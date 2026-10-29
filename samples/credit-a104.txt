@@ -1,0 +1,10 @@
+SYNTHETIC HACKATHON CREDIT EVIDENCE — NOT A REAL CREDIT NOTE
+Supplier: Shree Ganesh Distributors
+Credit note: DEMO-CN-A-104
+Original invoice: A-104
+Credit applied on next bill: INR 80.00
+Reason: 2 missing packs of Parle-G biscuits at INR 40.00 each.
+
+This fixture illustrates an explicit invoice-referenced credit.
+The merchant must confirm that the credit was actually applied.
+A supplier promise alone is insufficient to resolve a case.

@@ -1,0 +1,8 @@
+node_modules
+frontend/dist
+.data
+.venv
+package-lock.json
+test-results
+playwright-report
+samples

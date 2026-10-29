@@ -1,0 +1,18 @@
+SYNTHETIC HACKATHON INVOICE — NOT A REAL SUPPLIER BILL
+Shree Ganesh Distributors
+Invoice A-104
+Invoice date: 2026-10-29
+
+Item                 Billed quantity   Unit   Net unit price INR   Line total INR
+Parle-G biscuits      12                pack   40.00                480.00
+Tata Tea 250 g        6                 pack   125.00               750.00
+Lifebuoy soap        24                unclear 35.00                840.00
+
+Total billed: INR 2070.00
+No additional tax, discount or scheme in this synthetic example.
+The soap unit is unreadable. The merchant must clarify the unit.
+
+DELIVERY EXERCISE (merchant input, never inferred from invoice):
+10 biscuit packs arrived, 6 tea packs arrived, 24 individual soap pieces arrived.
+Supplier confirms the billed soap unit is piece. Delivery is complete.
+Shortage: (12 - 10) x INR 40.00 = INR 80.00.

@@ -1,0 +1,442 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Check,
+  ShieldCheck,
+  Upload,
+  FileText,
+  Sparkles,
+  Download,
+  MessageCircle,
+  Copy,
+  CalendarDays,
+  ExternalLink,
+  LoaderCircle,
+} from 'lucide-react';
+import { api, money, day, today } from '../api';
+import { icon, Modal, ErrorBox, Busy } from './ui';
+import { saveEvidence } from '../evidence';
+
+function Evidence({ c }) {
+  return (
+    <section className="evidence-card">
+      <div className="evidence-top">
+        <div className="evidence-brand">munafa.</div>
+        <span>{c.synthetic ? 'SYNTHETIC EVIDENCE' : 'DELIVERY EVIDENCE'}</span>
+      </div>
+      <span className="evidence-caption">
+        {c.approved_version ? 'MERCHANT-APPROVED CLAIM' : 'DRAFT · REQUIRES REVIEW'}
+      </span>
+      <strong className="evidence-total">
+        {money(c.approved_amount_paise ?? c.calculation.amount_paise)}
+      </strong>
+      <h3>{c.invoice.supplier}</h3>
+      <p>
+        Invoice {c.invoice.reference} · {day(c.invoice.date)}
+      </p>
+      <div className="evidence-rule" />
+      {c.invoice.lines.map((l, i) => (
+        <div className="evidence-line" key={i}>
+          <strong>{l.name}</strong>
+          <div>
+            <span>
+              {l.billed} billed − {l.received ?? '?'} received
+            </span>
+            <b>{l.unit}</b>
+          </div>
+          {c.calculation.lines[i]?.issue ? (
+            <span className="evidence-issue">Needs confirmation</span>
+          ) : (
+            <span className="equation">
+              {l.billed - l.received} × {money(l.price_paise)} ={' '}
+              {money(c.calculation.lines[i]?.amount_paise)}
+            </span>
+          )}
+        </div>
+      ))}
+      <div className="evidence-rule" />
+      <div className="evidence-trust">
+        <ShieldCheck size={15} />
+        {c.approved_version
+          ? 'Counts and prices confirmed by merchant'
+          : 'AI proposals need merchant confirmation'}
+      </div>
+      {c.approved_version && (
+        <button className="button secondary full" onClick={() => saveEvidence(c)}>
+          <Download size={15} /> Download evidence card
+        </button>
+      )}
+    </section>
+  );
+}
+function ShareModal({ c, close, config, notify }) {
+  const [lang, setLang] = useState('en-IN'),
+    [draft, setDraft] = useState(null),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState('');
+  async function generate(language) {
+    setBusy(true);
+    setError('');
+    setDraft(null);
+    try {
+      setDraft(await api(`/cases/${c.id}/message`, { method: 'POST', body: { language } }));
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  useEffect(() => {
+    generate('en-IN');
+  }, []);
+  const link = draft
+    ? `https://wa.me/${c.invoice.supplier_phone.replace(/\D/g, '')}?text=${encodeURIComponent(draft.text)}`
+    : '#';
+  return (
+    <Modal
+      title="A message the supplier can act on."
+      subtitle={`Invoice ${c.invoice.reference} · Review before you send`}
+      close={close}
+    >
+      <div className="modal-body">
+        <label className="field">
+          Message language
+          <select
+            value={lang}
+            onChange={(e) => {
+              setLang(e.target.value);
+              generate(e.target.value);
+            }}
+            disabled={busy}
+          >
+            <option value="en-IN">English · deterministic draft</option>
+            <option value="hi-IN" disabled={!config?.sarvam_configured}>
+              हिन्दी · Sarvam AI
+            </option>
+            <option value="kn-IN" disabled={!config?.sarvam_configured}>
+              ಕನ್ನಡ · Sarvam AI
+            </option>
+          </select>
+        </label>
+        <ErrorBox text={error} />
+        {busy ? (
+          <div className="loading">
+            <LoaderCircle className="spin" size={20} /> Preparing message…
+          </div>
+        ) : (
+          draft && (
+            <>
+              <div className="message-preview">{draft.text}</div>
+              {draft.provider === 'sarvam' && (
+                <>
+                  <div className="info-box warm">
+                    <Sparkles size={16} />
+                    <p>
+                      Sarvam translation is an AI draft. Check the supplier, invoice reference,
+                      quantities and amounts against the English original.
+                    </p>
+                  </div>
+                  <details>
+                    <summary>Compare original English message</summary>
+                    <div className="message-preview">{draft.original}</div>
+                  </details>
+                </>
+              )}
+              <div className="info-box">
+                <FileText size={17} />
+                <p>
+                  Download the evidence card, attach it in WhatsApp, then send. Come back to confirm
+                  sharing.
+                </p>
+              </div>
+              <div className="action-row">
+                <button
+                  className="button secondary"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(draft.text);
+                      notify('Supplier message copied.');
+                    } catch {
+                      setError(
+                        'Copy is unavailable. Select the message text and copy it manually.',
+                      );
+                    }
+                  }}
+                >
+                  <Copy size={16} /> Copy text
+                </button>
+                <button className="button secondary" onClick={() => saveEvidence(c)}>
+                  <Download size={16} /> Evidence PNG
+                </button>
+                <a className="button primary" href={link} target="_blank" rel="noreferrer">
+                  <MessageCircle size={16} /> Open WhatsApp
+                </a>
+              </div>
+            </>
+          )
+        )}
+      </div>
+    </Modal>
+  );
+}
+function PromiseModal({ c, close, update, notify }) {
+  const [note, setNote] = useState(c.promise || ''),
+    [date, setDate] = useState(c.follow_up && c.follow_up >= today() ? c.follow_up : today()),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState('');
+  return (
+    <Modal
+      title="Record the supplier’s promise"
+      subtitle="A promise helps you follow up. It does not count as recovery."
+      close={close}
+    >
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          setError('');
+          try {
+            update(
+              await api(`/cases/${c.id}/promise`, {
+                method: 'POST',
+                body: { version: c.version, note, follow_up: date },
+              }),
+            );
+            notify('Promise and follow-up date saved.');
+            close();
+          } catch (e) {
+            setError(e.message);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <div className="modal-body">
+          <label className="field">
+            What did the supplier say?
+            <textarea
+              required
+              maxLength={500}
+              rows={3}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Will adjust against the next bill."
+            />
+          </label>
+          <label className="field">
+            When should you follow up?
+            <input
+              required
+              type="date"
+              min={today()}
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </label>
+          <ErrorBox text={error} />
+          <button className="button primary full" disabled={busy}>
+            <Busy busy={busy}>
+              Save promise <CalendarDays size={16} />
+            </Busy>
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+function ResolveModal({ c, close, update, notify }) {
+  const [data, setData] = useState({
+      kind: 'credit',
+      supplier: c.invoice.supplier,
+      invoice_reference: c.invoice.reference,
+      evidence_reference: '',
+      amount_paise: c.remaining_paise,
+      attachment_id: '',
+      applied_confirmed: false,
+    }),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(''),
+    [proofName, setProofName] = useState('');
+  const change = (key, value) => setData((prev) => ({ ...prev, [key]: value }));
+  async function sample() {
+    setBusy(true);
+    setError('');
+    try {
+      const p = await api(`/cases/${c.id}/sample-proof`, {
+        method: 'POST',
+        body: {
+          amount_paise: data.amount_paise,
+          kind: data.kind,
+          evidence_reference: data.evidence_reference || null,
+        },
+      });
+      const { synthetic, ...rest } = p;
+      setData({ ...rest, applied_confirmed: false });
+      setProofName('Synthetic next-bill credit');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function upload(file) {
+    if (!file) return;
+    setBusy(true);
+    setError('');
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const p = await api(`/cases/${c.id}/proof`, { method: 'POST', body: form });
+      change('attachment_id', p.attachment_id);
+      setProofName(p.name);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function submit(e) {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      update(
+        await api(`/cases/${c.id}/resolve`, {
+          method: 'POST',
+          body: { ...data, version: c.version },
+        }),
+      );
+      notify('Recovery verified and recorded once.');
+      close();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Modal
+      title="Verify the money came back."
+      subtitle={`${money(c.remaining_paise)} remains on invoice ${c.invoice.reference}`}
+      close={busy ? () => {} : close}
+      wide
+    >
+      <form onSubmit={submit}>
+        <div className="modal-body">
+          <div className="info-box">
+            <ShieldCheck size={18} />
+            <p>
+              Match the supplier, original invoice and amount against a credit note or refund
+              record. Partial credits stay open. For a synthetic partial credit, enter the amount
+              before loading its proof. A supplier promise alone is not proof.
+            </p>
+          </div>
+          {c.synthetic && (
+            <button
+              type="button"
+              className="button secondary full"
+              disabled={busy}
+              onClick={sample}
+            >
+              <Sparkles size={16} /> Load synthetic next-bill credit
+            </button>
+          )}
+          <div className="form-grid resolution-form">
+            <label className="field">
+              Resolution type
+              <select value={data.kind} onChange={(e) => change('kind', e.target.value)}>
+                <option value="credit">Credit applied to a bill</option>
+                <option value="refund">Refund received</option>
+              </select>
+            </label>
+            <label className="field">
+              Amount actually applied / received (₹)
+              <input
+                required
+                type="number"
+                min="0.01"
+                step="0.01"
+                max={c.remaining_paise / 100}
+                value={data.amount_paise / 100 || ''}
+                onChange={(e) => change('amount_paise', Math.round(+e.target.value * 100))}
+              />
+            </label>
+            <label className="field">
+              Supplier on the proof
+              <input
+                required
+                maxLength={100}
+                value={data.supplier}
+                onChange={(e) => change('supplier', e.target.value)}
+              />
+            </label>
+            <label className="field">
+              Original invoice reference on proof
+              <input
+                required
+                maxLength={60}
+                value={data.invoice_reference}
+                onChange={(e) => change('invoice_reference', e.target.value)}
+              />
+            </label>
+            <label className="field span-two">
+              Unique credit-note / refund reference
+              <input
+                required
+                placeholder="e.g. CN-148 or bank transaction reference"
+                maxLength={100}
+                value={data.evidence_reference}
+                onChange={(e) => change('evidence_reference', e.target.value)}
+              />
+            </label>
+          </div>
+          <label className="proof-upload">
+            <Upload size={18} />
+            <span>
+              {proofName || 'Attach actual credit-note or refund proof'}
+              <small>PNG, JPEG, WebP or PDF · up to 8 MB</small>
+            </span>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,application/pdf"
+              disabled={busy}
+              onChange={(e) => upload(e.target.files[0])}
+            />
+          </label>
+          {data.attachment_id && (
+            <a
+              className="proof-link"
+              href={`/api/attachments/${data.attachment_id}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <ExternalLink size={15} /> Open and inspect attached evidence
+            </a>
+          )}
+          <label className="check-field resolution-check">
+            <input
+              type="checkbox"
+              required
+              checked={data.applied_confirmed}
+              onChange={(e) => change('applied_confirmed', e.target.checked)}
+            />
+            I checked this proof and confirm the credit was applied or the refund was received.
+          </label>
+          <ErrorBox text={error} />
+        </div>
+        <div className="modal-footer">
+          <span>Supplier + invoice + amount + proof</span>
+          <button
+            className="button primary"
+            disabled={busy || !data.attachment_id || !data.applied_confirmed}
+          >
+            <Busy busy={busy}>
+              <ShieldCheck size={16} /> Verify and record
+            </Busy>
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+export { Evidence, ShareModal, PromiseModal, ResolveModal };

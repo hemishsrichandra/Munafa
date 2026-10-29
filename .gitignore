@@ -1,0 +1,25 @@
+# Dependencies and builds
+node_modules/
+.venv/
+frontend/dist/
+# Local data, credentials and uploads
+.env
+.env.*
+!.env.example
+.data/
+*.db
+*.db-shm
+*.db-wal
+# Tool output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+playwright-report/
+test-results/
+*.log
+.DS_Store
+.idea/
+.vscode/
+.ruff_cache/

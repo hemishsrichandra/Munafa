@@ -1,0 +1,22 @@
+{
+  "name": "munafa",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c green,cyan \".venv/bin/uvicorn backend.app:app --reload --host 127.0.0.1 --port 8000\" \"npm run dev --workspace frontend\"",
+    "build": "npm run build --workspace frontend",
+    "test": ".venv/bin/python -m pytest backend/tests -q",
+    "test:e2e": "npm run build && playwright test",
+    "start": ".venv/bin/uvicorn backend.app:app --host 127.0.0.1 --port 8000",
+    "format": "prettier --write frontend/src tests/e2e playwright.config.js package.json frontend/package.json frontend/vite.config.js README.md docs",
+    "format:check": "prettier --check frontend/src tests/e2e playwright.config.js package.json frontend/package.json frontend/vite.config.js README.md docs"
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "concurrently": "9.1.2",
+    "prettier": "^3.6.2"
+  }
+}
