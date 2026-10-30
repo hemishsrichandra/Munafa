@@ -1,58 +1,38 @@
 # Build progress and handoff
 
-Last updated: **29 October 2026**. Offline hackathon: **31 October 2026, Bengaluru**.
+Updated **30 October 2026**. Batches **2, 3 and 4** implemented in the existing Munafa repository. No Batch 5 feature was started. The owner authorized committing and pushing the completed work before handoff.
 
-## Current state
+## Completed product and foundations
 
-The initial local prototype is implemented. The React/Vite frontend and FastAPI/SQLite backend run together with `npm run dev`. The API can also serve the compiled frontend with `npm run build` followed by `npm start`.
+- PostgreSQL-only SQLAlchemy/Psycopg persistence and Alembic; normalized tenant/store membership and supplier workflow records. No SQLite application/test fallback or startup DDL.
+- Exact fractional quantities and BIGINT paise, immutable approval snapshots, append-only audit/financial/resolution events and rebuildable recovery projection.
+- Session authentication, CSRF, role/store checks, bounded concurrency, operation receipts and exact version/digest-bound approvals.
+- Original invoice → physical receiving → approval → manual sharing confirmation → supplier promise → proof-backed recovery remains working.
+- Mobile Home/Purchases/More, actual-record brief, PWA public-shell install/update/offline launch and same-source Capacitor Android wrapper.
+- IndexedDB private receiving cache, manual invoice/receiving drafts and attachment capture; durable frozen outbox with dependency order, leases, bounded retries and explicit conflicts.
+- Offline draft reload and same-account reauthentication preserve saved work. Sign-out/account/role change clears private context. No offline approval, financial recovery, messaging or stock mutation is eligible.
 
-The folder is initialized as a Git repository on `main`, with `origin` linked to `https://github.com/hemishsrichandra/Munafa.git`. The remote was empty when inspected. The initial prototype is tracked on `main`. Use `git log -1` to identify the current revision and `git status --short --branch` to check local changes and upstream synchronization.
+## Verified results
 
-## Completed
+- **57 backend tests**, PostgreSQL **17.11**, isolated disposable schemas/stores.
+- **12 IndexedDB/state-machine tests**, including transaction quota abort, leases, immutable payload, context purge, schema refusal and attachment cleanup.
+- **14 Playwright tests**, including actual client timeout after acceptance with duplicate-proof replay, offline reload, attachment retry, auth expiry, quota and stale receiving.
+- Ruff, Prettier, production PWA build and Alembic metadata check pass.
+- Capacitor sync and Java 21/SDK 35 `assembleDebug lintDebug` pass. Android lint: 0 errors, 28 existing warnings. APK signature and packaged frontend byte parity verified.
+- APK `artifacts/munafa-debug.apk` and screenshots `test-results/` are ignored local artifacts. See BATCH-4.md for checksum, commands and limitations.
 
-- Reviewed all nine source slides and refined the build around shortage-to-resolution.
-- Added responsive Overview, Credit cases, Suppliers and Insights views.
-- Implemented synthetic, manual, Sarvam text and Sarvam-hosted image intake.
-- Added editable invoice fields and merchant receiving/unit/delivery/pricing confirmation.
-- Implemented deterministic integer-paise calculations and approval gates.
-- Added immutable approved evidence snapshots and invalidation after edits.
-- Added downloadable PNG evidence and previewable supplier messages.
-- Added Sarvam Hindi/Kannada translation with English comparison.
-- Kept WhatsApp sharing manual and required separate merchant sharing confirmation.
-- Added supplier promises, follow-up dates, overdue visibility and audit history.
-- Added case-owned proof attachments, partial/full credit and refund verification.
-- Added unique credit/refund references and proof-content deduplication within transactions.
-- Added exact field matching for the supported synthetic credit fixture.
-- Added optimistic versions to prevent stale-tab overwrites.
-- Added CSV export, synthetic sample files and a reset command preserving merchant cases.
-- Added dependency lockfiles, environment template, `.gitignore` and formatters.
-- Documented architecture, setup, demonstration, limitations and the remaining roadmap.
+## Current environment
 
-## Verification
+Ignored private `.env` configures a fresh local PostgreSQL cluster on **127.0.0.1:55432**, database `munafa_b23`. Tests use generated schemas, not public application tables. An explicitly labelled synthetic A-104 demo store was seeded without reset. Legacy `.data/*.db` files remain untouched.
 
-- **36 backend/domain/API tests pass**, including mocked Sarvam contracts and failures.
-- Production frontend compilation passes.
-- Python Ruff checks and formatting pass.
-- Frontend/Markdown Prettier formatting checks pass.
-- Desktop and mobile browser tests exercise the ₹80 workflow, PNG download, promises, closure, persistence, supplier/insight navigation and manual entry.
-- Desktop and mobile screenshots were visually inspected during development.
-- Browser tests use a separate local database; they do not modify the main workspace data.
+The development UI/API can be started with `npm run dev`. Port 5173 is Vite; the built PWA is served at port 8000. Detailed restart commands, tool locations and sign-in instructions are in HANDOFF.md. Never print or commit the private development access code.
 
-A non-failing Starlette test-client deprecation warning is present with the pinned HTTPX dependency. Runtime behavior and tests pass; migrate the test client dependency when the framework transition is evaluated.
+## Remaining work and decisions
 
-## Live integrations and scope limits
+1. Owner review and **explicit Batch 5 prompt** before more implementation. Do not infer future scope from the roadmap.
+2. Hosted HTTPS API and real Android device validation: login, offline restart, process kill, storage pressure, file/camera/share, native Back and install/update. No release signing/device-level encryption is implemented or claimed.
+3. Production authentication operations, least-privilege PostgreSQL role, verified backups/restores, deployment protections and data retention/scanning require infrastructure and operational review.
+4. Authorised Sarvam account/model checks, correction-adjusted accuracy/time, latency/cost evaluation remain unverified. No live Paytm connection exists.
+5. Merchant research/evaluation, final presentation, submission video and production rollout remain outstanding. No business outcome improvements are claimed without measurement.
 
-**No Sarvam key or credits were provided. Live Sarvam extraction/translation has not been tested.** Endpoint/header/model contracts and error paths are tested with mocks. Add the hackathon account key and validate actual account/model access before claiming a live AI demo or partner credit eligibility.
-
-No live Paytm connection, automatic supplier sending, production authentication or multi-store isolation exists. The prototype is intentionally bound to loopback. Real proof verification is a merchant attestation with identifier/amount rules, not independent document-authenticity validation.
-
-## Next implementation steps
-
-1. Configure Sarvam credentials and run real text/image/translation checks. Log latency, accuracy and credit usage.
-2. Evaluate more invoice variations and add regression fixtures for real extraction failures.
-3. Record the demo video and update the final presentation with working screenshots. These submission deliverables are not yet produced.
-4. Validate recent shortage/credit workflows with 3–5 merchants.
-5. Add authentication, store isolation, PostgreSQL, private storage, backups and upload/deployment protections before a real merchant pilot.
-6. Expand to fractional quantities, explicit unit conversions, multilingual receiving and evidence-assisted credit matching after validation.
-
-See `ROADMAP.md` for priorities and acceptance criteria, and `DEMO.md` for the rehearsal script. The README contains all start, build, test and reset commands.
+For the next chat read **[HANDOFF.md](HANDOFF.md)** first, then [Batch 4](BATCH-4.md), [sync protocol](SYNC-PROTOCOL.md) and the actual source/tests. Earlier [Batch 2](BATCH-2.md) and [Batch 3](BATCH-3.md) reports preserve their historical validation context; current behavior is documented above.

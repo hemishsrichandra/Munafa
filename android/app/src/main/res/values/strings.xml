@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Munafa Business Partner</string>
+    <string name="title_activity_main">Munafa Business Partner</string>
+    <string name="package_name">in.munafa.businesspartner</string>
+    <string name="custom_url_scheme">in.munafa.businesspartner</string>
+</resources>

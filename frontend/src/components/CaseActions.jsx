@@ -12,11 +12,12 @@ import {
   ExternalLink,
   LoaderCircle,
 } from 'lucide-react';
-import { api, money, day, today } from '../api';
+import { api, money, day, today, downloadPrivate, paiseFromInput } from '../api';
 import { icon, Modal, ErrorBox, Busy } from './ui';
 import { saveEvidence } from '../evidence';
 
 function Evidence({ c }) {
+  const [error, setError] = useState('');
   return (
     <section className="evidence-card">
       <div className="evidence-top">
@@ -47,7 +48,7 @@ function Evidence({ c }) {
             <span className="evidence-issue">Needs confirmation</span>
           ) : (
             <span className="equation">
-              {l.billed - l.received} × {money(l.price_paise)} ={' '}
+              {c.calculation.lines[i]?.shortage_quantity} × {money(l.price_paise)} ={' '}
               {money(c.calculation.lines[i]?.amount_paise)}
             </span>
           )}
@@ -60,8 +61,19 @@ function Evidence({ c }) {
           ? 'Counts and prices confirmed by merchant'
           : 'AI proposals need merchant confirmation'}
       </div>
+      <ErrorBox text={error} />
       {c.approved_version && (
-        <button className="button secondary full" onClick={() => saveEvidence(c)}>
+        <button
+          className="button secondary full"
+          onClick={async () => {
+            setError('');
+            try {
+              await saveEvidence(c);
+            } catch (e) {
+              setError(e.message);
+            }
+          }}
+        >
           <Download size={15} /> Download evidence card
         </button>
       )}
@@ -164,7 +176,17 @@ function ShareModal({ c, close, config, notify }) {
                 >
                   <Copy size={16} /> Copy text
                 </button>
-                <button className="button secondary" onClick={() => saveEvidence(c)}>
+                <button
+                  className="button secondary"
+                  onClick={async () => {
+                    setError('');
+                    try {
+                      await saveEvidence(c);
+                    } catch (e) {
+                      setError(e.message);
+                    }
+                  }}
+                >
                   <Download size={16} /> Evidence PNG
                 </button>
                 <a className="button primary" href={link} target="_blank" rel="noreferrer">
@@ -357,7 +379,7 @@ function ResolveModal({ c, close, update, notify }) {
                 step="0.01"
                 max={c.remaining_paise / 100}
                 value={data.amount_paise / 100 || ''}
-                onChange={(e) => change('amount_paise', Math.round(+e.target.value * 100))}
+                onChange={(e) => change('amount_paise', paiseFromInput(e.target.value))}
               />
             </label>
             <label className="field">
@@ -406,6 +428,14 @@ function ResolveModal({ c, close, update, notify }) {
             <a
               className="proof-link"
               href={`/api/attachments/${data.attachment_id}`}
+              onClick={async (e) => {
+                e.preventDefault();
+                try {
+                  await downloadPrivate(`/api/attachments/${data.attachment_id}`);
+                } catch (e) {
+                  setError(e.message);
+                }
+              }}
               target="_blank"
               rel="noreferrer"
             >

@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap');
 :root {
   font-family:
     'DM Sans',
@@ -3362,4 +3361,805 @@ details summary {
 }
 .confirmation-box p {
   color: #8a9c78;
+}
+/* Batch 3: phone-first shell additions; existing workflow styling remains in place. */
+.mobile-case-list,
+.bottom-nav {
+  display: none;
+}
+.login-page {
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 80px 22px 35px;
+  min-height: 100vh;
+}
+.login-card {
+  padding: 30px;
+}
+.login-card h1 {
+  font-size: 27px;
+}
+.login-card > p {
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 15px 0 22px;
+}
+.login-card .field {
+  font-size: 13px;
+}
+.login-card input {
+  font-size: 16px;
+  min-height: 48px;
+}
+.login-card .button {
+  margin-top: 12px;
+}
+.tiny-help {
+  font-size: 12px !important;
+  color: #52634d;
+}
+.brief-card {
+  border: 1px solid #dce6d1;
+  background: #edf3e6;
+  border-radius: 12px;
+  padding: 28px;
+  margin-bottom: 25px;
+}
+.brief-card h2 {
+  font-size: 25px;
+  line-height: 1.4;
+  letter-spacing: -0.6px;
+}
+.brief-card p {
+  font-size: 14px;
+  line-height: 1.8;
+  max-width: 650px;
+  color: #4f6444;
+  margin: 14px 0 20px;
+}
+.brief-card small {
+  display: block;
+  font-size: 12px;
+  color: #53664a;
+  margin-top: 16px;
+  line-height: 1.8;
+}
+.more-panel {
+  padding: 24px;
+  max-width: 700px;
+}
+.more-panel h2 {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+.more-panel > .button {
+  margin-bottom: 14px;
+  justify-content: space-between;
+}
+.more-panel > .field {
+  margin-top: 20px;
+  font-size: 14px;
+}
+.more-panel > p {
+  font-size: 13px;
+  line-height: 1.8;
+  margin-bottom: 18px;
+}
+.locale-note {
+  background: #f6f4e9;
+  padding: 15px;
+  border-radius: 6px;
+}
+.pwa-status {
+  position: relative;
+  z-index: 35;
+}
+.offline-banner,
+.update-banner {
+  padding: 13px 20px;
+  background: #fff2d9;
+  color: #694d18;
+  font-size: 13px;
+  line-height: 1.7;
+  border-bottom: 1px solid #e0cc9c;
+}
+.update-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  background: #eaf2e2;
+  color: #324d27;
+}
+.update-banner button {
+  min-height: 44px;
+  padding: 10px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+.install-control {
+  position: fixed;
+  right: 22px;
+  bottom: 18px;
+  z-index: 40;
+}
+.install-control > button,
+.install-control > span {
+  min-height: 44px;
+  border: 1px solid #b4c4a4;
+  border-radius: 22px;
+  background: white;
+  box-shadow: 0 3px 14px #243a1b10;
+  padding: 12px 17px;
+  color: #36532b;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+}
+.install-guide {
+  position: absolute;
+  bottom: 58px;
+  right: 0;
+  width: 290px;
+  max-width: 85vw;
+  border: 1px solid #ccd9c0;
+  background: #fff;
+  padding: 18px;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 1.8;
+  box-shadow: 0 8px 25px #1d352319;
+}
+.skeleton {
+  background: linear-gradient(90deg, #eef2e8, #f9fbf5, #eef2e8);
+  padding: 30px;
+  border-radius: 10px;
+  color: #4f6444;
+}
+.button,
+.icon-button,
+.text-button,
+.tabs button {
+  min-height: 44px;
+}
+.icon-button {
+  min-width: 44px;
+}
+.field input,
+.field select {
+  min-height: 44px;
+}
+.field input,
+.field select,
+.field textarea {
+  font-size: 14px;
+}
+.field {
+  font-size: 12px;
+}
+.check-field {
+  min-height: 44px;
+  align-items: center;
+  font-size: 13px;
+}
+.error-box {
+  font-size: 13px;
+}
+.snapshot-link {
+  min-height: 44px;
+  font-size: 12px;
+}
+.metric-top {
+  font-size: 12px;
+}
+.metric-foot {
+  font-size: 11px;
+}
+.panel-heading p {
+  font-size: 12px;
+}
+.timeline strong {
+  font-size: 13px;
+}
+.timeline p {
+  font-size: 12px;
+}
+.timeline time {
+  font-size: 11px;
+}
+.table-date {
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .sidebar {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e3e8da;
+  }
+  .sidebar nav,
+  .sidebar .workspace {
+    display: none;
+  }
+  .brand {
+    font-size: 25px;
+  }
+  .topbar {
+    height: auto;
+    min-height: 48px;
+  }
+  .main-shell main {
+    padding: 24px 18px 115px;
+  }
+  .page-heading h1 {
+    font-size: 26px;
+  }
+  .page-heading > div > p {
+    font-size: 13px;
+    max-width: 100%;
+  }
+  .eyebrow {
+    font-size: 10px;
+    line-height: 1.8;
+    letter-spacing: 1px;
+  }
+  .page-heading {
+    align-items: center;
+  }
+  .page-heading > .button {
+    margin-top: 0;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .hero {
+    display: none;
+  }
+  .bottom-note {
+    display: none;
+  }
+  .section-caption {
+    font-size: 10px;
+    line-height: 1.8;
+    gap: 14px;
+  }
+  .section-caption > .muted {
+    font-size: 10px;
+  }
+  .metric-top {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .metric-value {
+    font-size: 30px;
+  }
+  .metric-foot {
+    font-size: 11px;
+  }
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .metric {
+    padding: 16px 14px;
+  }
+  .panel-heading h2 {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .panel-heading p {
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  .panel-heading .text-button {
+    font-size: 12px;
+  }
+  .desktop-case-table {
+    display: none;
+  }
+  .mobile-case-list {
+    display: flex;
+    flex-direction: column;
+    padding: 0 16px;
+  }
+  .case-list-card {
+    display: block;
+    padding: 19px 0;
+    width: 100%;
+    text-align: left;
+    border-top: 1px solid #e8eddf;
+  }
+  .case-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .case-card-top > strong {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+  .case-card-top .badge {
+    font-size: 10px;
+    line-height: 1.8;
+    white-space: normal;
+    flex-shrink: 0;
+    max-width: 110px;
+  }
+  .case-card-reference {
+    display: block;
+    font-size: 12px;
+    color: #617456;
+    margin: 8px 0 14px;
+    line-height: 1.8;
+  }
+  .case-card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .case-card-bottom > strong {
+    font-size: 21px;
+    font-family: Manrope, sans-serif;
+  }
+  .case-card-bottom > span {
+    font-size: 12px;
+    color: #596e4d;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 1px solid #dbe4d0;
+    z-index: 30;
+    padding: 7px 10px calc(7px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -3px 12px #243a1b06;
+  }
+  .bottom-nav > button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+    min-height: 55px;
+    font-size: 12px;
+    color: #5d7251;
+    border-radius: 8px;
+  }
+  .bottom-nav > button[aria-current='page'] {
+    color: #264e36;
+    background: #edf4e6;
+    font-weight: 600;
+  }
+  .brief-card {
+    padding: 24px 20px;
+  }
+  .brief-card h2 {
+    font-size: 23px;
+  }
+  .brief-card p {
+    font-size: 14px;
+  }
+  .brief-card .button {
+    width: 100%;
+    font-size: 13px;
+  }
+  .brief-card small {
+    font-size: 11px;
+  }
+  .install-control {
+    bottom: 85px;
+    right: 12px;
+  }
+  .install-control > button,
+  .install-control > span {
+    font-size: 11px;
+    padding: 9px 13px;
+  }
+  .detail-aside {
+    grid-row: auto;
+  }
+  .detail-layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .detail-main {
+    display: contents;
+  }
+  .review-panel {
+    order: 0;
+  }
+  .detail-aside {
+    order: 1;
+  }
+  .detail-main > .panel:not(.review-panel),
+  .resolution-success {
+    order: 2;
+  }
+  .evidence-card h3,
+  .evidence-line > strong {
+    font-size: 14px;
+  }
+  .evidence-card > p,
+  .evidence-line > div,
+  .equation {
+    font-size: 13px;
+  }
+  .evidence-caption,
+  .evidence-top > span,
+  .evidence-trust {
+    font-size: 10px;
+    line-height: 1.8;
+  }
+  .approval-box h3,
+  .approval-box ul,
+  .approval-box > p {
+    font-size: 13px;
+  }
+  .confirmation-box p {
+    font-size: 12px;
+  }
+  .check-field {
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  .field {
+    font-size: 12px;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    font-size: 16px;
+    min-height: 46px;
+  }
+  .line-editor .field {
+    font-size: 12px;
+  }
+  .line-form-grid,
+  .review-panel .line-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 14px;
+  }
+  .line-top {
+    align-items: center;
+  }
+  .review-actions > span {
+    font-size: 11px;
+  }
+  .review-actions > .button {
+    font-size: 13px;
+    width: 100%;
+  }
+  .steps {
+    flex-wrap: wrap;
+    gap: 14px;
+    padding: 17px;
+  }
+  .steps > div {
+    flex: 1 1 40%;
+    font-size: 11px;
+    flex-direction: row;
+    gap: 8px;
+    text-align: left;
+  }
+  .steps > div > span {
+    min-width: 25px;
+    height: 25px;
+    font-size: 11px;
+  }
+  .steps > div > svg {
+    display: none;
+  }
+  .action-row > .button,
+  .action-row > .text-button {
+    font-size: 13px;
+    min-height: 46px;
+    flex: 1 1 auto;
+  }
+  .confirmed-lines strong {
+    font-size: 14px;
+  }
+  .confirmed-lines span:not(.line-check) {
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  .sent-confirm .check-field {
+    font-size: 13px;
+  }
+  .balance-card > span,
+  .balance-card > div {
+    font-size: 13px;
+  }
+  .balance-card > p {
+    font-size: 12px;
+  }
+  .modal-backdrop {
+    padding: 12px;
+  }
+  .modal {
+    max-height: calc(100dvh - 24px);
+  }
+  .modal-body,
+  .modal-header,
+  .modal-footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .modal-header h2 {
+    font-size: 21px;
+  }
+  .modal-header p {
+    font-size: 12px;
+  }
+  .intake-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+  .intake-tabs button {
+    font-size: 12px;
+    min-height: 44px;
+  }
+  .sample-line {
+    grid-template-columns: 1fr 90px 40px;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .sample-hint {
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .sample-intake > p,
+  .info-box p {
+    font-size: 12px;
+  }
+  .message-preview {
+    font-size: 14px;
+  }
+  .resolution-list strong {
+    font-size: 13px;
+  }
+  .resolution-list span:not(.proof-icon) {
+    font-size: 11px;
+  }
+  .resolution-list a {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .resolution-success h2 {
+    font-size: 19px;
+  }
+  .resolution-success p {
+    font-size: 13px;
+  }
+  .table-toolbar {
+    padding: 16px;
+  }
+  .tabs button {
+    font-size: 12px;
+    padding: 9px 12px;
+  }
+  .search-field input {
+    font-size: 16px;
+  }
+  .proof-upload {
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  .proof-link {
+    font-size: 13px;
+    min-height: 44px;
+  }
+  .more-panel > .button {
+    font-size: 14px;
+    min-height: 48px;
+  }
+  .toast {
+    bottom: 89px;
+    font-size: 13px;
+  }
+  .top-actions {
+    gap: 8px;
+  }
+  .prototype-label {
+    font-size: 10px;
+  }
+  .breadcrumb {
+    font-size: 11px;
+  }
+  footer {
+    font-size: 11px;
+    line-height: 1.8;
+  }
+  footer > span:first-child {
+    font-size: 11px;
+  }
+}
+@media (max-width: 350px) {
+  .main-shell main {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+  .case-card-top {
+    flex-direction: column;
+  }
+  .line-form-grid,
+  .review-panel .line-form-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .sample-line {
+    grid-template-columns: 1fr 70px 32px;
+    font-size: 11px;
+  }
+  .case-card-bottom {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .bottom-nav > button {
+    font-size: 11px;
+  }
+}
+/* Install controls remain in document flow and never cover merchant actions. */
+.install-control {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  display: flex;
+  justify-content: flex-end;
+  padding: 7px 20px;
+  background: #f7f8f4;
+}
+.install-guide {
+  top: 58px;
+  bottom: auto;
+  right: 20px;
+}
+.overview-lower {
+  grid-template-columns: 1fr;
+}
+@media (max-width: 760px) {
+  .bottom-nav {
+    flex-direction: row;
+  }
+}
+
+/* Batch 4: focused device workspace; provisional states never look like accepted credit. */
+.device-sync-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.offline-workspace {
+  max-width: 1000px;
+  margin: 16px auto;
+  padding: 24px;
+  overflow-wrap: anywhere;
+}
+.offline-workspace h1 {
+  font-size: 28px;
+  letter-spacing: -1px;
+}
+.offline-workspace h2 {
+  margin-top: 28px;
+  font-size: 20px;
+}
+.offline-workspace > p {
+  font-size: 14px;
+  line-height: 1.65;
+  margin: 14px 0;
+}
+.offline-workspace .info-box {
+  display: block;
+  line-height: 1.65;
+}
+.offline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0;
+}
+.offline-workspace .field {
+  margin: 14px 0;
+}
+.offline-list-card {
+  background: #f8faf6;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  margin: 12px 0;
+}
+.offline-list-card p {
+  margin: 12px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.offline-list-card button {
+  margin: 4px 8px 4px 0;
+}
+.sync-state {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin: 6px;
+  background: #e9eee6;
+  color: #33553a;
+}
+.sync-state.pending_sync,
+.sync-state.syncing {
+  background: #fff2cf;
+  color: #775419;
+}
+.sync-state.conflict,
+.sync-state.needs_attention {
+  background: #ffe6de;
+  color: #873b2b;
+}
+.offline-editor,
+.conflict-review {
+  padding: 18px;
+  border: 2px solid #c7d5bf;
+  border-radius: 14px;
+  margin: 20px 0;
+}
+.conflict-review {
+  border-color: #b66f3b;
+  background: #fff8e9;
+}
+.local-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 340px;
+  object-fit: contain;
+}
+.sync-debug {
+  padding: 16px;
+  background: #f0f2ed;
+  font-size: 12px;
+}
+.sync-debug summary {
+  min-height: 44px;
+  cursor: pointer;
+}
+@media (max-width: 600px) {
+  .offline-workspace {
+    margin: 8px;
+    padding: 16px;
+    padding-bottom: 90px;
+  }
+  .offline-editor {
+    padding: 12px;
+  }
+  .offline-actions {
+    flex-direction: column;
+  }
+  .offline-actions > .button {
+    width: 100%;
+  }
+  .offline-list-card > .button {
+    width: 100%;
+    margin: 5px 0;
+  }
+  .device-sync-summary .button {
+    min-height: 44px;
+  }
 }

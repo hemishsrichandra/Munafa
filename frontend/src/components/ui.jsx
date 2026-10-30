@@ -37,78 +37,108 @@ function Metric({ label, value, Icon, foot, tone, onClick }) {
 }
 function CaseTable({ cases, open }) {
   return (
-    <div className="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>SUPPLIER / INVOICE</th>
-            <th>TO RESOLVE</th>
-            <th>STATUS</th>
-            <th>FOLLOW-UP</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {cases.map((c) => (
-            <tr
-              key={c.id}
-              onClick={() => open(c)}
-              tabIndex={0}
-              onKeyDown={(e) => e.key === 'Enter' && open(c)}
-              aria-label={`Open invoice ${c.invoice.reference}`}
-            >
-              <td>
-                <div className="supplier-cell">
-                  <span className={`supplier-logo ${c.status === 'resolved' ? 'mint' : ''}`}>
-                    {c.invoice.supplier
-                      .split(' ')
-                      .slice(0, 2)
-                      .map((s) => s[0])
-                      .join('')}
-                  </span>
-                  <div>
-                    <strong>{c.invoice.supplier}</strong>
-                    <span>
-                      {c.invoice.reference} <b>·</b>{' '}
-                      {c.synthetic ? 'Synthetic example' : day(c.invoice.date)}
-                    </span>
-                  </div>
-                </div>
-              </td>
-              <td className="amount">
-                {c.status === 'review' ? (
-                  <span className="muted">In review</span>
-                ) : (
-                  money(c.remaining_paise)
-                )}
-                {c.status === 'resolved' && <small>{money(c.recovered_paise)} verified</small>}
-              </td>
-              <td>{badge(c.status)}</td>
-              <td>
-                <span
-                  className={
-                    c.follow_up && c.follow_up < today() && c.status !== 'resolved'
-                      ? 'overdue-date'
-                      : 'table-date'
-                  }
-                >
-                  {c.follow_up && c.follow_up < today() && c.status !== 'resolved' ? (
-                    <>
-                      <i />
-                      Overdue ·{' '}
-                    </>
-                  ) : null}
-                  {day(c.follow_up)}
-                </span>
-              </td>
-              <td>
-                <ChevronRight size={17} className="muted" />
-              </td>
+    <>
+      <div className="mobile-case-list">
+        {cases.map((c) => (
+          <button
+            key={c.id}
+            className="case-list-card"
+            onClick={() => open(c)}
+            aria-label={`Open invoice ${c.invoice.reference}`}
+          >
+            <span className="case-card-top">
+              <strong>{c.invoice.supplier}</strong>
+              {badge(c.status)}
+            </span>
+            <span className="case-card-reference">
+              Invoice {c.invoice.reference} ·{' '}
+              {c.synthetic ? 'Synthetic example' : day(c.invoice.date)}
+            </span>
+            <span className="case-card-bottom">
+              <strong>
+                {c.status === 'review' ? 'Needs your review' : money(c.remaining_paise)}
+              </strong>
+              <span>
+                {c.follow_up ? `Follow up ${day(c.follow_up)}` : 'View case'}{' '}
+                <ChevronRight size={18} />
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="table-scroll desktop-case-table">
+        <table>
+          <thead>
+            <tr>
+              <th>SUPPLIER / INVOICE</th>
+              <th>TO RESOLVE</th>
+              <th>STATUS</th>
+              <th>FOLLOW-UP</th>
+              <th />
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {cases.map((c) => (
+              <tr
+                key={c.id}
+                onClick={() => open(c)}
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && open(c)}
+                aria-label={`Open invoice ${c.invoice.reference}`}
+              >
+                <td>
+                  <div className="supplier-cell">
+                    <span className={`supplier-logo ${c.status === 'resolved' ? 'mint' : ''}`}>
+                      {c.invoice.supplier
+                        .split(' ')
+                        .slice(0, 2)
+                        .map((s) => s[0])
+                        .join('')}
+                    </span>
+                    <div>
+                      <strong>{c.invoice.supplier}</strong>
+                      <span>
+                        {c.invoice.reference} <b>·</b>{' '}
+                        {c.synthetic ? 'Synthetic example' : day(c.invoice.date)}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td className="amount">
+                  {c.status === 'review' ? (
+                    <span className="muted">In review</span>
+                  ) : (
+                    money(c.remaining_paise)
+                  )}
+                  {c.status === 'resolved' && <small>{money(c.recovered_paise)} verified</small>}
+                </td>
+                <td>{badge(c.status)}</td>
+                <td>
+                  <span
+                    className={
+                      c.follow_up && c.follow_up < today() && c.status !== 'resolved'
+                        ? 'overdue-date'
+                        : 'table-date'
+                    }
+                  >
+                    {c.follow_up && c.follow_up < today() && c.status !== 'resolved' ? (
+                      <>
+                        <i />
+                        Overdue ·{' '}
+                      </>
+                    ) : null}
+                    {day(c.follow_up)}
+                  </span>
+                </td>
+                <td>
+                  <ChevronRight size={17} className="muted" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 function Empty({ onAdd }) {
@@ -118,7 +148,7 @@ function Empty({ onAdd }) {
       <h3>Your next delivery starts here</h3>
       <p>Add a sample or your own invoice to check what arrived.</p>
       <button className="button primary" onClick={onAdd}>
-        Add an invoice
+        Add first invoice
       </button>
     </div>
   );

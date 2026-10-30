@@ -1,6 +1,6 @@
-import { money } from './api';
+import { money, saveBlob } from './api';
 
-export function saveEvidence(c) {
+export async function saveEvidence(c) {
   // The app renders a shareable card from approved, server-calculated evidence.
   const canvas = document.createElement('canvas');
   canvas.width = 1000;
@@ -32,12 +32,12 @@ export function saveEvidence(c) {
     ctx.fillText(l.name.slice(0, 62), 55, y + 20);
     ctx.font = '22px sans-serif';
     ctx.fillText(
-      `${l.billed} billed - ${l.received} received = ${l.billed - l.received} ${l.unit}`,
+      `${l.billed} billed - ${l.received} received = ${c.calculation.lines[i].shortage_quantity} ${l.unit}`,
       55,
       y + 57,
     );
     ctx.fillText(
-      `${l.billed - l.received} x ${money(l.price_paise)} = ${money((l.billed - l.received) * l.price_paise)}`,
+      `${c.calculation.lines[i].shortage_quantity} x ${money(l.price_paise)} = ${money(c.calculation.lines[i].amount_paise)}`,
       55,
       y + 90,
     );
@@ -55,13 +55,7 @@ export function saveEvidence(c) {
     55,
     base + 33,
   );
-  canvas.toBlob((blob) => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `munafa-${c.id}-evidence.png`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-  }, 'image/png');
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  if (!blob) throw new Error('Unable to prepare evidence card. Please retry.');
+  await saveBlob(blob, `munafa-${c.id}-evidence.png`);
 }

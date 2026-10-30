@@ -23,3 +23,9 @@ test-results/
 .idea/
 .vscode/
 .ruff_cache/
+
+# Native signing material and machine configuration
+*.jks
+*.keystore
+android/local.properties
+artifacts/

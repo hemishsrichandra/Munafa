@@ -16,12 +16,14 @@ import {
   ExternalLink,
   Settings2,
 } from 'lucide-react';
-import { api, money, day, today } from '../api';
+import { api, money, day, today, isNative, downloadPrivate } from '../api';
+import { useSession } from '../session';
 import { badge, icon, Modal, ErrorBox, Busy } from './ui';
 import { InvoiceFields } from './InvoiceIntake';
 import { Evidence, ShareModal, PromiseModal, ResolveModal } from './CaseActions';
 
 function CaseDetail({ c, onUpdate, back, config, notify }) {
+  const session = useSession();
   const [invoice, setInvoice] = useState(c.invoice),
     [complete, setComplete] = useState(c.delivery_complete),
     [pricing, setPricing] = useState(c.pricing_confirmed);
@@ -58,6 +60,7 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
             ? 'Evidence approved. You can prepare a supplier message.'
             : 'Case updated.',
       );
+      return true;
     } catch (e) {
       setError(e.message);
     } finally {
@@ -65,6 +68,10 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
     }
   }
   function voiceCount() {
+    if (isNative()) {
+      setSpeech('Voice is not enabled in this Android shell. Enter the received quantity below.');
+      return;
+    }
     const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!Speech) {
       setSpeech('Voice isn’t supported in this browser. Use the received-quantity fields below.');
@@ -141,6 +148,14 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
             <a
               className="button secondary"
               href={`/api/attachments/${c.attachment_id}`}
+              onClick={async (e) => {
+                e.preventDefault();
+                try {
+                  await downloadPrivate(`/api/attachments/${c.attachment_id}`);
+                } catch (e) {
+                  setError(e.message);
+                }
+              }}
               target="_blank"
               rel="noreferrer"
             >
@@ -163,6 +178,12 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
           </div>
         ))}
       </div>
+      {!session.permissions.includes('approve') && (
+        <div className="info-box" role="status">
+          Your role can review records but cannot approve, share or record recovery. Ask the store
+          owner.
+        </div>
+      )}
       <ErrorBox text={error} />
       <div className="detail-layout">
         <div className="detail-main">
@@ -255,7 +276,7 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
                     </div>
                     <strong>
                       {l.billed - l.received
-                        ? money((l.billed - l.received) * l.price_paise)
+                        ? money(c.calculation.lines[i].amount_paise)
                         : 'Matched'}
                     </strong>
                   </div>
@@ -351,6 +372,14 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
                     <strong>{money(r.amount_paise)}</strong>
                     <a
                       href={`/api/attachments/${r.attachment_id}`}
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        try {
+                          await downloadPrivate(`/api/attachments/${r.attachment_id}`);
+                        } catch (e) {
+                          setError(e.message);
+                        }
+                      }}
                       target="_blank"
                       rel="noreferrer"
                       aria-label={`View proof ${r.evidence_reference}`}
@@ -427,7 +456,12 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
               {dirty && <p className="unsaved">Save your latest changes before approving.</p>}
               <button
                 className="button primary full"
-                disabled={busy || dirty || !c.calculation.eligible}
+                disabled={
+                  busy ||
+                  dirty ||
+                  !c.calculation.eligible ||
+                  !session.permissions.includes('approve')
+                }
                 onClick={() => run('approve')}
               >
                 <Busy busy={busy}>
@@ -481,8 +515,7 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
               className="button primary full"
               disabled={busy}
               onClick={async () => {
-                await run('sent', { confirmed: true });
-                setDialog(null);
+                if (await run('sent', { confirmed: true })) setDialog(null);
               }}
             >
               Yes, I sent the evidence <Check size={16} />

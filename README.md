@@ -1,151 +1,126 @@
-# Munafa
+# Paytm Business Partner · Munafa
 
-**Recover what your store is owed. Track credits to resolution.**
+A phone-first kirana supplier-credit assistant built incrementally from the original Munafa prototype. React 19 + Vite, FastAPI + Pydantic, **PostgreSQL only**, an installable offline app shell, and a Capacitor Android wrapper built from the same frontend.
 
-A working supplier-credit copilot for the **Paytm Build for India AI Hackathon, Bengaluru · Track 1: Merchant Growth AI**. Built from the nine-slide proposal in `Munafa_IIITBlasters.pptx` for the offline hackathon on **31 October 2026**.
+**AI reads. Rules calculate. The merchant approves.** No live Paytm connection or measured merchant outcomes are claimed.
 
-Munafa takes one merchant problem end to end: a supplier bills 12 packs, only 10 arrive, and the promised adjustment gets lost between bills. The merchant confirms the receiving count, reviews the claim, shares evidence, follows up, and records only a documented applied credit or received refund as recovery.
+## Start locally
 
-**AI reads. Rules calculate. You approve.**
+Requirements: Python 3.11–3.13, Node 20.19+ (or supported Node 22), and PostgreSQL 17. Docker Compose is optional.
 
-## Quick start
-
-Requirements: **Node.js 20.19+ or 22.12+**, npm, and **Python 3.11–3.13**. Commands below assume macOS/Linux and run from the repository root.
-
-```bash
+```sh
 python3 -m venv .venv
-.venv/bin/pip install -r backend/requirements.lock.txt
+.venv/bin/pip install -r backend/requirements-dev.txt
 npm ci
 cp .env.example .env
+```
+
+Fill in private PostgreSQL values and a `postgresql+psycopg://...` DATABASE_URL. Use a dedicated TEST_DATABASE_URL for testing. Generate your own credentials; never commit `.env`. For local HTTP development, set APP_ENV=development and APP_ORIGINS=http://127.0.0.1:5173,http://127.0.0.1:8000; keep ALLOW_DEV_LOGIN=0 unless deliberately using the isolated demo.
+
+For Compose, set POSTGRES_USER, POSTGRES_PASSWORD and POSTGRES_DB in `.env`, then:
+
+```sh
+docker compose up -d postgres
+.venv/bin/alembic upgrade head
+.venv/bin/python -m backend.manage create-owner
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173**. API documentation: **http://127.0.0.1:8000/docs**.
+Open [the development UI](http://127.0.0.1:5173). Sign in using the owner account created by the CLI. API contracts are available at [the local API documentation](http://127.0.0.1:8000/docs). Browsers need APP_ORIGINS to include the actual frontend origin.
 
-No API key is needed for the full synthetic demo, manual invoices, evidence downloads, English messages, supplier follow-ups or resolution tracking. Local SQLite data persists at `.data/munafa.db` and is excluded from Git. Three clearly labeled synthetic cases populate an empty database.
+PWA/service-worker behavior is tested on the **production build**, not the Vite development server:
 
-### One-process production build
-
-```bash
+```sh
 npm run build
 npm start
 ```
 
-Open **http://127.0.0.1:8000**. Restart the API after the initial frontend build so it registers static assets. This serves a local prototype; it is not a production deployment configuration.
+Open [the built application](http://127.0.0.1:8000). Restart the backend after the first build so it registers static assets.
 
-## What works
+### Explicit development demo
 
-| Workflow               | Behavior                                                                                                                          |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Invoice intake         | A-104 synthetic example, manual entry, Sarvam text extraction, or image extraction through Sarvam-hosted vision                   |
-| Guided confirmation    | Correct supplier/reference/date and every item; confirm actual quantities, matching units, complete delivery and effective prices |
-| Claim calculation      | Integer paise arithmetic. Missing counts, unknown/mismatched units, over-deliveries and incomplete receiving block approval       |
-| Evidence               | Merchant-reviewed claim card downloadable as PNG, with billed/received quantities and exact arithmetic                            |
-| Supplier communication | Preview English message; optional Sarvam Hindi/Kannada translation; open WhatsApp and attach evidence manually                    |
-| Sharing confirmation   | A separate merchant confirmation records sharing; opening WhatsApp never marks the case sent                                      |
-| Follow-ups             | Record supplier promises and dates; overdue cases remain visible                                                                  |
-| Resolution             | Match supplier and original invoice; attach proof; confirm application/receipt; support partial credit and refund                 |
-| Accounting safeguards  | Unique supplier evidence references prevent duplicate recovery; excessive credit is rejected; edits invalidate approval           |
-| Ledger                 | Searchable cases, status filters, supplier balances, recovery overview and safe CSV export                                        |
-| Persistence            | SQLite transactions, optimistic case versions, attachment storage and event history                                               |
-| Voice fallback         | Optional browser English speech recognition proposes the first item's count; merchant still checks units                          |
+Only for development: set APP_ENV=development, ALLOW_DEV_LOGIN=1, and a private DEV_LOGIN_CODE with at least 16 characters. Run `.venv/bin/python -m backend.manage seed-demo`, then use **Development demo access** on the login screen and enter that code. This creates a separate demo store and a synthetic A-104 case if empty. It does not reset anything. All input in that store remains synthetic.
 
-## Sarvam AI integration
+Production refuses to enable development login. Production cookies require HTTPS. There is no Paytm SSO or OTP integration.
 
-Set the following **server-side** values in `.env`, then restart the API:
+## Current product
+
+- Home: a business brief derived only from existing supplier cases, with real balances and an existing overdue-follow-up rule.
+- Purchases: mobile case cards, invoice intake, receiving review, approval, supplier message preparation, promises and documented recovery.
+- More: supplier balances, recovery report/export, workflow guide, limited language-shell preview and sign out.
+- Drafts & sync: IndexedDB manual invoices/receiving notes/attachments, durable dependency-ordered outbox and explicit server-accepted/conflict states.
+- Merchant-confirmed received quantities, units, delivery completeness and effective prices remain mandatory.
+- Integer-paise claim calculation; exact decimal quantities use NUMERIC(20,6), HALF_UP rounding to paise per line. The phone editor preserves fractional quantity strings up to six decimal places; prices are converted from decimal input to paise without floating-point rounding.
+- Partial/full credit and refund records require case-owned proof. Duplicate references and identical proof bytes cannot be counted twice.
+- Immutable approval snapshots and append-only audit/financial/resolution records.
+- Server-derived store scope, owner/staff/viewer permissions, CSRF-bound cookie sessions and transactionally idempotent writes.
+- Ledger export requires a server-approved export action. WhatsApp sending remains manual.
+
+No stock/sales/customer-credit module, forecasting, live reconciliation or general support RAG has been introduced.
+
+## PWA behavior
+
+Choose **Install app** for supported-browser prompting or platform-specific guidance. First installation/cache warm-up needs connectivity. After warm-up, the static shell can reopen offline. First sign-in, server records and AI require a connection. A previously verified workspace can reopen device drafts offline for eight hours.
+
+The service worker caches only the public shell and versioned assets. It does not cache `/api` responses, attachments, tokens or merchant records. Logout stops sync and clears private IndexedDB data after a warning, plus workspace memory and non-shell caches. Offline logout leaves server revocation pending until connectivity returns. Updates wait for explicit confirmation and warn about unsaved form input.
+
+**IndexedDB drafts and sync are now available through Drafts & sync.** Save a local draft, then explicitly queue it. Only manual invoice capture, unapproved receiving and original-bill attachment operations are eligible. Approvals, credits/refunds, exports and messages remain online-only. Direct actions outside this workspace are never silently queued. Hindi/Kannada selection currently previews navigation labels; workflow text remains English and is explicitly labelled as not fully reviewed.
+
+## Sarvam integration
+
+Optional server-only settings:
 
 ```dotenv
-SARVAM_API_KEY=your-key
+SARVAM_API_KEY=your-private-key
 SARVAM_CHAT_MODEL=sarvam-105b
 SARVAM_VISION_MODEL=gemma4
 ```
 
-- **Native Sarvam invoice understanding:** `sarvam-105b` via `POST /v1/chat/completions` structures pasted supplier invoice text.
-- **Bill image understanding:** the `gemma4` model hosted by Sarvam via `POST /v2/chat/completions` reads a base64 bill image. This is a Sarvam-hosted open-weight vision model, not Sarvam's native chat model. Account/model access must be available.
-- **Indian-language communication:** `mayura:v1` via `POST /translate` translates an approved supplier message into Hindi or Kannada. The English original remains available for comparison. Long messages are split within the documented input limit.
-- API keys remain in the backend. Provider authentication, timeout, malformed-output and credit/access errors are surfaced without exposing keys. No failed AI call silently becomes a fabricated extraction.
-- Model output goes through the same typed validation as manual entry. AI-proposed received counts and unit confirmations are discarded. AI cannot approve, send or resolve a case.
-
-The adapter is implemented and covered by **mocked API contract/error tests**. **Live Sarvam calls have not been validated: no key or credits were supplied.** A successful local synthetic demo does not establish live AI extraction quality or partner-credit eligibility. Check this with your own hackathon account.
-
-Current API references used during implementation: [authentication](https://docs.sarvam.ai/api-reference/authentication), [chat models](https://docs.sarvam.ai/api/api-guides-tutorials/chat-completion/overview), [V2 image input](https://docs.sarvam.ai/api-reference/chat/chat-completions-v2), and [translation](https://docs.sarvam.ai/api-reference/text/translate-text).
-
-## Two-minute demo
-
-1. Choose **Add an invoice → Try a sample → Use sample invoice**.
-2. For A-104, enter **10 biscuit packs**, **6 tea packs**, and **24 soap pieces**. Set the soap billed unit to `piece`, set each received unit, and confirm every matching unit.
-3. Confirm delivery is complete and effective prices are correct, then **Save delivery review**.
-4. Review **(12 − 10) × ₹40 = ₹80** and **Approve evidence**.
-5. Download the evidence PNG and preview the supplier message. Opening WhatsApp is optional. Attach the PNG yourself if demonstrating actual sharing. Only confirm sharing if you actually sent it, or explicitly explain you are simulating the merchant step in the synthetic demo.
-6. Record “Adjust against next bill” with a follow-up date.
-7. Choose **Verify credit / refund → Load synthetic next-bill credit**. Inspect the attached evidence, confirm application, and record ₹80.
-8. The case closes with ₹80 verified exactly once. Check the supplier ledger and Insights.
-
-A longer demo script, partial-credit scenario and rehearsal checklist are in [docs/DEMO.md](docs/DEMO.md). A repeatable synthetic reset is provided below.
+Pasted-text extraction uses native Sarvam chat; image extraction uses Sarvam-hosted Gemma; Hindi/Kannada message translation uses Mayura. AI-proposed receiving counts are discarded. Provider endpoints and failure paths have mocked contract tests. **Live account access, credits, accuracy and latency remain unverified.** No API key is bundled in the PWA or Android assets.
 
 ## Tests
 
-```bash
-npm test                 # Domain/API rules and mocked Sarvam contracts
-npm run build            # Production frontend compilation
-npx playwright install chromium
-npm run test:e2e          # Builds frontend, then desktop + mobile workflow tests
-```
-
-**Current verification:** 36 backend/API tests and two desktop/mobile browser tests. Live Sarvam calls still require your key.
-
-Browser tests start a separate API on port **8001** and use an isolated `.data/e2e-<process>.db`; your main merchant database is untouched. Stop anything occupying port 8001 first. For an existing Chromium installation, `PLAYWRIGHT_EXECUTABLE_PATH=/absolute/path/to/browser npm run test:e2e` is supported.
-
-### Code maintenance
-
-```bash
-npm run format:check
-.venv/bin/pip install -r backend/requirements-dev.txt
+```sh
+npm test
+npm run test:offline
 .venv/bin/ruff check backend
-.venv/bin/ruff format --check backend
+npm run format:check
+npx playwright install chromium
+npm run test:e2e
 ```
 
-The frontend is split into workspace, intake, case actions, case detail and shared UI components. The backend separates rules, persistence, provider access and routes.
+The Python fixtures create unique disposable PostgreSQL schemas. The browser server creates a separate `e2e_...` schema. Both require TEST_DATABASE_URL; neither falls back to another engine. Test teardown only removes its generated schema. Do not use a production database account for tests.
 
-## Demo fixtures and reset
+The browser suite additionally tests offline draft reload, actual client timeout after server acceptance, duplicate-proof attachment retry, quota failure, expired session, account switch and receiving conflicts. It also exercises the original shortage-to-recovery loop, phone manual intake, 360×800, 390×844, 430×932, 320px narrow screens, rotation, dialogs, bottom-nav touch targets, manifest/worker metadata, private-cache exclusion and offline shell launch. Physical-device installation and native behavior are separate validation steps.
 
-- `samples/invoice-a104.png`: synthetic photo-intake fixture.
-- `samples/invoice-a104.html`: editable source for that fixture.
-- `samples/invoice-a104.txt`: billed values plus a separate merchant receiving exercise. Paste only the invoice section when trying AI extraction.
-- `samples/credit-a104.txt`: illustrative invoice-referenced adjustment.
+## Android: same React application
 
-To rehearse again, stop the API and run:
+Capacitor 7.6.10 wraps `frontend/dist`. The Android project contains no separate product screens or financial rules. Its development package identifier is `in.munafa.businesspartner`.
 
-```bash
-.venv/bin/python -m backend.reset_demo --yes
-npm run dev
+```sh
+npm run android:sync
+npm run android:check
+npm run android:debug
 ```
 
-This removes only cases marked synthetic and their attached evidence/recovery keys. It preserves manually entered and AI-extracted cases. An otherwise empty database receives the three demo-ledger cases again. Back up `.data/munafa.db` before manually managing any real records.
+A debug build requires **JDK 21**, Android SDK Platform 35, Build Tools 34/35 and accepted Android SDK licenses. Set JAVA_HOME and ANDROID_HOME to your local installations. The output is `android/app/build/outputs/apk/debug/app-debug.apk` after a successful build. Install with `adb install -r android/app/build/outputs/apk/debug/app-debug.apk` on an explicitly connected development device.
 
-## Project map
+For a connected native build, set the public **VITE_API_BASE=https://YOUR_HOST/api** before building, and add the exact native origin `https://localhost` to the backend APP_ORIGINS after reviewing your deployment. Cleartext networking and Android backups are disabled. Native session tokens are memory-only and require sign-in after process restart. They are not stored in localStorage/IndexedDB or bundled assets.
 
-```text
-backend/             FastAPI routes, SQLite persistence, business rules, Sarvam adapter
-backend/tests/       API and accounting invariant tests
-frontend/src/        React workspace and responsive CSS
-samples/             Clearly synthetic bill and credit fixtures
-scripts/             Sample document rendering utility
-tests/e2e/           Browser workflow tests
-docs/ARCHITECTURE.md  Data flow, decisions and API contracts
-docs/DEMO.md          Demonstration script and rehearsal checks
-docs/ROADMAP.md       Hackathon priorities and merchant pilot plan
-docs/PROGRESS.md      Current implementation status and handoff
-```
+Without a configured HTTPS backend, the APK deliberately presents the shell and a clear connectivity/configuration error; it does not invent records. The packaged shell opens offline without a service worker. No microphone/location/contacts permission is requested. Existing system file selection is retained; private downloads use authenticated requests and a temporary app-cache file with an explicit OS share sheet. Camera capture, sharing, downloads and native navigation still need real-device validation.
 
-## Scope and limitations
+This is not a release-signed APK setup. No production signing key, deployment endpoint, emulator or physical-device coverage is claimed. See [Batch 4 report](docs/BATCH-4.md) for current build results; [Batch 3](docs/BATCH-3.md) records the initial wrapper validation.
 
-This is a **local, single-store prototype with no authentication**. Keep the supplied loopback host binding. Do not expose it to the internet or use real merchant records before adding authentication, store isolation, access-controlled evidence storage, backups and deployment protections.
+## Data safety and architecture
 
-The current scope is **short delivery against an invoice**, with **whole quantities** and merchant-verified effective unit prices. It does not infer carton conversions, tax treatment, scheme eligibility, multi-invoice credit allocation, price disputes or returns. Ambiguous evidence stays open; resolution verification is a documented merchant attestation, not forensic validation of an uploaded file.
+See [Batch 2](docs/BATCH-2.md) for schema, authentication, migration and backup/restore details, and [architecture](docs/ARCHITECTURE.md) for module boundaries.
 
-There is **no live Paytm connection** and **no automatic WhatsApp sending**. Browser voice recognition depends on browser support/permission and may use the browser vendor's speech service. Sarvam extraction/translation sends the selected invoice or approved message to Sarvam only when explicitly requested. The interface uses optional Google Fonts with local system fallbacks.
+Legacy `.data/*.db` files are untouched archives. They are never opened by the current app/tests. There is no automatic importer and the former reset command refuses deletion. Any real-data import or destructive migration requires verified backup and explicit owner approval.
 
-No recovery outcomes have been measured. The deck's **₹199/month** price remains a hypothesis for a 3–5-merchant pilot. See the roadmap for the production and validation work ahead.
+For a new session, start with [resume context](docs/HANDOFF.md). See [progress](docs/PROGRESS.md), [demo instructions](docs/DEMO.md) and [remaining roadmap](docs/ROADMAP.md). Batch 4 includes the owner-authorized Git commit/push; consult the handoff and `git status` for the exact current revision.
 
-Git remote: `origin` → `https://github.com/hemishsrichandra/Munafa.git`. The prototype is maintained on `main`. Local credentials, databases, dependencies and generated build output are excluded from Git.
+## Offline data safety
+
+IndexedDB data is scoped by verified user/store/role. Cached receiving sources expire in 24 hours; accepted draft copies expire seven days after sync. Unsynced drafts are retained until explicit discard/sign-out; automatic retries pause after five attempts or 30 days. A timeout does not prove rejection: retries preserve the exact operation ID/body and PostgreSQL replays its receipt.
+
+Browser/WebView storage is **not encrypted by this app** and can be evicted or cleared. Keep original documents and deliberately back up important drafts. JSON draft backups do not contain attachment bytes. No device-level encryption, guaranteed persistence, background delivery or cross-device recovery of unsynced drafts is claimed. See [sync protocol and threat model](docs/SYNC-PROTOCOL.md).

@@ -1,0 +1,16 @@
+{
+  "appId": "in.munafa.businesspartner",
+  "appName": "Munafa Business Partner",
+  "webDir": "frontend/dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "includePlugins": [
+    "@capacitor/filesystem",
+    "@capacitor/share"
+  ]
+}

@@ -1,9 +1,6 @@
 import csv
-import hashlib
 import io
-import json
 import os
-import sqlite3
 import uuid
 from contextlib import asynccontextmanager
 from datetime import date
@@ -13,7 +10,12 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.responses import JSONResponse, Response, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import Field
-from . import store, ai
+from . import store, ai, auth, actions
+from .sync import router as sync_router
+from .db import engine
+from .security import guard, origins
+from sqlalchemy import text
+from fastapi.middleware.cors import CORSMiddleware
 from .domain import (
     Invoice,
     Review,
@@ -30,19 +32,39 @@ from .domain import (
     normalized,
     now,
     local_today,
+    rupees,
 )
-from .samples import sample_invoice, demo_seed
+from .samples import sample_invoice
 
 
 @asynccontextmanager
 async def lifespan(app):
-    store.init()
-    if os.getenv("MUNAFA_SEED", "1") == "1":
-        demo_seed()
+    auth.development_login()
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
+
+    expected = ScriptDirectory.from_config(Config("alembic.ini")).get_current_head()
+    with engine().connect() as db:
+        if db.execute(text("SELECT version_num FROM alembic_version")).scalar_one() != expected:
+            raise RuntimeError("Database migrations must be applied before startup.")
     yield
 
 
-app = FastAPI(title="Munafa Merchant Credit API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Paytm Business Partner · Munafa API", version="0.2.0", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins(),
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_headers=[
+        "Content-Type",
+        "X-CSRF-Token",
+        "Idempotency-Key",
+        "Authorization",
+        "X-Client-Platform",
+    ],
+)
+app.middleware("http")(guard)
 
 
 @app.exception_handler(RuleError)
@@ -55,35 +77,8 @@ async def not_found(request, exc):
     return JSONResponse(status_code=404, content={"detail": "Case or attachment not found."})
 
 
-@app.middleware("http")
-async def local_guard(request: Request, call_next):
-    # This unauthenticated prototype must be served only on loopback. Prevent browser cross-origin writes.
-    origin = request.headers.get("origin")
-    if request.method not in ("GET", "HEAD", "OPTIONS") and origin:
-        allowed = {
-            f"http://{h}:{p}" for h in ("localhost", "127.0.0.1") for p in (8000, 5173, 4173)
-        }
-        if request.url.hostname in ("localhost", "127.0.0.1"):
-            allowed.add(str(request.base_url).rstrip("/"))
-        if origin not in allowed:
-            return JSONResponse(
-                status_code=403,
-                content={"detail": "Cross-origin writes are disabled for this local prototype."},
-            )
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["Referrer-Policy"] = "same-origin"
-    if request.url.path.startswith("/api"):
-        response.headers["Cache-Control"] = "no-store"
-    return response
-
-
-def db_cases(db):
-    return [json.loads(r["data"]) for r in db.execute("SELECT data FROM cases")]
-
-
 def identifier():
-    return "MNF-" + uuid.uuid4().hex[:8].upper()
+    return "MNF-" + uuid.uuid4().hex.upper()
 
 
 def insert_invoice(invoice, synthetic=False, attachment=None):
@@ -91,23 +86,17 @@ def insert_invoice(invoice, synthetic=False, attachment=None):
         date.fromisoformat(invoice["date"])
     except ValueError:
         raise RuleError("Enter a valid invoice date.")
-    c = new_case(invoice, identifier(), synthetic)
+    c = new_case(invoice, identifier(), auth.current().demo)
     with store.connect() as db:
-        db.execute("BEGIN IMMEDIATE")
         # A duplicated supplier invoice must be reviewed in the existing case.
-        for row in db.execute("SELECT data FROM cases"):
-            old = json.loads(row["data"])
+        for old in store.all_cases(db):
             if normalized(old["invoice"]["supplier"]) == normalized(
                 invoice["supplier"]
             ) and normalized(old["invoice"]["reference"]) == normalized(invoice["reference"]):
                 raise RuleError(f"Invoice already exists in {old['id']}. Open the existing case.")
         store.save(db, c)
         if attachment:
-            aid = uuid.uuid4().hex
-            db.execute(
-                "INSERT INTO attachments VALUES (?,?,?,?,?)",
-                (aid, c["id"], attachment[0], attachment[1], attachment[2]),
-            )
+            aid = store.add_attachment(db, c["id"], attachment[0], attachment[1], attachment[2])
             c["attachment_id"] = aid
             store.save(db, c)
     return present(c)
@@ -120,7 +109,8 @@ def health():
         "sarvam_configured": ai.configured(),
         "vision_model": os.getenv("SARVAM_VISION_MODEL", "gemma4"),
         "chat_model": os.getenv("SARVAM_CHAT_MODEL", "sarvam-105b"),
-        "mode": "local prototype",
+        "mode": "merchant workspace",
+        "development_login": auth.development_login(),
     }
 
 
@@ -137,6 +127,8 @@ def get_case(case_id: str):
 
 @app.post("/api/invoices/sample", status_code=201)
 def sample():
+    if not auth.current("write").demo:
+        raise HTTPException(403, "Synthetic invoices require an isolated demo store.")
     return insert_invoice(sample_invoice(), True)
 
 
@@ -164,6 +156,13 @@ async def read_file(file: UploadFile, proof=False):
     if not data or len(data) > 8 * 1024 * 1024:
         raise RuleError("Choose a non-empty file smaller than 8 MB.")
     mime = file.content_type
+    validate_file(data, mime, proof)
+    return data, mime
+
+
+def validate_file(data, mime, proof=False):
+    if not data or len(data) > 8 * 1024 * 1024:
+        raise RuleError("Choose a non-empty file smaller than 8 MB.")
     valid = (
         (mime == "image/png" and data.startswith(b"\x89PNG\r\n\x1a\n"))
         or (mime == "image/jpeg" and data.startswith(b"\xff\xd8\xff"))
@@ -173,7 +172,6 @@ async def read_file(file: UploadFile, proof=False):
         valid = True
     if not valid:
         raise RuleError("Use a PNG, JPEG or WebP image" + (" or PDF proof." if proof else "."))
-    return data, mime
 
 
 @app.post("/api/invoices/extract", status_code=201)
@@ -197,7 +195,7 @@ def review(case_id: str, body: Review):
             date.fromisoformat(body.invoice.date)
         except ValueError:
             raise RuleError("Enter a valid invoice date.")
-        for old in db_cases(db):
+        for old in store.all_cases(db):
             if (
                 old["id"] != case_id
                 and normalized(old["invoice"]["supplier"]) == normalized(body.invoice.supplier)
@@ -224,7 +222,13 @@ def review(case_id: str, body: Review):
 
 @app.post("/api/cases/{case_id}/approve")
 def approve(case_id: str, body: Version):
-    with store.mutate(case_id, body.version) as (_, c):
+    with store.mutate(case_id, body.version, "approve") as (db, c):
+        proposal = actions.propose(db, "approve_case", case_id, {}, body.version, store.uid())
+        proposal = actions.approve(
+            db, proposal["id"], proposal["version"], proposal["payload_digest"]
+        )
+        actions.consume(db, proposal["id"], proposal["version"])
+        actions.executed(db, proposal)
         if c["status"] != "review":
             raise RuleError("Only a case in review can be approved.")
         calc = calculate(c["invoice"]["lines"], c["delivery_complete"], c["pricing_confirmed"])
@@ -287,13 +291,8 @@ def promise(case_id: str, body: Promise):
 @app.post("/api/cases/{case_id}/proof", status_code=201)
 async def proof(case_id: str, file: UploadFile = File(...)):
     data, mime = await read_file(file, True)
-    aid = uuid.uuid4().hex
-    with store.connect() as db:
-        store.get(db, case_id)
-        db.execute(
-            "INSERT INTO attachments VALUES (?,?,?,?,?)",
-            (aid, case_id, file.filename or "proof", mime, data),
-        )
+    with store.connect("write") as db:
+        aid = store.add_attachment(db, case_id, file.filename or "proof", mime, data)
     return {"attachment_id": aid, "name": file.filename}
 
 
@@ -320,12 +319,8 @@ def sample_proof(case_id: str, body: SampleProof = SampleProof()):
         amount = body.amount_paise or present(c)["remaining_paise"]
         if amount > present(c)["remaining_paise"]:
             raise RuleError("Synthetic proof amount must not exceed the remaining claim.")
-        aid = uuid.uuid4().hex
-        text = f"SYNTHETIC NEXT BILL / CREDIT EVIDENCE\nSupplier: {c['invoice']['supplier']}\nOriginal invoice: {c['invoice']['reference']}\nEvidence reference: {ref}\n{'Credit applied' if body.kind == 'credit' else 'Refund received'}: INR {amount / 100:.2f}\nFor hackathon demonstration only."
-        db.execute(
-            "INSERT INTO attachments VALUES (?,?,?,?,?)",
-            (aid, case_id, ref + ".txt", "text/plain", text.encode()),
-        )
+        evidence = f"SYNTHETIC EVIDENCE\nSupplier: {c['invoice']['supplier']}\nInvoice: {c['invoice']['reference']}\nReference: {ref}\n{body.kind}: INR {amount / 100:.2f}"
+        aid = store.add_attachment(db, case_id, ref + ".txt", "text/plain", evidence.encode())
         result = {
             "attachment_id": aid,
             "supplier": c["invoice"]["supplier"],
@@ -335,7 +330,14 @@ def sample_proof(case_id: str, body: SampleProof = SampleProof()):
             "kind": body.kind,
             "synthetic": True,
         }
-        db.execute("INSERT INTO synthetic_proofs VALUES (?,?)", (aid, json.dumps(result)))
+        from sqlalchemy import update
+        from .models import attachments
+
+        db.execute(
+            update(attachments)
+            .where(store.scope(attachments), attachments.c.id == aid)
+            .values(synthetic_fields=result)
+        )
     return result
 
 
@@ -354,58 +356,29 @@ def resolve(case_id: str, body: Resolution):
             raise RuleError(
                 "The resolution exceeds the remaining claim. Partial credits may be recorded, over-credit cannot."
             )
-        attachment = db.execute(
-            "SELECT * FROM attachments WHERE id=? AND case_id=?", (body.attachment_id, case_id)
-        ).fetchone()
+        attachment = store.attachment(db, body.attachment_id, case_id)
         if not attachment:
             raise RuleError(
                 "Attach credit or refund proof belonging to this case before closing it."
             )
         if not c["synthetic"] and attachment["mime"] == "text/plain":
             raise RuleError("Synthetic evidence cannot close a merchant invoice.")
-        digest = hashlib.sha256(bytes(attachment["data"])).hexdigest()
-        if db.execute(
-            "SELECT 1 FROM resolution_proofs WHERE supplier=? AND digest=?",
-            (normalized(body.supplier), digest),
-        ).fetchone():
-            raise RuleError(
-                "This evidence file has already been counted. Attach distinct proof of the additional credit or refund."
+        if store.proof_used(db, body.supplier, digest=attachment["digest"]):
+            raise RuleError("This evidence file has already been counted.")
+        if store.proof_used(db, body.supplier, reference=body.evidence_reference):
+            raise RuleError("This supplier evidence reference has already been counted.")
+        fields = attachment["synthetic_fields"]
+        if fields and any(
+            body.model_dump()[key] != fields[key]
+            for key in (
+                "kind",
+                "supplier",
+                "invoice_reference",
+                "evidence_reference",
+                "amount_paise",
             )
-        fixture = db.execute(
-            "SELECT data FROM synthetic_proofs WHERE attachment_id=?", (body.attachment_id,)
-        ).fetchone()
-        if fixture:
-            fields = json.loads(fixture["data"])
-            if any(
-                body.model_dump()[key] != fields[key]
-                for key in (
-                    "kind",
-                    "supplier",
-                    "invoice_reference",
-                    "evidence_reference",
-                    "amount_paise",
-                )
-            ):
-                raise RuleError(
-                    "The entered resolution does not match the synthetic evidence. Load proof for the exact amount and type being recorded."
-                )
-        try:
-            db.execute(
-                "INSERT INTO resolution_keys VALUES (?,?)",
-                (normalized(body.supplier), normalized(body.evidence_reference)),
-            )
-        except sqlite3.IntegrityError:
-            raise RuleError(
-                "This supplier evidence reference has already been counted. Use a distinct credit or refund record."
-            ) from None
-        try:
-            db.execute(
-                "INSERT INTO resolution_proofs VALUES (?,?)", (normalized(body.supplier), digest)
-            )
-        except sqlite3.IntegrityError:
-            raise RuleError(
-                "This evidence file has already been counted. Attach distinct proof of the additional credit or refund."
-            ) from None
+        ):
+            raise RuleError("The entered resolution does not match the synthetic evidence.")
         c["resolutions"].append(
             {**body.model_dump(exclude={"version"}), "id": uuid.uuid4().hex, "at": now()}
         )
@@ -426,18 +399,20 @@ def message(c):
     lines = [
         f"Hello, please review the delivery shortage on invoice {c['invoice']['reference']} ({c['invoice']['date']})."
     ]
-    for line in c["invoice"]["lines"]:
-        short = line["billed"] - line["received"]
+    for index, line in enumerate(c["invoice"]["lines"]):
+        from decimal import Decimal
+
+        short = Decimal(str(line["billed"])) - Decimal(str(line["received"]))
         if short:
             lines.append(
-                f"{line['name']}: {line['billed']} billed, {line['received']} received ({line['unit']}). {short} x INR {line['price_paise'] / 100:.2f} = INR {short * line['price_paise'] / 100:.2f}."
+                f"{line['name']}: {line['billed']} billed, {line['received']} received ({line['unit']}). {short} x INR {rupees(line['price_paise'])} = INR {rupees(p['calculation']['lines'][index]['amount_paise'])}."
             )
     lines.append(
-        f"Total reviewed shortage: INR {c['approved_amount_paise'] / 100:.2f}. Please issue a credit note referencing this invoice and confirm when applied, or refund the amount. Thank you."
+        f"Total reviewed shortage: INR {rupees(c['approved_amount_paise'])}. Please issue a credit note referencing this invoice and confirm when applied, or refund the amount. Thank you."
     )
     if c["resolutions"]:
         lines.append(
-            f"Already verified: INR {p['recovered_paise'] / 100:.2f}. Remaining: INR {p['remaining_paise'] / 100:.2f}."
+            f"Already verified: INR {rupees(p['recovered_paise'])}. Remaining: INR {rupees(p['remaining_paise'])}."
         )
     if c["synthetic"]:
         lines.insert(0, "[SYNTHETIC DEMO — NOT A REAL CLAIM]")
@@ -478,18 +453,33 @@ def approval_snapshot(case_id: str, version: int):
 @app.get("/api/attachments/{attachment_id}")
 def attachment(attachment_id: str):
     with store.connect() as db:
-        row = db.execute("SELECT * FROM attachments WHERE id=?", (attachment_id,)).fetchone()
+        row = store.attachment(db, attachment_id)
         if not row:
             raise KeyError(attachment_id)
         return Response(
             bytes(row["data"]),
             media_type=row["mime"],
-            headers={"Content-Disposition": 'inline; filename="evidence"'},
+            headers={"Content-Disposition": 'attachment; filename="evidence"'},
         )
 
 
 @app.get("/api/export")
-def export():
+def export(action_id: str):
+    with store.connect("export") as db:
+        approved = actions.get(db, action_id)
+        if (
+            approved["action_type"] != "export_ledger"
+            or approved["status"] != "executed"
+            or approved["created_by"] != auth.current().user_id
+        ):
+            raise HTTPException(403, "Approve this ledger export first.")
+        if approved["expires_at"] <= __import__("datetime").datetime.now(
+            __import__("datetime").timezone.utc
+        ):
+            raise HTTPException(403, "Export approval expired.")
+        if approved["payload"] != actions.export_payload(db):
+            raise RuleError("Ledger changed after approval. Approve a fresh export.")
+        store.audit_record(db, action_id, "Ledger downloaded", entity_type="export")
     output = io.StringIO()
     w = csv.writer(output)
     w.writerow(
@@ -521,8 +511,8 @@ def export():
                 safe(c["invoice"]["reference"]),
                 c["status"],
                 f"{(c['approved_amount_paise'] or 0) / 100:.2f}",
-                f"{p['recovered_paise'] / 100:.2f}",
-                f"{p['remaining_paise'] / 100:.2f}",
+                f"{rupees(p['recovered_paise'])}",
+                f"{rupees(p['remaining_paise'])}",
                 c["follow_up"],
                 c["synthetic"],
             ]
@@ -534,7 +524,164 @@ def export():
     )
 
 
+# These routes precede the frontend catch-all in registration order below.
+class LoginBody(StrictModel):
+    username: str = Field(min_length=1, max_length=120)
+    password: str = Field(min_length=1, max_length=200)
+
+
+class DemoBody(StrictModel):
+    code: str = Field(min_length=16, max_length=200)
+
+
+def login_response(result, request):
+    p, token, csrf = result
+    secure = os.getenv("APP_ENV", "production") == "production"
+    response = JSONResponse(
+        {
+            **(
+                {"session_token": token}
+                if request.headers.get("x-client-platform") == "android"
+                else {}
+            ),
+            "user_id": p.user_id,
+            "csrf": csrf,
+            "store": {
+                "id": p.store_id,
+                "name": p.store_name,
+                "demo": p.demo,
+                "timezone": p.timezone,
+            },
+            "role": p.role,
+            "permissions": sorted(auth.PERMISSIONS[p.role]),
+        }
+    )
+    response.set_cookie(
+        "pbp_session",
+        token,
+        httponly=True,
+        secure=secure,
+        samesite="strict",
+        max_age=43200,
+        path="/api",
+    )
+    response.set_cookie(
+        "pbp_csrf", csrf, httponly=False, secure=secure, samesite="strict", max_age=43200, path="/"
+    )
+    return response
+
+
+@app.post("/api/auth/login")
+def login(body: LoginBody, request: Request):
+    return login_response(auth.login(body.username, body.password), request)
+
+
+@app.post("/api/auth/dev-login")
+def dev_login(body: DemoBody, request: Request):
+    return login_response(auth.demo_login(body.code), request)
+
+
+@app.get("/api/auth/me")
+def me(request: Request):
+    p = auth.current()
+    return {
+        "user_id": p.user_id,
+        "csrf": request.cookies.get("pbp_csrf", ""),
+        "role": p.role,
+        "permissions": sorted(auth.PERMISSIONS[p.role]),
+        "store": {"id": p.store_id, "name": p.store_name, "demo": p.demo, "timezone": p.timezone},
+    }
+
+
+@app.post("/api/auth/logout")
+def logout(request: Request):
+    header = request.headers.get("authorization", "")
+    auth.revoke(
+        header[7:] if header.startswith("Bearer ") else request.cookies.get("pbp_session", "")
+    )
+    response = JSONResponse({"ok": True})
+    response.delete_cookie("pbp_session", path="/api")
+    response.delete_cookie("pbp_csrf", path="/")
+    return response
+
+
+class ProposalBody(StrictModel):
+    action_type: Literal["approve_case", "export_ledger"]
+    entity_id: str = ""
+    expected_version: int = 0
+
+
+class ActionApproval(StrictModel):
+    version: int
+    payload_digest: str
+
+
+class ActionRevision(StrictModel):
+    version: int
+    payload: dict
+
+
+@app.post("/api/actions", status_code=201)
+def propose_action(body: ProposalBody, request: Request):
+    with store.connect("write") as db:
+        return actions.propose(
+            db,
+            body.action_type,
+            body.entity_id,
+            {},
+            body.expected_version,
+            request.headers["idempotency-key"],
+        )
+
+
+@app.get("/api/actions/{action_id}")
+def get_action(action_id: str):
+    with store.connect() as db:
+        return actions.get(db, action_id)
+
+
+@app.patch("/api/actions/{action_id}")
+def revise_action(action_id: str, body: ActionRevision):
+    with store.connect("write") as db:
+        return actions.revise(db, action_id, body.version, body.payload)
+
+
+@app.post("/api/actions/{action_id}/approve")
+def approve_action(action_id: str, body: ActionApproval):
+    with store.connect("approve") as db:
+        return actions.approve(db, action_id, body.version, body.payload_digest)
+
+
+@app.post("/api/actions/{action_id}/execute")
+def execute_action(action_id: str, body: Version):
+    with store.connect("approve") as db:
+        a = actions.consume(db, action_id, body.version)
+        if a["action_type"] == "approve_case":
+            c = store.get(db, a["entity_id"], True)
+            payload = {
+                "invoice": c["invoice"],
+                "delivery_complete": c["delivery_complete"],
+                "pricing_confirmed": c["pricing_confirmed"],
+            }
+            if (
+                c["version"] != a["expected_version"]
+                or actions.payload_digest(payload) != a["payload_digest"]
+            ):
+                raise RuleError("Approved source changed. Create a new proposal.")
+            result = approve(c["id"], Version(version=c["version"]))
+        else:
+            auth.current("export")
+            if a["payload"] != actions.export_payload(db):
+                raise RuleError("Invalid ledger export scope.")
+            result = {"download_url": f"/api/export?action_id={a['id']}"}
+        actions.executed(db, a)
+    return result
+
+
 # A built frontend can be served by the same loopback process.
+
+app.include_router(sync_router)
+
 DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if DIST.exists():
     app.mount("/assets", StaticFiles(directory=DIST / "assets"), name="assets")
@@ -543,6 +690,12 @@ if DIST.exists():
     def spa(path: str):
         if path.startswith("api/"):
             raise HTTPException(404, "Endpoint not found")
-        if path == "favicon.svg":
-            return FileResponse(DIST / "favicon.svg")
+        if path in ("favicon.svg", "sw.js", "manifest.webmanifest") or path in (
+            "icons/icon-192.png",
+            "icons/icon-512.png",
+            "icons/maskable-512.png",
+        ):
+            return FileResponse(
+                DIST / path, headers={"Cache-Control": "no-cache"} if path == "sw.js" else None
+            )
         return FileResponse(DIST / "index.html")

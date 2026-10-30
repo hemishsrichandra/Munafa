@@ -15,9 +15,9 @@ module.exports = defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command: '.venv/bin/uvicorn backend.app:app --host 127.0.0.1 --port 8001',
+    command: '.venv/bin/python scripts/serve_e2e.py',
     url: 'http://127.0.0.1:8001/api/health',
     reuseExistingServer: false,
-    env: { MUNAFA_DB: `.data/e2e-${process.pid}.db`, MUNAFA_SEED: '1', SARVAM_API_KEY: '' },
+    env: { APP_ENV: 'test', SARVAM_API_KEY: '' },
   },
 });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChartNoAxesCombined, ChevronRight, Download } from 'lucide-react';
-import { money } from '../api';
+import { money, exportLedger, downloadPrivate } from '../api';
+import { useSession } from '../session';
 import { badge } from './ui';
 
 function Suppliers({ cases, open }) {
@@ -53,6 +54,9 @@ function Suppliers({ cases, open }) {
   );
 }
 function Insights({ cases, verified, outstanding }) {
+  const [exporting, setExporting] = useState(false),
+    [exportError, setExportError] = useState('');
+  const session = useSession();
   const approved = cases.filter((c) => c.approved_version !== null),
     closed = cases.filter((c) => c.status === 'resolved').length;
   const total = verified + outstanding,
@@ -65,10 +69,33 @@ function Insights({ cases, verified, outstanding }) {
             <h2>Reviewed value, tracked to resolution</h2>
             <p>Verified recovery as a share of all approved claim value.</p>
           </div>
-          <a className="button secondary small" href="/api/export">
-            <Download size={15} /> Export CSV
-          </a>
+          <button
+            className="button secondary small"
+            disabled={exporting || !session.permissions.includes('export')}
+            onClick={async () => {
+              if (!window.confirm('Approve export of the current store’s private supplier ledger?'))
+                return;
+              setExporting(true);
+              setExportError('');
+              try {
+                const result = await exportLedger();
+                await downloadPrivate(result.download_url, 'supplier-ledger.csv');
+              } catch (e) {
+                setExportError(e.message);
+              } finally {
+                setExporting(false);
+              }
+            }}
+          >
+            <Download size={15} />
+            {exporting ? 'Preparing approved export…' : 'Export CSV'}
+          </button>
         </div>
+        {exportError && (
+          <p className="error-box" role="alert">
+            {exportError}
+          </p>
+        )}
         <div className="recovery-visual">
           <div
             className="recovery-ring"

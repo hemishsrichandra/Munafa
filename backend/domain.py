@@ -4,19 +4,39 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from copy import deepcopy
 from typing import Literal
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, BeforeValidator, PlainSerializer
+from typing import Annotated
+from decimal import Decimal, ROUND_HALF_UP
 
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
+def exact_quantity(value):
+    if isinstance(value, (float, bool)):
+        raise ValueError(
+            "Use an integer or decimal string; binary floating quantities are not accepted."
+        )
+    quantity = Decimal(str(value))
+    if not quantity.is_finite() or quantity.as_tuple().exponent < -6:
+        raise ValueError("Quantities support at most six decimal places.")
+    return quantity
+
+
+Quantity = Annotated[
+    Decimal,
+    BeforeValidator(exact_quantity),
+    PlainSerializer(lambda q: int(q) if q == q.to_integral() else str(q)),
+]
+
+
 class Line(StrictModel):
     name: str = Field(min_length=1, max_length=120)
-    billed: int = Field(ge=1, le=100000, strict=True)
+    billed: Quantity = Field(gt=0, le=100000)
     unit: Literal["pack", "piece", "carton", "kg", "unknown"] = "unknown"
     price_paise: int = Field(ge=1, le=100000000, strict=True)
-    received: int | None = Field(default=None, ge=0, le=100000, strict=True)
+    received: Quantity | None = Field(default=None, ge=0, le=100000)
     received_unit: Literal["pack", "piece", "carton", "kg", "unknown"] = "unknown"
     unit_confirmed: bool = False
     note: str = Field(default="", max_length=300)
@@ -72,7 +92,10 @@ def now():
 
 
 def local_today():
-    return datetime.now(ZoneInfo("Asia/Kolkata")).date()
+    from .auth import principal
+
+    p = principal.get()
+    return datetime.now(ZoneInfo(p.timezone if p else "Asia/Kolkata")).date()
 
 
 def normalized(s):
@@ -88,6 +111,10 @@ def calculate(lines, complete, pricing):
     for i, line in enumerate(lines):
         if isinstance(line, BaseModel):
             line = line.model_dump()
+        line = dict(line)
+        line["billed"] = Decimal(str(line["billed"]))
+        if line["received"] is not None:
+            line["received"] = Decimal(str(line["received"]))
         reason = None
         if line["received"] is None:
             reason = "Enter the quantity received."
@@ -103,8 +130,25 @@ def calculate(lines, complete, pricing):
             )
         if reason:
             issues.append(f"{line['name']}: {reason}")
-        amount = (line["billed"] - line["received"]) * line["price_paise"] if not reason else 0
-        details.append({"index": i, "amount_paise": amount, "issue": reason})
+        amount = (
+            int(
+                ((line["billed"] - line["received"]) * line["price_paise"]).quantize(
+                    Decimal("1"), rounding=ROUND_HALF_UP
+                )
+            )
+            if not reason
+            else 0
+        )
+        details.append(
+            {
+                "index": i,
+                "amount_paise": amount,
+                "issue": reason,
+                "shortage_quantity": str(line["billed"] - line["received"])
+                if line["received"] is not None
+                else None,
+            }
+        )
         total += amount
     return {
         "amount_paise": total,
@@ -160,3 +204,7 @@ def present(case):
             0, (case["approved_amount_paise"] or calc["amount_paise"]) - recovered
         ),
     }
+
+
+def rupees(paise):
+    return format(Decimal(paise) / Decimal(100), ".2f")

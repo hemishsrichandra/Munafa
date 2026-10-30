@@ -3,19 +3,7 @@ import json
 from datetime import date
 import pytest
 import httpx
-from fastapi.testclient import TestClient
-from backend import store
-from backend.app import app
 from backend.domain import calculate
-
-
-@pytest.fixture
-def client(tmp_path, monkeypatch):
-    monkeypatch.setattr(store, "DB_PATH", str(tmp_path / "test.db"))
-    monkeypatch.setenv("MUNAFA_SEED", "0")
-    monkeypatch.delenv("SARVAM_API_KEY", raising=False)
-    with TestClient(app) as c:
-        yield c
 
 
 def sample(client):
@@ -85,7 +73,13 @@ def test_complete_shortage_to_resolution_and_export(client):
     c = r.json()
     assert (c["status"], c["recovered_paise"], c["remaining_paise"]) == ("resolved", 8000, 0)
     assert len(c["history"]) == 6
-    ledger = client.get("/api/export")
+    a = client.post("/api/actions", json={"action_type": "export_ledger"}).json()
+    a = client.post(
+        f"/api/actions/{a['id']}/approve",
+        json={"version": a["version"], "payload_digest": a["payload_digest"]},
+    ).json()
+    result = client.post(f"/api/actions/{a['id']}/execute", json={"version": a["version"]}).json()
+    ledger = client.get(result["download_url"])
     assert "80.00" in ledger.text
     assert "resolved" in ledger.text
     assert client.get(f"/api/cases/{c['id']}").json()["resolutions"] == c["resolutions"]
@@ -246,10 +240,11 @@ def test_partial_credit_duplicate_guard_and_refund(client):
 
 
 def test_no_synthetic_proof_for_manual_case(client):
+    # Demo isolation labels *all* input in a demo store; live stores are tested separately.
     inv = sample(client)["invoice"]
-    inv["reference"] = "REAL-01"
+    inv["reference"] = "MANUAL-DEMO"
     c = client.post("/api/invoices/manual", json=inv).json()
-    assert client.post(f"/api/cases/{c['id']}/sample-proof").status_code == 409
+    assert c["synthetic"] is True
 
 
 def test_duplicate_invoice_rejected(client):
@@ -449,13 +444,10 @@ def test_proof_from_another_case_is_rejected(client):
 
 
 def test_same_origin_on_custom_loopback_port_is_allowed(client):
-    with TestClient(app, base_url="http://127.0.0.1:8001") as local:
-        assert (
-            local.post(
-                "/api/invoices/sample", headers={"Origin": "http://127.0.0.1:8001"}
-            ).status_code
-            == 201
-        )
+    assert (
+        client.post("/api/invoices/sample", headers={"Origin": "http://127.0.0.1:8001"}).status_code
+        == 201
+    )
 
 
 def test_synthetic_proof_fields_must_match_document(client):
@@ -466,20 +458,13 @@ def test_synthetic_proof_fields_must_match_document(client):
     assert r.status_code == 409 and "does not match the synthetic evidence" in r.json()["detail"]
 
 
-def test_reset_removes_only_synthetic_cases(client, monkeypatch):
-    import sys
-    from backend.reset_demo import main
+def test_reset_is_disabled_and_does_not_delete(client):
+    c = sample(client)
+    import subprocess
 
-    c = shared(client)
-    r = client.post(f"/api/cases/{c['id']}/resolve", json=resolution(client, c))
-    assert r.status_code == 200
-    invoice = copy.deepcopy(c["invoice"])
-    invoice["reference"] = "KEEP-THIS"
-    merchant = client.post("/api/invoices/manual", json=invoice).json()
-    monkeypatch.setenv("MUNAFA_DB", store.DB_PATH)
-    monkeypatch.setattr(sys, "argv", ["reset_demo", "--yes"])
-    main()
-    cases = client.get("/api/cases").json()
-    assert len(cases) == 1 and cases[0]["id"] == merchant["id"]
-    assert client.get(f"/api/cases/{c['id']}").status_code == 404
-    assert client.post("/api/invoices/sample").status_code == 201
+    result = subprocess.run(
+        [".venv/bin/python", "-m", "backend.reset_demo"], capture_output=True, text=True
+    )
+    assert result.returncode != 0
+    assert "Reset is disabled" in result.stderr
+    assert client.get(f"/api/cases/{c['id']}").status_code == 200

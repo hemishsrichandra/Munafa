@@ -1,117 +1,59 @@
-# Architecture and implementation decisions
+# Current architecture after Batches 2–4
 
-## Product boundary
-
-Munafa focuses on invoice shortages and documented supplier-credit follow-up. This implements the source deck's explicit merchant confirmation and approval gates. It does not claim to be a general ERP, lender or autonomous collections agent.
-
-The key refinement is a complete case lifecycle with explicit recovery accounting. A promise, a generated message or a credit-note upload cannot independently close a case.
-
-## Components
+The original supplier-credit workflow remains the product core. New foundation code adds data/security boundaries and a shared installable shell; it does not add inventory, customer ledgers, forecasting or Paytm payment data.
 
 ```mermaid
 flowchart LR
-    A[Merchant React workspace] --> B[FastAPI API]
-    B --> C[Typed invoice and review validation]
-    C --> D[Deterministic paise calculations]
-    D --> E[SQLite cases, attachments and audit history]
-    B --> F[Sarvam adapter]
-    F --> G[Native Sarvam text extraction]
-    F --> H[Sarvam-hosted vision extraction]
-    F --> I[Hindi and Kannada translation]
-    A --> J[Merchant opens WhatsApp and attaches PNG]
+    W[React 19 phone UI] --> A[FastAPI authenticated routes]
+    N[Capacitor Android wrapper] --> W
+    P[PWA public-shell service worker] --> W
+    A --> S[Session/store/role and CSRF policy]
+    S --> I[PostgreSQL transaction and operation receipt]
+    I --> D[Existing shortage rules and bound approvals]
+    D --> R[SQLAlchemy scoped repository]
+    R --> DB[PostgreSQL normalized records]
+    A --> AI[Existing optional Sarvam adapter]
 ```
 
-- **React 19 + Vite**: responsive workspace with dashboard, case detail, supplier ledger and insights. Browser state refreshes from authoritative API responses after every mutation.
-- **FastAPI + Pydantic**: typed request contracts, field limits, restricted units, validation and generated OpenAPI docs.
-- **SQLite**: zero-service local setup. JSON case records retain structured invoice/review/audit data. Attachments are stored as database blobs, not public static files. Transactions serialize changes and versions reject stale tabs.
-- **Sarvam HTTP adapter**: server-side credentials, bounded requests, validation and explicit failure handling. No privileged tools or state mutation are exposed to the models.
+## Files and boundaries
 
-SQLite replaces the deck's planned PostgreSQL for the first local build. PostgreSQL with normalized tables and store-scoped queries is a deployment prerequisite; this JSON-backed prototype is not a demonstrated architecture for millions of merchants.
+- `backend/models.py`: normalized SQLAlchemy Core metadata; no startup create-all.
+- `backend/db.py`: PostgreSQL-only engine selection and schema-specific connection pools.
+- `backend/migrations/`: reviewed Alembic DDL, append-only triggers and recovery projection view.
+- `backend/auth.py`: scrypt passwords, hashed opaque sessions, verified store membership and role permissions.
+- `backend/security.py`: exact origin policy, CSRF, rate limits, store-scoped idempotency locks/receipts and request transaction.
+- `backend/store.py`: normalized case reconstruction and scoped persistence. Route handlers retain the original state-machine operations.
+- `backend/actions.py`: proposal digest, version, approval invalidation, expiry and execution policy.
+- `backend/domain.py`: validated exact quantities, deterministic integer-paise calculation and copied approval snapshots.
+- `frontend/src/session.jsx`: account/development sign-in and clearing the workspace on successful logout.
+- `frontend/src/pwa.jsx`, `frontend/public/sw.js`, `scripts/build-pwa.cjs`: public-shell install, cache and update lifecycle.
+- Existing `CaseDetail`, `InvoiceIntake`, `CaseActions` remain in use; mobile lists replace table layouts without new domain logic.
+- `capacitor.config.json`, `android/`: package the same built frontend; no parallel native domain model.
 
-## Case lifecycle
+## Trust and transaction model
 
-```mermaid
-stateDiagram-v2
-    [*] --> Review: Invoice added
-    Review --> Ready: Valid reviewed claim approved
-    Ready --> Sent: Merchant confirms sharing
-    Sent --> Promised: Supplier promise and date recorded
-    Sent --> Partial: Documented partial recovery
-    Promised --> Partial: Documented partial recovery
-    Partial --> Partial: Additional distinct recovery
-    Sent --> Resolved: Full documented recovery
-    Promised --> Resolved: Full documented recovery
-    Partial --> Resolved: Balance reaches zero
-    Ready --> Review: Inputs edited
-    Sent --> Review: Inputs edited before recovery
-    Promised --> Review: Inputs edited before recovery
-```
+Session membership supplies store context. Client JSON cannot choose a tenant. Reads/writes use store predicates; related rows carry composite store foreign keys. Owner, staff and viewer are intentionally small roles.
 
-Editing any review input invalidates current approval, amount and follow-up. Earlier sharing history remains. Each new approval stores an immutable invoice/count/price/amount snapshot in the audit history. Once any recovery has been recorded, invoice edits are blocked so historical recovery cannot become detached from its original claim.
+An authenticated unsafe request requires CSRF for cookies (bearer-native sessions are exempt from cookie CSRF), an Idempotency-Key, current permission and normal domain checks. The request owns a PostgreSQL transaction. An advisory transaction lock serializes a store/key; business state and accepted response commit together. Errors roll back the whole operation.
 
-A draft with no shortage cannot be approved as a credit claim. It remains a reviewed invoice; a separate “matched/no-claim” archive state is future work.
+Approvals bind a proposal version and canonical payload digest; changed proposals lose approval. Source versions and payloads are checked again at execution. The existing direct merchant approval endpoint invokes the central primitive. Ledger exports require approved execution rather than an unauthenticated GET.
 
-## Money and receiving rules
+Audit, resolution and financial-event rows reject updates/deletes. Current balances are derivable from immutable events; `case_recovery_balances` is a read-only view. Historical approval snapshots remain JSONB to preserve the original reviewed evidence. Runtime DB privileges must not allow trigger bypass. No inventory table has been added prematurely.
 
-For each eligible line:
+## Offline and native boundaries
 
-`shortage_paise = (billed_whole_units − received_whole_units) × effective_unit_price_paise`
+Service-worker cache contains only the shell, manifest/icons and build assets. All API requests remain network-only. Private device drafts and a minimal unapproved receiving cache live in scoped IndexedDB stores. Tokens are not persisted there. A durable outbox synchronizes only the approved Batch 4 draft operation types; server approval/recovery stay online-only. App update activation is user-controlled and warns about unsaved input.
 
-- All monetary persistence and calculations use integer paise.
-- Whole units only in this version, including whole kg. Fractional quantities require an expanded quantity model.
-- Merchant must confirm the same billed and received unit. `unknown`, carton/pack mismatches or an unchecked unit confirmation block the entire claim.
-- Unknown receiving counts, counts exceeding billed quantity, incomplete delivery and unverified effective prices block approval.
-- The merchant corrects net unit prices after considering tax, discounts and schemes. The app does not perform GST or scheme calculations.
-- UI estimates never override the backend; approval re-runs all calculation gates.
+PWA cookie sessions are HttpOnly/Secure in production. The native adapter can request the same opaque session as an in-memory bearer after actual password/development-code authentication. Native API access requires an explicitly configured HTTPS base and allowed origin. Native process restart requires login; durable native credential storage has not been introduced.
 
-## Resolution rules
+The PWA and APK share source and behavior. The native shell does not need the web service worker to start offline. Download/share/camera permissions and device behavior require actual device testing; no speculative permissions are declared.
 
-Every recovery requires:
+## Remaining operational work
 
-1. An approved and merchant-confirmed shared case.
-2. Supplier and original invoice reference matching after case/whitespace normalization.
-3. A positive integer-paise amount no greater than the remaining balance.
-4. A proof attachment belonging to that case.
-5. A unique supplier credit-note/refund reference.
-6. A proof-content SHA-256 digest not previously recorded for that supplier.
-7. Merchant attestation that the credit was applied or refund received.
+Ingress body/rate limits, multi-worker rate-limit coordination, file decoding/malware scanning, retention jobs, recovery operations and deployment configuration need production-specific review. Provider quality and device behavior are not established by mocked/API or headless-browser tests. Do not expose a development login or use superuser DB credentials in a deployed merchant environment.
 
-The reference and digest inserts occur in the same transaction as the case update. Failed validation rolls them back. Partial recovery stays open. A zero balance resolves the case and clears its follow-up date.
+## Batch 4 boundary
 
-This is **merchant-assisted verification**. File presence, identifiers and arithmetic are checked; the authenticity and business meaning of the uploaded document are not independently verified. Multi-invoice application of a single credit note is intentionally unsupported and blocked by the uniqueness rule.
+`frontend/src/offline/db.js` owns IndexedDB schema/transactions and frozen outbox state. `sync.js` owns bounded, dependency-aware transport and receipt validation; `provider.jsx` handles foreground/online lifecycle. `Workspace.jsx` is the phone draft/conflict surface. SessionGate activates/clears verified user/store/role context and supports a limited offline workspace grant.
 
-## API surface
-
-All routes begin with `/api`. Interactive schema is at `/docs`.
-
-| Method and path                       | Purpose                                                          |
-| ------------------------------------- | ---------------------------------------------------------------- |
-| `GET /health`                         | Local mode and Sarvam configuration presence, never key contents |
-| `GET /cases`, `GET /cases/{id}`       | Read cases with derived amounts/issues                           |
-| `POST /invoices/sample`               | Create the A-104 synthetic invoice once                          |
-| `POST /invoices/manual`               | Create typed merchant invoice                                    |
-| `POST /invoices/extract-text`         | Structure pasted invoice with native Sarvam model                |
-| `POST /invoices/extract`              | Read image using Sarvam-hosted vision                            |
-| `PATCH /cases/{id}/review`            | Save receiving evidence and corrected invoice fields             |
-| `POST /cases/{id}/approve`            | Validate and snapshot merchant approval                          |
-| `POST /cases/{id}/message`            | Prepare deterministic English or Sarvam translation draft        |
-| `POST /cases/{id}/sent`               | Explicit merchant sharing confirmation                           |
-| `POST /cases/{id}/promise`            | Record promise and follow-up date                                |
-| `POST /cases/{id}/proof`              | Attach credit/refund image or PDF                                |
-| `POST /cases/{id}/sample-proof`       | Synthetic next-bill fixture for synthetic cases only             |
-| `POST /cases/{id}/resolve`            | Verify and record partial/full credit or refund                  |
-| `GET /cases/{id}/approvals/{version}` | Inspect an earlier approved snapshot                             |
-| `GET /attachments/{id}`               | Read stored evidence                                             |
-| `GET /export`                         | Export ledger CSV with formula-injection protection              |
-
-Mutating case operations carry the current `version`. Successful mutations increment it; stale requests return `409` and require reloading. Unknown IDs return `404`, malformed contracts `422`, and rule/provider failures `409`. Invoice identity is unique per normalized supplier/reference; duplicate imports point the merchant to the existing case.
-
-## Data and privacy
-
-The server is bound to `127.0.0.1`. There is no login or store isolation, so all local users with API access share the same workspace. Browser writes from foreign origins are blocked. File size is capped at 8 MB, allowed types/signatures are checked, file IDs are server-generated, and responses use `nosniff` and no-store caching for API data. These are prototype controls, not production security guarantees. Image decoding, malware scanning, content sandboxing, total request limits, encryption and retention policies remain deployment work.
-
-AI calls occur only through explicit extraction/translation actions. Invoice text/image or the approved message goes to Sarvam, so obtain merchant consent before using real records. No external Paytm calls occur. WhatsApp is a user-opened link; the merchant chooses the recipient and sends. Browser voice input is optional and may use vendor services.
-
-## Validation boundary
-
-Domain/API tests exercise workflow and accounting rules. Mocked provider contracts verify endpoint, headers, model selection, image payloads, translations and error paths. Browser tests exercise approval, PNG download, promise, full closure, persistence, navigation and mobile manual intake. They do not establish live Sarvam accuracy, real supplier acceptance, authentication strength or measured business impact.
+`backend/sync.py` is an allowlist adapter into existing supplier persistence, not a new merchant service or ledger. It reuses PostgreSQL idempotency receipts, scoped repositories, expected case versions and append-only audits. It accepts no tenant IDs or offline approval/recovery commands. No server schema migration is needed in Batch 4. Read SYNC-PROTOCOL.md for the complete wire/state/storage contract.

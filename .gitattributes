@@ -1,0 +1,2 @@
+# Canonical Git text with native Windows batch-script checkout line endings.
+*.bat text eol=crlf

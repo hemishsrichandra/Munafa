@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Plus, ShieldCheck, X, Upload, Sparkles, AlertCircle } from 'lucide-react';
-import { api, today } from '../api';
+import { paiseFromInput, api, today } from '../api';
 import { icon, Modal, ErrorBox, Busy } from './ui';
 
 const freshLine = () => ({
@@ -170,7 +170,7 @@ function InvoiceModal({ close, create, config }) {
     </Modal>
   );
 }
-function InvoiceFields({ invoice, change, review = false }) {
+function InvoiceFields({ invoice, change, review = false, draft = false }) {
   const update = (key, value) => change({ ...invoice, [key]: value });
   const lineChange = (index, key, value) => {
     const lines = invoice.lines.map((l, i) =>
@@ -190,7 +190,7 @@ function InvoiceFields({ invoice, change, review = false }) {
         <label className="field">
           Supplier name
           <input
-            required
+            required={!draft}
             value={invoice.supplier}
             maxLength={100}
             onChange={(e) => update('supplier', e.target.value)}
@@ -199,7 +199,7 @@ function InvoiceFields({ invoice, change, review = false }) {
         <label className="field">
           Invoice reference
           <input
-            required
+            required={!draft}
             value={invoice.reference}
             maxLength={60}
             onChange={(e) => update('reference', e.target.value)}
@@ -208,7 +208,7 @@ function InvoiceFields({ invoice, change, review = false }) {
         <label className="field">
           Invoice date
           <input
-            required
+            required={!draft}
             type="date"
             value={invoice.date}
             onChange={(e) => update('date', e.target.value)}
@@ -232,7 +232,7 @@ function InvoiceFields({ invoice, change, review = false }) {
               <label className="field grow">
                 Item {i + 1}
                 <input
-                  required
+                  required={!draft}
                   aria-label={`Item ${i + 1} name`}
                   maxLength={120}
                   value={l.name}
@@ -260,15 +260,13 @@ function InvoiceFields({ invoice, change, review = false }) {
                 Billed quantity
                 <input
                   type="number"
-                  required
-                  min="1"
+                  required={!draft}
+                  min="0.000001"
                   max="100000"
-                  step="1"
+                  step="0.000001"
                   aria-label={`Item ${i + 1} billed quantity`}
                   value={l.billed}
-                  onChange={(e) =>
-                    lineChange(i, 'billed', e.target.value === '' ? '' : +e.target.value)
-                  }
+                  onChange={(e) => lineChange(i, 'billed', e.target.value)}
                 />
               </label>
               <label className="field">
@@ -289,13 +287,13 @@ function InvoiceFields({ invoice, change, review = false }) {
                 Net price / unit (₹)
                 <input
                   type="number"
-                  required
+                  required={!draft}
                   min="0.01"
                   max="1000000"
                   step="0.01"
                   aria-label={`Item ${i + 1} unit price`}
                   value={l.price_paise ? l.price_paise / 100 : ''}
-                  onChange={(e) => lineChange(i, 'price_paise', Math.round(+e.target.value * 100))}
+                  onChange={(e) => lineChange(i, 'price_paise', paiseFromInput(e.target.value))}
                 />
               </label>
               {review && (
@@ -304,15 +302,15 @@ function InvoiceFields({ invoice, change, review = false }) {
                     Actually received
                     <input
                       type="number"
-                      required
+                      required={!draft}
                       min="0"
                       max="100000"
-                      step="1"
+                      step="0.000001"
                       aria-label={`Item ${i + 1} received quantity`}
                       value={l.received ?? ''}
                       placeholder="Count"
                       onChange={(e) =>
-                        lineChange(i, 'received', e.target.value === '' ? null : +e.target.value)
+                        lineChange(i, 'received', e.target.value === '' ? null : e.target.value)
                       }
                     />
                   </label>

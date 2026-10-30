@@ -1,0 +1,35 @@
+name: PostgreSQL and PWA checks
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: runner
+          POSTGRES_DB: munafa_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U runner -d munafa_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+psycopg://runner@127.0.0.1:5432/munafa_test
+      TEST_DATABASE_URL: postgresql+psycopg://runner@127.0.0.1:5432/munafa_test
+      APP_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm}
+      - run: python -m venv .venv
+      - run: .venv/bin/pip install -r backend/requirements-dev.txt
+      - run: npm ci
+      - run: .venv/bin/python -m pytest backend/tests -q
+      - run: .venv/bin/ruff check backend
+      - run: npm run format:check
+      - run: npm run test:offline
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
