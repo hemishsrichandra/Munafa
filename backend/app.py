@@ -309,7 +309,7 @@ def approve(case_id: str, body: Version):
         audit(
             c,
             "Evidence approved",
-            f"INR {calc['amount_paise'] / 100:.2f} reviewed by the merchant.",
+            f"INR {rupees(calc['amount_paise'])} reviewed by the merchant.",
             snapshot={
                 "version": c["approved_version"],
                 "invoice": c["invoice"],
@@ -386,7 +386,7 @@ def sample_proof(case_id: str, body: SampleProof = SampleProof()):
         amount = body.amount_paise or present(c)["remaining_paise"]
         if amount > present(c)["remaining_paise"]:
             raise RuleError("Synthetic proof amount must not exceed the remaining claim.")
-        evidence = f"SYNTHETIC EVIDENCE\nSupplier: {c['invoice']['supplier']}\nInvoice: {c['invoice']['reference']}\nReference: {ref}\n{body.kind}: INR {amount / 100:.2f}"
+        evidence = f"SYNTHETIC EVIDENCE\nSupplier: {c['invoice']['supplier']}\nInvoice: {c['invoice']['reference']}\nReference: {ref}\n{body.kind}: INR {rupees(amount)}"
         aid = store.add_attachment(db, case_id, ref + ".txt", "text/plain", evidence.encode())
         result = {
             "attachment_id": aid,
@@ -456,7 +456,7 @@ def resolve(case_id: str, body: Resolution):
         audit(
             c,
             "Credit verified" if body.kind == "credit" else "Refund verified",
-            f"INR {body.amount_paise / 100:.2f} recorded against {body.evidence_reference}; INR {remaining / 100:.2f} remaining.",
+            f"INR {rupees(body.amount_paise)} recorded against {body.evidence_reference}; INR {rupees(remaining)} remaining.",
         )
     return present(c)
 

@@ -1,4 +1,8 @@
-# Cross-system handoff — current extension work
+# Cross-system handoff — final checklist review
+
+**Latest: [FINAL-CHECKLIST-REVIEW.md](FINAL-CHECKLIST-REVIEW.md)** checks all 31 owner checklist items, records the synthetic data now on the website and lists required access/decisions. Latest run: 246 backend, 22 browser and 17 frontend tests pass. Three exact-money audit/evidence formatting conversions were repaired; no schema/dependency changes. Existing merchant data was preserved.
+
+## Extension handoff
 
 **Read [EXTENSION-HANDOFF.md](EXTENSION-HANDOFF.md) first for the latest state**, then [POST-PLAYBOOK-STATUS.md](POST-PLAYBOOK-STATUS.md) for all 47 extension acceptance gates. The historical Batch 10 snapshot below remains useful for local setup and earlier release evidence; its counts/APK hash are superseded by the extension report.
 

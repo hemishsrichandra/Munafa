@@ -148,3 +148,5 @@ No real Android device/emulator, OS install, live Paytm, measured cloud OCR/spee
 ## Post-playbook extension status
 
 More → **Connections & readiness** now shows honest provider blockers, accepted-source preparation with exact-payload local export approval, and SKU data-readiness reports. Private offline pilot and forecast-baseline analysis tools are documented in [the evaluation protocol](docs/EVALUATION-AND-PILOT.md). All three extension batches were processed sequentially; live integrations, CA review, representative AI evaluation and a real kirana pilot remain blocked by unavailable access/participants. No external sending, submission, forecast or peer result is enabled. See [all 47 acceptance gates and test evidence](docs/POST-PLAYBOOK-STATUS.md) and [the current cross-system handoff](docs/EXTENSION-HANDOFF.md).
+
+Latest: [final owner checklist review](docs/FINAL-CHECKLIST-REVIEW.md) — all 31 checks, fresh test results, synthetic website scenario, remaining gaps and required credentials/decisions.

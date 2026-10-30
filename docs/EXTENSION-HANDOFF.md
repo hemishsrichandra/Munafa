@@ -1,4 +1,6 @@
-# Current cross-system handoff — post-playbook extensions
+# Cross-system handoff — post-playbook extensions
+
+**Latest continuation:** read `docs/FINAL-CHECKLIST-REVIEW.md` first. The final owner checklist review now has 246 backend tests (one added exact-money audit/evidence regression), 22 browser and 17 frontend tests passing. Three float-format strings in `backend/app.py` now use the existing Decimal `rupees()` formatter. The current development demo store has a synthetic reviewed ₹200 invoice, explicit 2 kg receipt, ₹40 open approved claim, ₹0 recovery and isolated settlement fixture. No messages sent; no existing records reset. The website seed lives only in local PostgreSQL and must be recreated safely on another machine. No new migrations/dependencies. Current provider/data/device gates remain unchanged.
 
 Updated 30 October 2026, Asia/Kolkata. Repository `hemishsrichandra/Munafa`, branch
 `main`. Read actual source/Git status before changing anything. The owner explicitly

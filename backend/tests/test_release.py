@@ -21,6 +21,26 @@ from backend.tests.test_commerce import purchase, receiving, receive, accept, ok
 from backend.tests.test_workflow import shared, resolution
 
 PUBLIC = {"/api/health", "/api/auth/login", "/api/auth/dev-login"}
+
+
+def test_audit_and_evidence_money_never_uses_binary_float():
+    import ast
+    from pathlib import Path
+    from backend.domain import rupees
+
+    assert rupees(9007199254740991) == "90071992547409.91"
+    assert rupees(-101) == "-1.01"
+    tree = ast.parse((Path(__file__).parents[1] / "app.py").read_text())
+    assert not [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.BinOp)
+        and isinstance(node.op, ast.Div)
+        and isinstance(node.right, ast.Constant)
+        and node.right.value == 100
+    ], "Route audit/evidence strings must not convert integer paise through binary float."
+
+
 ENDPOINTS = [
     (method.upper(), path)
     for path, methods in app.openapi()["paths"].items()
