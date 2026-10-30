@@ -57,6 +57,10 @@ async def lifespan(app):
     with engine().connect() as db:
         if db.execute(text("SELECT version_num FROM alembic_version")).scalar_one() != expected:
             raise RuntimeError("Database migrations must be applied before startup.")
+    with engine().begin() as db:
+        user_count = db.execute(text("SELECT COUNT(id) FROM users")).scalar()
+        if user_count == 0:
+            auth.provision("owner", os.getenv("OWNER_PASSWORD", "KiranaOwner2026!"), "Lakshmi Kirana")
     yield
 
 
