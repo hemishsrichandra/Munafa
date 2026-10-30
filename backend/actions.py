@@ -23,6 +23,7 @@ def propose(db, action_type, entity_id, payload, expected_version, key):
         "accept_purchase",
         "accept_receiving",
         "inventory_movement",
+        "export_preparation",
     ):
         raise RuleError("Unsupported action type.")
     if action_type == "approve_case":
@@ -36,6 +37,11 @@ def propose(db, action_type, entity_id, payload, expected_version, key):
         }
     elif action_type == "export_ledger":
         payload = export_payload(db)
+    elif action_type == "export_preparation":
+        current("export")
+        from .preparation import proposal_payload
+
+        payload = proposal_payload(db, payload)
     else:
         from .commerce_api import action_payload
 
@@ -50,7 +56,9 @@ def propose(db, action_type, entity_id, payload, expected_version, key):
             payload=payload,
             payload_digest=payload_digest(payload),
             risk_level="financial" if action_type == "approve_case" else "private",
-            source_ids=[entity_id] if entity_id else [],
+            source_ids=[r["purchase_id"] for r in payload["records"]]
+            if action_type == "export_preparation"
+            else ([entity_id] if entity_id else []),
             status="proposed",
             version=1,
             expected_version=expected_version,

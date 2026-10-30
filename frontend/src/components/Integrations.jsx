@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
+import { Preparation } from './Preparation';
 
 export function Integrations() {
   const [data, setData] = useState(null);
@@ -69,6 +70,7 @@ export function Integrations() {
           ))}
         </>
       )}
+      <Preparation />
     </section>
   );
 }

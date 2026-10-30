@@ -20,6 +20,7 @@ from .brief import router as brief_router
 from .ai_api import router as ai_router
 from .planning import router as planning_router
 from .integrations import router as integrations_router
+from .preparation import router as preparation_router
 from .db import engine
 from .security import guard, origins
 from sqlalchemy import text
@@ -752,6 +753,17 @@ def execute_action(action_id: str, body: Version, request: Request):
             from .commerce_api import execute
 
             return execute(db, a, request.headers["idempotency-key"])
+        elif a["action_type"] == "export_preparation":
+            from .preparation import revalidate
+
+            auth.current("export")
+            if (
+                a["created_by"] != auth.current().user_id
+                or a["approved_by"] != auth.current().user_id
+            ):
+                raise HTTPException(403, "Review your own preparation export.")
+            revalidate(db, a)
+            result = {"download_url": f"/api/preparation/export?action_id={a['id']}"}
         else:
             auth.current("export")
             if a["payload"] != actions.export_payload(db):
@@ -770,6 +782,7 @@ app.include_router(brief_router)
 app.include_router(ai_router)
 app.include_router(planning_router)
 app.include_router(integrations_router)
+app.include_router(preparation_router)
 
 DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if (DIST / "assets").is_dir() and (DIST / "index.html").is_file():
