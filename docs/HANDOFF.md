@@ -1,8 +1,10 @@
-# Next-chat handoff · Batches 2–4
+# Next-chat handoff · Batches 2–5
 
-Updated **30 October 2026**. Start here after the usage window/chat ends. Read BATCH-4.md, SYNC-PROTOCOL.md, BATCH-2.md, BATCH-3.md, PROGRESS.md and the actual source/tests before editing.
+Updated **30 October 2026** (Batch 5 backend commit). Start here after the usage window/chat ends. Read BATCH-5.md first, then BATCH-4.md, SYNC-PROTOCOL.md, BATCH-2.md, BATCH-3.md and the actual source/tests before editing.
 
 ## Authorization and repository state
+
+> **Batch 5 backend committed.** Frontend UI, offline outbox guard and `test_commerce.py` remain. See `docs/BATCH-5.md`.
 
 - Workspace: `/Users/hemish/Sem-3/Munafa`; branch **main**; owner repo `https://github.com/hemishsrichandra/Munafa.git`.
 - Initial committed baseline was **9f426e4**. This handoff includes the previously uncommitted Batch 2/3 implementation plus Batch 4. The owner explicitly requested a proper commit and push before exit; use `git log -1`, `git status --short --branch` and the remote to identify the exact published revision.
@@ -11,7 +13,7 @@ Updated **30 October 2026**. Start here after the usage window/chat ends. Read B
 
 ## What exists
 
-React 19/Vite + FastAPI/Pydantic, PostgreSQL only through SQLAlchemy Core/Psycopg. Three Alembic migrations, current head **37c45f100e71**. Server startup checks the exact head and performs no DDL/seed/import.
+React 19/Vite + FastAPI/Pydantic, PostgreSQL only through SQLAlchemy Core/Psycopg. Four Alembic migrations, current head **67e38dd313f8** (Batch 5: products, purchases, receiving, inventory events). Server startup checks the exact head and performs no DDL/seed/import.
 
 Supplier invariants: invoice capture → merchant physical receiving and unit/delivery/pricing checks → exact paise calculation/approval snapshot → explicit manual sharing confirmation → promise → evidence-backed recovery. Promise is never recovery. Preserve deduplication, immutable snapshots/audit/financial history, expected versions, principal-derived store scope and exact approval payload binding.
 
@@ -90,9 +92,9 @@ Screenshots: ignored `test-results/offline-draft-phone.png` (390px, visually ins
 1. Review the delivered batches. Provide HTTPS hosting only if a connected APK demo is desired. Run real Android installation/login/file/share/Back/offline cold-start/process-kill/storage-pressure/app-update checks. None has been claimed as tested.
 2. Before real merchant data: production identity/account operations, least-privilege DB role, verified backups/restores, deployment protections, file scanning/retention and privacy/support procedures. No production pilot readiness is claimed.
 3. Before live AI claims: authorised Sarvam contract/model checks and correction-adjusted task time/accuracy/cost/latency evaluation. No live Paytm access or fabricated operational events.
-4. **Wait for an explicit Batch 5 prompt.** Maintain existing trust/offline boundaries; new inventory or financial operations must be validated immutable events and stay provisional until accepted. Do not infer or implement future batches from this note.
+4. **Batch 5 backend is committed.** Remaining Batch 5 work: 9 frontend UI screens, offline outbox guard lift (remove `sync.js` stock-ledger error), `backend/tests/test_commerce.py` (~19 test cases), and final `BATCH-5.md` / HANDOFF update. See `docs/BATCH-5.md` for the complete checklist.
 5. Final merchant validation, presentation and demo video are still outstanding. Business impact must be measured, not asserted.
 
 Suggested next-chat prompt:
 
-> Read docs/HANDOFF.md, docs/BATCH-4.md and docs/SYNC-PROTOCOL.md, inspect Git status/history and the actual source/tests, and preserve the completed Batches 2–4 implementation. Execute only the Batch 5 requirements I provide below. Before editing list intended files, schema/API changes, dependencies, risks and tests. Preserve store isolation, exact-money rules, append-only history, approval binding, durable operation IDs and conflict handling. Do not import/reset legacy data or jump ahead. Update the handoff and push an appropriate commit before exiting.
+> Read docs/HANDOFF.md and docs/BATCH-5.md, inspect Git status/history and the actual source/tests. The Batch 5 backend (schema, services, API) is complete and committed. Continue with: (1) frontend UI screens for purchases/receiving/stock/expiry, (2) lifting the offline outbox guard in sync.js, (3) writing backend/tests/test_commerce.py, (4) updating HANDOFF.md and pushing before exit. Preserve store isolation, exact-money rules, append-only history, approval binding and conflict handling. Do not import/reset legacy data.

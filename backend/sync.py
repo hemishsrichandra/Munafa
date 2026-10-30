@@ -17,10 +17,19 @@ router = APIRouter(prefix="/api/sync")
 
 class Operation(StrictModel):
     operation_id: UUID
-    operation_type: Literal["invoice_create", "receiving_save", "attachment_upload"]
+    operation_type: Literal[
+        "invoice_create",
+        "receiving_save",
+        "attachment_upload",
+        "purchase_create",
+        "purchase_document_upload",
+        "purchase_receiving_capture",
+        "inventory_movement",
+        "proof_upload",
+    ]
     payload_schema_version: Literal[1]
     entity_id: str | None = Field(default=None, max_length=64)
-    expected_version: int | None = Field(default=None, ge=1)
+    expected_version: int | None = Field(default=None, ge=0)
     client_created_at: AwareDatetime
     dependency_ids: list[UUID] = Field(default_factory=list, max_length=10)
     payload: dict
@@ -71,6 +80,16 @@ def apply_operation(body: Operation, request: Request):
             )
             if not accepted or accepted["response"].get("operation_id") != str(dependency):
                 raise HTTPException(409, "A prerequisite has not been accepted for this store.")
+        if body.operation_type in (
+            "purchase_create",
+            "purchase_document_upload",
+            "purchase_receiving_capture",
+            "inventory_movement",
+            "proof_upload",
+        ):
+            from .commerce_api import apply_sync
+
+            return apply_sync(db, body)
         if body.operation_type == "invoice_create":
             if body.entity_id is not None or body.expected_version is not None:
                 raise HTTPException(422, "A new invoice cannot overwrite an existing case.")
@@ -79,6 +98,9 @@ def apply_operation(body: Operation, request: Request):
         else:
             if not body.entity_id or body.expected_version is None:
                 raise HTTPException(422, "Entity and expected version are required.")
+            from .purchasing import require_legacy_edit_allowed
+
+            require_legacy_edit_allowed(db, body.entity_id)
             with store.mutate(body.entity_id, body.expected_version, "write") as (_, c):
                 if c["status"] != "review" or c["approved_version"] is not None or c["resolutions"]:
                     raise RuleError(

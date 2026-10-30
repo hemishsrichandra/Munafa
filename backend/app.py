@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from . import store, ai, auth, actions
 from .sync import router as sync_router
+from .commerce_api import router as commerce_router
 from .db import engine
 from .security import guard, origins
 from sqlalchemy import text
@@ -116,13 +117,29 @@ def health():
 
 @app.get("/api/cases")
 def cases():
-    return [present(c) for c in store.all_cases()]
+    from .purchasing import case_link
+
+    with store.connect() as db:
+        result = []
+        for c in store.all_cases(db):
+            value = present(c)
+            link = case_link(db, c["id"])
+            if link:
+                value["commerce_link"] = link
+            result.append(value)
+        return result
 
 
 @app.get("/api/cases/{case_id}")
 def get_case(case_id: str):
     with store.connect() as db:
-        return present(store.get(db, case_id))
+        c = present(store.get(db, case_id))
+        from .purchasing import case_link
+
+        link = case_link(db, case_id)
+        if link:
+            c["commerce_link"] = link
+        return c
 
 
 @app.post("/api/invoices/sample", status_code=201)
@@ -186,6 +203,10 @@ async def extract_image(file: UploadFile = File(...)):
 
 @app.patch("/api/cases/{case_id}/review")
 def review(case_id: str, body: Review):
+    from .purchasing import require_legacy_edit_allowed
+
+    with store.connect() as db:
+        require_legacy_edit_allowed(db, case_id)
     with store.mutate(case_id, body.version) as (db, c):
         if c["resolutions"]:
             raise RuleError(
@@ -669,6 +690,10 @@ def execute_action(action_id: str, body: Version):
             ):
                 raise RuleError("Approved source changed. Create a new proposal.")
             result = approve(c["id"], Version(version=c["version"]))
+        elif a["action_type"] in ("accept_purchase", "accept_receiving", "inventory_movement"):
+            from .commerce_api import execute
+
+            return execute(db, a, __import__("uuid").uuid4().hex)
         else:
             auth.current("export")
             if a["payload"] != actions.export_payload(db):
@@ -681,6 +706,7 @@ def execute_action(action_id: str, body: Version):
 # A built frontend can be served by the same loopback process.
 
 app.include_router(sync_router)
+app.include_router(commerce_router)
 
 DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if DIST.exists():

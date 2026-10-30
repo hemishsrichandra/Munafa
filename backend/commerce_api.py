@@ -1,0 +1,475 @@
+"""Authenticated purchase/catalog/receiving routes; approval execution stays server-side."""
+
+from datetime import timedelta, date
+from decimal import Decimal
+from fastapi import APIRouter, Request, UploadFile, File, HTTPException
+from fastapi.responses import Response
+from pydantic import Field
+from sqlalchemy import select
+from . import store, auth, actions, inventory, purchasing, purchase_extraction, models as m
+from .commerce_models import (
+    ProductInput,
+    ConversionInput,
+    PurchaseDraft,
+    ReceivingDraft,
+    MovementInput,
+)
+from .domain import StrictModel, RuleError, local_today
+
+router = APIRouter(prefix="/api")
+
+
+class DraftEdit(StrictModel):
+    version: int = Field(ge=1, strict=True)
+    draft: PurchaseDraft
+
+
+class ProductEdit(StrictModel):
+    version: int = Field(ge=1, strict=True)
+    product: ProductInput
+
+
+class TextSource(StrictModel):
+    text: str = Field(min_length=1, max_length=18000)
+
+
+class Proposal(StrictModel):
+    action_type: str
+    entity_id: str = Field(min_length=1, max_length=64)
+    expected_version: int = Field(ge=0, strict=True)
+    payload: dict = Field(default_factory=dict)
+
+
+class ReceiptProposal(StrictModel):
+    version: int = Field(ge=1, strict=True)
+    payload: ReceivingDraft
+
+
+def action_payload(db, kind, eid, expected, payload):
+    if kind == "accept_purchase":
+        return purchasing.acceptance_payload(db, eid, expected)
+    if kind == "accept_receiving":
+        return purchasing.receipt_payload(db, eid, expected)
+    if kind == "inventory_movement":
+        body = MovementInput.model_validate(payload)
+        if body.product_id != eid or body.expected_stock_version != expected:
+            raise RuleError("Stock proposal must bind the selected SKU and exact source version.")
+        return inventory.movement_payload(db, body.model_dump(mode="json"))
+    raise RuleError("Unsupported commerce action.")
+
+
+def execute(db, a, key):
+    if a["action_type"] == "accept_purchase":
+        result = purchasing.accept(db, a)
+    elif a["action_type"] == "accept_receiving":
+        result = purchasing.accept_receiving(db, a, key)
+    elif a["action_type"] == "inventory_movement":
+        result = inventory.execute_movement(db, a["payload"], key)
+    else:
+        raise RuleError("Unsupported commerce action.")
+    actions.executed(db, a)
+    return result
+
+
+@router.post("/commerce/proposals", status_code=201)
+def propose(body: Proposal, request: Request):
+    if body.action_type not in ("accept_purchase", "accept_receiving", "inventory_movement"):
+        raise RuleError("This endpoint accepts purchase/receiving/stock proposals only.")
+    with store.connect("write") as db:
+        return actions.propose(
+            db,
+            body.action_type,
+            body.entity_id,
+            body.payload,
+            body.expected_version,
+            request.headers["idempotency-key"],
+        )
+
+
+@router.get("/products")
+def products():
+    with store.connect() as db:
+        return inventory.products(db)
+
+
+@router.post("/products", status_code=201)
+def create_product(body: ProductInput):
+    with store.connect("write") as db:
+        return inventory.create_product(db, body)
+
+
+@router.patch("/products/{pid}")
+def edit_product(pid: str, body: ProductEdit):
+    with store.connect("write") as db:
+        return inventory.change_product(db, pid, body.version, body.product)
+
+
+@router.get("/products/{pid}/movements")
+def movements(pid: str):
+    with store.connect() as db:
+        return inventory.movements(db, pid)
+
+
+@router.get("/products/{pid}/conversions")
+def conversions(pid: str):
+    with store.connect() as db:
+        inventory.product(db, pid)
+        return [
+            {
+                **r,
+                "factor": inventory.quantity(r["factor"]),
+                "created_at": r["created_at"].isoformat(),
+            }
+            for r in db.execute(
+                select(m.conversions).where(
+                    store.scope(m.conversions), m.conversions.c.product_id == pid
+                )
+            ).mappings()
+        ]
+
+
+@router.post("/products/{pid}/conversions", status_code=201)
+def add_conversion(pid: str, body: ConversionInput):
+    with store.connect("approve") as db:
+        return inventory.add_conversion(db, pid, body)
+
+
+@router.get("/inventory/expiry")
+def expiry():
+    with store.connect() as db:
+        today = local_today()
+        result = []
+        for p in inventory.products(db):
+            for lot in inventory.lots(db, p["id"]):
+                if (
+                    lot["expiry_date"] is not None
+                    and date.fromisoformat(lot["expiry_date"]) <= today + timedelta(days=30)
+                    and Decimal(lot["quantity"]) > 0
+                ):
+                    result.append(
+                        {
+                            "product_id": p["id"],
+                            "product_name": p["name"],
+                            "unit": p["unit"],
+                            **lot,
+                            "expired": date.fromisoformat(lot["expiry_date"]) < today,
+                        }
+                    )
+        return {"as_of": today.isoformat(), "window_days": 30, "lots": result}
+
+
+@router.get("/purchases")
+def purchases():
+    with store.connect() as db:
+        rows = db.execute(
+            select(m.purchases)
+            .where(store.scope(m.purchases))
+            .order_by(m.purchases.c.created_at.desc())
+            .limit(100)
+        ).mappings()
+        return [purchasing.view(db, dict(r)) for r in rows]
+
+
+@router.get("/purchases/{pid}")
+def get_purchase(pid: str):
+    with store.connect() as db:
+        return purchasing.view(db, purchasing.get(db, pid))
+
+
+@router.post("/purchases/manual", status_code=201)
+def manual(body: PurchaseDraft):
+    with store.connect("write") as db:
+        return purchasing.create(db, body.model_dump(mode="json"))
+
+
+@router.post("/purchases/sample", status_code=201)
+def sample():
+    if not auth.current("write").demo:
+        raise HTTPException(403, "Samples require an isolated demo store.")
+    draft = {
+        "supplier": "Synthetic Kirana Wholesale",
+        "reference": "KIRANA-DEMO-1",
+        "date": local_today().isoformat(),
+        "lines": [
+            {
+                "description": "Rice",
+                "sku_candidate": "Rice",
+                "billed_quantity": "2.5",
+                "unit": "kg",
+                "unit_price_paise": 8000,
+                "effective_price_paise": 8000,
+            }
+        ],
+        "subtotal_paise": 20000,
+        "tax_paise": 0,
+        "discount_paise": 0,
+        "total_paise": 20000,
+        "pricing_note": "Synthetic sample; merchant must select its SKU and review all fields.",
+    }
+    with store.connect("write") as db:
+        return purchasing.create(
+            db,
+            draft,
+            "sample",
+            provenance={"source": "synthetic_sample", "provider": None, "review_required": True},
+        )
+
+
+@router.patch("/purchases/{pid}")
+def edit_purchase(pid: str, body: DraftEdit):
+    with store.connect("write") as db:
+        return purchasing.revise(db, pid, body.version, body.draft.model_dump(mode="json"))
+
+
+@router.post("/purchases/extract-text", status_code=201)
+def from_text(body: TextSource):
+    draft, prov = purchase_extraction.extract(text=body.text)
+    with store.connect("write") as db:
+        return purchasing.create(
+            db, draft, "text", ("pasted-invoice.txt", "text/plain", body.text.encode()), prov
+        )
+
+
+@router.post("/purchases/document", status_code=201)
+async def from_document(file: UploadFile = File(...)):
+    from .app import read_file
+    from starlette.concurrency import run_in_threadpool
+
+    data, mime = await read_file(file, proof=True)
+    draft, prov = await run_in_threadpool(purchase_extraction.extract, data=data, mime=mime)
+    with store.connect("write") as db:
+        return purchasing.create(
+            db, draft, "document", (file.filename or "invoice", mime, data), prov
+        )
+
+
+@router.get("/purchase-documents/{did}")
+def get_document(did: str):
+    with store.connect() as db:
+        row = (
+            db.execute(
+                select(m.purchase_documents).where(
+                    store.scope(m.purchase_documents), m.purchase_documents.c.id == did
+                )
+            )
+            .mappings()
+            .first()
+        )
+        if not row:
+            raise KeyError(did)
+        return Response(
+            row["data"],
+            media_type=row["mime"],
+            headers={
+                "Content-Disposition": 'attachment; filename="original-invoice"',
+                "Cache-Control": "no-store",
+            },
+        )
+
+
+@router.post("/purchases/{pid}/receivings", status_code=201)
+def capture_receiving(pid: str, body: ReceivingDraft):
+    with store.connect("write") as db:
+        return purchasing.create_receiving(db, pid, body.model_dump(mode="json"))
+
+
+@router.patch("/receivings/{rid}")
+def edit_receiving(rid: str, body: ReceiptProposal):
+    with store.connect("write") as db:
+        r = purchasing.receiving(db, rid, True)
+        if r["version"] != body.version or r["status"] != "draft":
+            raise RuleError("Receiving is stale or already accepted.")
+        purchasing.get(db, r["purchase_id"])
+        from sqlalchemy import update
+
+        db.execute(
+            update(m.receiving_drafts)
+            .where(store.scope(m.receiving_drafts), m.receiving_drafts.c.id == rid)
+            .values(
+                version=body.version + 1,
+                payload=body.payload.model_dump(mode="json"),
+                purchase_version=body.payload.purchase_version,
+            )
+        )
+        store.audit_record(
+            db,
+            rid,
+            "Receiving draft revised",
+            body.version,
+            body.version + 1,
+            entity_type="receiving",
+        )
+        return {
+            **r,
+            "version": body.version + 1,
+            "payload": body.payload.model_dump(mode="json"),
+            "purchase_version": body.payload.purchase_version,
+        }
+
+
+class ExpectedDocument(StrictModel):
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    name: str = Field(min_length=1, max_length=120)
+    mime: str = Field(min_length=1, max_length=80)
+
+
+class OfflinePurchase(StrictModel):
+    draft: PurchaseDraft
+    document: ExpectedDocument | None = None
+
+
+class ConfirmedMovement(StrictModel):
+    movement: MovementInput
+    merchant_confirmed: bool
+
+
+def apply_sync(db, body):
+    """Same request transaction and idempotency receipt as the established outbox."""
+    import base64
+    import binascii
+    import hashlib
+    from datetime import datetime, timezone
+    from sqlalchemy import insert, update
+    from .sync import AttachmentPayload
+    from .app import validate_file
+
+    kind = body.operation_type
+    attachment_id = None
+    if kind == "purchase_create":
+        payload = OfflinePurchase.model_validate(body.payload)
+        if body.entity_id is not None or body.expected_version is not None:
+            raise RuleError("New purchase draft cannot overwrite a server entity.")
+        result = purchasing.create(
+            db,
+            payload.draft.model_dump(mode="json"),
+            "offline_manual",
+            provenance={
+                "source": "offline_manual",
+                "expected_document": payload.document.model_dump() if payload.document else None,
+                "review_required": True,
+            },
+        )
+        eid = result["id"]
+        version = result["version"]
+        family = "purchase"
+    elif kind == "purchase_receiving_capture":
+        payload = ReceivingDraft.model_validate(body.payload)
+        if body.entity_id is None or body.expected_version != payload.purchase_version:
+            raise RuleError("Receiving draft must bind the current accepted purchase version.")
+        result = purchasing.create_receiving(db, body.entity_id, payload.model_dump(mode="json"))
+        eid = result["id"]
+        version = result["version"]
+        family = "receiving_draft"
+    elif kind == "inventory_movement":
+        payload = ConfirmedMovement.model_validate(body.payload)
+        auth.current("approve")
+        if not payload.merchant_confirmed:
+            raise RuleError("Explicit merchant approval of this stock event is required.")
+        movement = payload.movement
+        if (
+            movement.product_id != body.entity_id
+            or movement.expected_stock_version != body.expected_version
+        ):
+            raise RuleError(
+                "Stock operation must match the exact SKU/version reviewed on the device."
+            )
+        a = actions.propose(
+            db,
+            "inventory_movement",
+            body.entity_id,
+            movement.model_dump(mode="json"),
+            body.expected_version,
+            str(body.operation_id),
+        )
+        a = actions.approve(db, a["id"], a["version"], a["payload_digest"])
+        a = actions.consume(db, a["id"], a["version"])
+        result = execute(db, a, str(body.operation_id))
+        eid = movement.product_id
+        version = result["product"]["stock_version"]
+        family = "inventory_event"
+    else:
+        payload = AttachmentPayload.model_validate(body.payload)
+        try:
+            data = base64.b64decode(payload.content_base64, validate=True)
+        except (ValueError, binascii.Error):
+            raise HTTPException(
+                422, "Incomplete attachment. Keep its original and retry."
+            ) from None
+        if len(data) > 4 * 1024 * 1024 or hashlib.sha256(data).hexdigest() != payload.sha256:
+            raise HTTPException(422, "Attachment size/checksum did not match.")
+        validate_file(data, payload.mime, proof=True)
+        if not body.entity_id or body.expected_version is None:
+            raise RuleError("Attachment must bind its source entity/version.")
+        if kind == "purchase_document_upload":
+            p = purchasing.get(db, body.entity_id, True)
+            if p["status"] != "draft" or p["version"] != body.expected_version:
+                raise RuleError(
+                    "Purchase changed or was accepted; original evidence has not been replaced."
+                )
+            did = store.uid()
+            attachment_id = did
+            db.execute(
+                insert(m.purchase_documents).values(
+                    id=did,
+                    store_id=auth.current().store_id,
+                    purchase_id=p["id"],
+                    name=payload.name,
+                    mime=payload.mime,
+                    data=data,
+                    sha256=payload.sha256,
+                    created_at=datetime.now(timezone.utc),
+                )
+            )
+            p["version"] += 1
+            db.execute(
+                update(m.purchases)
+                .where(store.scope(m.purchases), m.purchases.c.id == p["id"])
+                .values(version=p["version"])
+            )
+            purchasing.revision(
+                db,
+                p,
+                p["draft"],
+                {
+                    "source": "offline_document_upload",
+                    "document_id": did,
+                    "document_sha256": payload.sha256,
+                },
+            )
+            eid = p["id"]
+            version = p["version"]
+            family = "purchase_document"
+        elif kind == "proof_upload":
+            c = store.get(db, body.entity_id, True)
+            if c["version"] != body.expected_version or c["status"] not in (
+                "sent",
+                "promised",
+                "partial",
+            ):
+                raise RuleError(
+                    "Proof upload needs the current shared/unresolved claim. No recovery is inferred from an upload."
+                )
+            attachment_id = store.add_attachment(db, c["id"], payload.name, payload.mime, data)
+            eid = c["id"]
+            version = c["version"]
+            family = "proof_attachment"
+        else:
+            raise RuleError("Unsupported sync operation.")
+    store.audit_record(
+        db,
+        str(body.operation_id),
+        "Offline proposal accepted",
+        prior=body.expected_version,
+        new=version,
+        source_ids=[eid, str(body.operation_id)] + ([attachment_id] if attachment_id else []),
+        entity_type="sync_operation",
+        detail=kind,
+    )
+    return {
+        "operation_id": str(body.operation_id),
+        "entity_id": eid,
+        "entity_version": version,
+        "attachment_id": attachment_id,
+        "entity_family": family,
+        "accepted_at": datetime.now(timezone.utc).isoformat(),
+    }

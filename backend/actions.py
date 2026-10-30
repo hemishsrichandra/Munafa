@@ -17,7 +17,13 @@ def payload_digest(payload):
 
 def propose(db, action_type, entity_id, payload, expected_version, key):
     p = current("write")
-    if action_type not in ("approve_case", "export_ledger"):
+    if action_type not in (
+        "approve_case",
+        "export_ledger",
+        "accept_purchase",
+        "accept_receiving",
+        "inventory_movement",
+    ):
         raise RuleError("Unsupported action type.")
     if action_type == "approve_case":
         c = store.get(db, entity_id)
@@ -28,8 +34,12 @@ def propose(db, action_type, entity_id, payload, expected_version, key):
             "delivery_complete": c["delivery_complete"],
             "pricing_confirmed": c["pricing_confirmed"],
         }
-    else:
+    elif action_type == "export_ledger":
         payload = export_payload(db)
+    else:
+        from .commerce_api import action_payload
+
+        payload = action_payload(db, action_type, entity_id, expected_version, payload)
     aid = store.uid()
     db.execute(
         insert(m.actions).values(
@@ -122,7 +132,7 @@ def revise(db, aid, version, payload):
 
 def consume(db, aid, version):
     a = get(db, aid, True)
-    current("approve" if a["action_type"] == "approve_case" else "export")
+    current("export" if a["action_type"] == "export_ledger" else "approve")
     if (
         a["version"] != version
         or a["status"] != "approved"
