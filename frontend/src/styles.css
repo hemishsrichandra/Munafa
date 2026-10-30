@@ -4329,3 +4329,267 @@ textarea:focus-visible,
 .field [aria-invalid='true'] {
   border-color: #b54732;
 }
+
+/* Purchases and stock share the ledger's card, form and action language. */
+.commerce-workspace {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+.commerce-workspace .page-heading {
+  margin-bottom: 0;
+}
+.commerce-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.commerce-summary > div {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 22px 24px;
+  display: grid;
+  gap: 12px;
+}
+.commerce-summary > div > span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 500;
+}
+.commerce-summary strong {
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -1px;
+}
+.commerce-summary small {
+  color: #626e62;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.commerce-workspace .commerce-tabs {
+  margin: 0;
+  padding: 5px;
+  gap: 4px;
+  background: #edf0e8;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  width: fit-content;
+}
+.commerce-workspace .commerce-tabs button {
+  border-radius: 8px;
+  min-height: 44px;
+  padding: 10px 24px;
+  text-transform: capitalize;
+  color: #536254;
+}
+.commerce-workspace .commerce-tabs button.chosen {
+  background: white;
+  color: var(--green);
+  box-shadow: 0 1px 4px #26352c12;
+  font-weight: 600;
+}
+.commerce-workspace fieldset > .panel,
+.commerce-workspace fieldset > form.panel {
+  padding: 26px;
+}
+.commerce-workspace .panel {
+  border-radius: 16px;
+}
+.commerce-workspace h2 {
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0 0 20px;
+  letter-spacing: -0.4px;
+}
+.commerce-workspace h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+.commerce-workspace .panel .panel {
+  background: #fafbf7;
+  border: 1px solid var(--line);
+  padding: 22px;
+  margin: 20px 0;
+}
+.commerce-workspace form > .field {
+  margin-block: 14px;
+}
+.commerce-workspace .form-grid {
+  gap: 18px;
+  margin-block: 18px;
+}
+.commerce-workspace button:not([class]),
+.commerce-workspace form > button:not(.primary):not(.text-button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  min-height: 44px;
+  border: 1px solid #d8e0d0;
+  border-radius: 9px;
+  background: white;
+  color: var(--green);
+  font-weight: 500;
+  margin: 6px 8px 6px 0;
+}
+.commerce-workspace form > button.primary {
+  margin: 12px 10px 12px 0;
+}
+.commerce-workspace button:not(:disabled):hover {
+  filter: brightness(0.98);
+}
+.commerce-workspace .commerce-purchase-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 20px 0;
+  text-align: left;
+}
+.commerce-row-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #eef3e8;
+  color: var(--green);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.commerce-row-copy {
+  display: grid;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+}
+.commerce-row-copy strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.commerce-row-copy small,
+.commerce-stock-title small {
+  display: block;
+  color: #657165;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.commerce-row-total {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+.commerce-status {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 9px;
+  background: #f4eddb;
+  color: #745b26;
+  border-radius: 20px;
+}
+.commerce-status.accepted {
+  background: #eaf2e1;
+  color: #33592c;
+}
+.commerce-workspace .commerce-stock-card {
+  background: white !important;
+}
+.commerce-stock-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.commerce-stock-title strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 17px;
+}
+.commerce-stock-balance {
+  padding: 14px 0;
+  color: var(--green);
+  border-bottom: 1px solid var(--line);
+}
+.commerce-empty {
+  padding: 44px 20px;
+  text-align: center;
+  background: #fafbf7;
+  border: 1px dashed #d8e0d0;
+  border-radius: 12px;
+  color: #657165;
+  line-height: 1.7;
+}
+.commerce-workspace [role='status'] {
+  padding: 14px 18px;
+  background: #eef3e8;
+  border-radius: 10px;
+  color: var(--green);
+}
+.commerce-workspace p,
+.commerce-workspace small,
+.commerce-row-copy strong {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .commerce-workspace {
+    gap: 16px;
+  }
+  .commerce-summary {
+    gap: 8px;
+  }
+  .commerce-summary > div {
+    padding: 14px 10px;
+    border-radius: 12px;
+    gap: 9px;
+  }
+  .commerce-summary > div > span {
+    font-size: 11px;
+    gap: 5px;
+    align-items: flex-start;
+  }
+  .commerce-summary svg {
+    display: none;
+  }
+  .commerce-summary strong {
+    font-size: 25px;
+  }
+  .commerce-summary small {
+    font-size: 10px;
+  }
+  .commerce-workspace .commerce-tabs {
+    width: 100%;
+  }
+  .commerce-workspace .commerce-tabs button {
+    flex: 1;
+    padding: 10px 8px;
+  }
+  .commerce-workspace fieldset > .panel,
+  .commerce-workspace fieldset > form.panel {
+    padding: 18px;
+  }
+  .commerce-workspace .panel .panel {
+    padding: 16px;
+  }
+  .commerce-workspace h2 {
+    font-size: 18px;
+    line-height: 1.4;
+  }
+  .commerce-workspace .commerce-purchase-row {
+    gap: 10px;
+  }
+  .commerce-purchase-row > .commerce-row-icon {
+    display: none;
+  }
+  .commerce-row-copy strong {
+    font-size: 14px;
+  }
+  .commerce-row-total strong {
+    font-size: 14px;
+  }
+}

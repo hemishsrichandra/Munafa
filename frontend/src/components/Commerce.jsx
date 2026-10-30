@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Plus, FileText, Package, CalendarClock, ChevronRight } from 'lucide-react';
 import { api, money, today, downloadPrivate, proposeCommerceAction } from '../api';
 import { MoneyInput } from './MoneyInput';
 import { useOffline } from '../offline/provider';
@@ -367,6 +368,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
     <section className="commerce-workspace">
       <div className="page-heading">
         <div>
+          <span className="eyebrow">YOUR SUPPLY DESK</span>
           <h1>Purchases & stock</h1>
           <p>Review the bill first. Count the physical delivery separately.</p>
         </div>
@@ -384,12 +386,42 @@ export function Commerce({ openCase, initialRoute = '' }) {
             setReceiving(null);
           }}
         >
-          New purchase
+          <Plus size={17} aria-hidden="true" /> New purchase
         </button>
       </div>
-      <div className="tabs">
+      <div className="commerce-summary" aria-label="Purchase and stock summary">
+        <div>
+          <span>
+            <FileText size={17} /> Purchase register
+          </span>
+          <strong>{purchases.length}</strong>
+          <small>
+            {purchases.filter((p) => p.status === 'draft').length} awaiting confirmation
+          </small>
+        </div>
+        <div>
+          <span>
+            <Package size={17} /> Products tracked
+          </span>
+          <strong>{products.length}</strong>
+          <small>{products.filter((p) => p.below_threshold).length} below reorder level</small>
+        </div>
+        <div>
+          <span>
+            <CalendarClock size={17} /> Expiry watch
+          </span>
+          <strong>{expiry.length}</strong>
+          <small>Expired or due within 30 days</small>
+        </div>
+      </div>
+      <div className="tabs commerce-tabs">
         {['purchases', 'stock', 'expiry'].map((t) => (
-          <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)}>
+          <button
+            className={tab === t ? 'chosen' : ''}
+            key={t}
+            aria-pressed={tab === t}
+            onClick={() => setTab(t)}
+          >
             {t}
           </button>
         ))}
@@ -406,13 +438,33 @@ export function Commerce({ openCase, initialRoute = '' }) {
             {!draft && !selected && (
               <div className="panel">
                 <h2>Purchase register</h2>
-                {!purchases.length && <p>No purchases yet. Add a bill to begin.</p>}
+                {!purchases.length && (
+                  <p className="commerce-empty">No purchases yet. Add a bill to begin.</p>
+                )}
                 {purchases.map((p) => (
-                  <button className="supplier-case" key={p.id} onClick={() => run(() => choose(p))}>
-                    {p.synthetic ? 'DEMO · ' : ''}
-                    {p.draft.supplier || 'Supplier needs review'} ·{' '}
-                    {p.draft.reference || 'No reference'} · {p.draft.date} · {p.status} ·{' '}
-                    {money(p.accepted_total_paise ?? p.draft.total_paise)}
+                  <button
+                    className="supplier-case commerce-purchase-row"
+                    key={p.id}
+                    onClick={() => run(() => choose(p))}
+                  >
+                    <span className="commerce-row-icon">
+                      <FileText size={19} aria-hidden="true" />
+                    </span>
+                    <span className="commerce-row-copy">
+                      <strong>{p.draft.supplier || 'Supplier needs review'}</strong>
+                      <small>
+                        {p.draft.reference || 'No reference'} ·{' '}
+                        {p.draft.date || 'Date needs review'}
+                        {p.synthetic ? ' · Demo' : ''}
+                      </small>
+                    </span>
+                    <span className="commerce-row-total">
+                      <strong>{money(p.accepted_total_paise ?? p.draft.total_paise)}</strong>
+                      <span className={`commerce-status ${p.status}`}>
+                        {p.status === 'accepted' ? 'Confirmed' : 'Draft'}
+                      </span>
+                    </span>
+                    <ChevronRight size={17} aria-hidden="true" />
                   </button>
                 ))}
               </div>
@@ -904,9 +956,19 @@ export function Commerce({ openCase, initialRoute = '' }) {
               New SKU
             </button>
             {products.map((p) => (
-              <div className="panel" key={p.id}>
-                <strong>{p.name}</strong>
-                <p>
+              <div className="panel commerce-stock-card" key={p.id}>
+                <div className="commerce-stock-title">
+                  <span className="commerce-row-icon">
+                    <Package size={20} aria-hidden="true" />
+                  </span>
+                  <div>
+                    <strong>{p.name}</strong>
+                    <small>
+                      {p.code} · {p.unit}
+                    </small>
+                  </div>
+                </div>
+                <p className="commerce-stock-balance">
                   {p.stock_quantity} {p.unit} · {p.stock_state}{' '}
                   {p.below_threshold ? '· REORDER' : ''}
                 </p>
@@ -938,7 +1000,9 @@ export function Commerce({ openCase, initialRoute = '' }) {
                 </button>
               </div>
             ))}
-            {!products.length && <p>Create a SKU before accepting invoice lines.</p>}
+            {!products.length && (
+              <p className="commerce-empty">Create a SKU before accepting invoice lines.</p>
+            )}
             {sku && (
               <form
                 onSubmit={(e) => {
@@ -1097,7 +1161,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
         {tab === 'expiry' && (
           <div className="panel">
             <h2>Expired & expiring within 30 days</h2>
-            {!expiry.length && <p>No recorded lots in this window.</p>}
+            {!expiry.length && <p className="commerce-empty">No recorded lots in this window.</p>}
             {expiry.map((l) => (
               <p key={l.id}>
                 {l.product_name} · {l.quantity} {l.unit} · {l.expiry_date} ·{' '}
