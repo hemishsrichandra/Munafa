@@ -46,3 +46,7 @@ For the next chat read **[HANDOFF.md](HANDOFF.md)** first, then [Batch 4](BATCH-
 ## 30 October 2026 — Batches 6 and 7
 
 Pulled Batch 5 completion `cba2166`. Batch 6 checkpoint `9408088` adds deterministic component reconciliation, isolated synthetic payment observations and source-linked daily brief. Batch 7 adds strict bounded extraction, persistent invalid-output budget, reviewed language/voice drafts, scoped cited help, synthetic corpus/evaluator and data-handling notes. Full verification: 101 backend + 18 browser + 14 IndexedDB tests; production/PWA and Android debug build/lint pass. Live Paytm, measured provider comparisons and real language/device/merchant studies remain explicit gates. See HANDOFF.md for cross-system setup, preserved invariants and remaining work. Batch 8 was not implemented.
+
+## 30 October 2026 — Batch 9 prerequisite gates
+
+Inspected actual source after Batches 6–7. Required P1 data quality, verified supplier offers/order lifecycle, complete financial ledgers/lender process and approved cohort controls are absent. Implemented a typed, store-scoped P2 readiness workspace and fail-closed flags/execution guards with audit/idempotency, not simulated business results. Three business capabilities remain disabled/blocked. No Batch 8 backfill, data migration or new dependency. See BATCH-9.md and HANDOFF.md for evidence, risk register, gate-test limits and prerequisites.

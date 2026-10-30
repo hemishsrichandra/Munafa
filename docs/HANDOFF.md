@@ -1,13 +1,27 @@
-# Cross-system handoff — Batches 6 and 7
+# Cross-system handoff — Batch 9 prerequisite gates
 
-Updated **30 October 2026 (Asia/Kolkata)**. Read this, BATCH-6.md, BATCH-7.md, PAYTM-INTEGRATION.md, AI-EVALUATION.md and AI-DATA-HANDLING.md before continuing. Inspect actual source/tests and Git status; historical guides are descriptions, not proof.
+Updated **30 October 2026 (Asia/Kolkata)**. Read this, BATCH-9.md, BATCH-6.md, BATCH-7.md, PAYTM-INTEGRATION.md, AI-EVALUATION.md and AI-DATA-HANDLING.md before continuing. Inspect actual source/tests and Git status; historical guides are descriptions, not proof.
+
+## Current Batch 9 checkpoint
+
+The owner authorised Batch 9 after Batches 6–7. Actual P2 procurement, financial/lender planning and benchmarking prerequisites are absent/unproven, so **all three business capabilities remain disabled/blocked**. Implemented readiness/evidence reporting, typed inspection, fail-closed feature flags, rejection of external execution, minimal audited/idempotent checks and phone UI. No PO, offer comparison, cashflow/credit decision, lender checklist/application or peer statistic is generated. No Batch 8/P1 backfill was performed.
+
+New files: `backend/planning.py`, `backend/tests/test_planning.py`, `frontend/src/components/Planning.jsx`, `docs/BATCH-9.md`. Existing app/router/navigation, `.env.example` and docs were extended. **No migration or new dependency**; head remains `c6ec82a178d3`. Use More → Planning readiness, or the desktop sidebar. `ENABLE_P2_PROCUREMENT`, `ENABLE_P2_FINANCIAL_PLANNING`, `ENABLE_P2_BENCHMARKING` default to `0`; `1` only requests activation and cannot lift missing gates. Their actual blockers and the risk register are in BATCH-9.md.
+
+APIs: `GET /api/planning/readiness`, `POST /api/planning/assess` (inspection only; financial checks require owner/admin), and `POST /api/planning/{capability}/execute` (always rejected). Inspection checks store-owned source IDs, expected SKU/stock versions, units, unconfirmed need and declared offer-date plausibility/expiry. An attachment/date/consent/cohort-size supplied by a client grants no verification or authority. All peer results are suppressed with no cross-store query. Own recorded movement history is linked, not reinterpreted as a growth comparison.
+
+Final Batch 9 verification: **126 backend tests**, **19 browser journeys** (2 commerce + 3 partner/readiness + 14 legacy/offline/PWA), **14 IndexedDB tests**, lint/format/build, Alembic drift and shared Android debug build/lint. The 25 new backend cases test gates, not actual order lifecycle, verified lending consent or privacy-approved cohorts. Gate-only duplicate inspection/replay is not a working purchase-order idempotency claim. Screenshots: ignored `artifacts/test-evidence/batch9-readiness-phone.png` (visually inspected, 320–430px viewport checks). Android final size/checksum is in BATCH-9.md; this supersedes the local artifact from the historical Batch 7 report. No real device/provider/supplier/lender/cohort acceptance is claimed.
+
+Run builds **before** backend collection/API startup; do not rebuild frontend/dist concurrently with importing backend.app. An initial parallel verification attempt raced Vite's replacement of dist/assets and failed collection; the completed sequential backend rerun is the result counted here. No test was weakened or deleted. Do not run two full frontend builds against one dist concurrently.
+
+Before proceeding: explicit owner approval for the relevant missing P1 foundations/source evaluation, current permissioned supplier offers and PO lifecycle, complete authorised financial/consent/lender process or privacy-reviewed cohort methodology. Do not enable P2 results just by changing a flag, and do not infer that all of Batch 8 is now authorised. The owner's standing instruction remains: commit/push and update this handoff before exit so another system can continue.
 
 ## Git / authorization / scope
 
 - Repository: `https://github.com/hemishsrichandra/Munafa.git`; current macOS checkout `/Users/hemish/Sem-3/Munafa`, branch `main`.
 - Pulled GitHub Batch 5 completion **cba2166** by fast-forward, preserving the local whitespace-only report edit in a stash. The report was later normalized for formatting; no substantive owner content was removed. The local stash remains as a backup, not application state.
 - Batch 6 checkpoint: **9408088** (`Implement Batch 6: deterministic reconciliation and evidence-linked daily brief`). Batch 7 follows it; `git log -2 --oneline` identifies the final published revision.
-- Owner explicitly requested pulling, completing Batches 6 **and** 7 sequentially, a cross-system handoff and committing/pushing before exit. The pasted Batch 8 specification was treated as future context because the request named Batches 6–7. **Do not implement Batch 8 without explicit approval.**
+- Owner previously requested pulling, completing Batches 6 **and** 7 sequentially, a cross-system handoff and committing/pushing before exit; the subsequent Batch 9 request authorises the gate work described above. The pasted Batch 8 specification was treated as future context because the request named Batches 6–7. **Do not implement Batch 8 without explicit approval.**
 - Preserve PostgreSQL-only persistence, existing six-stage supplier invariants, approvals/idempotency, scoped sessions and IndexedDB conflict handling. No SQLite import/reset, destructive migration, demo reset, real-document upload, automatic messaging or external live provider call was performed.
 
 ## Current implementation / boundaries
@@ -52,11 +66,12 @@ The browser UI is `http://127.0.0.1:5173`; API/built PWA `http://127.0.0.1:8000`
 - Private backup `artifacts/private/pre-batch6-postgres.dump`, mode 0600; archive list checked, **restore not tested**. SHA-256 `bc0ea9013ee2b7d1b161671cde5ea2216d96a45f502dc119c35e593b6ca73b53`. It is excluded from Git. Existing Batches 2–5 backups/legacy data remain untouched.
 - Current migrations were additive and applied to the development schema. Never downgrade populated tables/import old databases without verified backup and explicit owner approval.
 
-## Verified checks / exact commands
+## Historical Batches 6–7 checks / shared commands
 
-Final backend suite **101 passed** (one existing Starlette/HTTPX deprecation warning); all browser groups **18 passed** (2 commerce + 2 partner + 14 legacy/offline/PWA); IndexedDB **14 passed**. Full backend suite includes empty-schema migration down/up, exact paise/decimal rules, source/stock/recovery regressions, tenant/mode/role isolation, duplicate/out-of-order components, approval/idempotency, invalid AI attempts, timeouts/429, cited/stale/contradictory help, draft permissions and no financial/inventory AI authority.
+Batches 6–7 baseline backend suite **101 passed** (one existing Starlette/HTTPX deprecation warning); all browser groups **18 passed** (2 commerce + 2 partner + 14 legacy/offline/PWA); IndexedDB **14 passed**. Full backend suite includes empty-schema migration down/up, exact paise/decimal rules, source/stock/recovery regressions, tenant/mode/role isolation, duplicate/out-of-order components, approval/idempotency, invalid AI attempts, timeouts/429, cited/stale/contradictory help, draft permissions and no financial/inventory AI authority.
 
 ```sh
+npm run build
 npm test
 npm run test:offline
 npm run test:e2e
@@ -87,7 +102,7 @@ JAVA_HOME=/private/tmp/munafa-jdk21/jdk-21.0.13+9/Contents/Home ANDROID_HOME=/pr
 
 Tool paths are temporary and may disappear: Java 21.0.13+9, Gradle 8.11.1, SDK 35. Install permanent tools on another system. Owner previously authorised Google SDK licence acceptance. No additional microphone/location/contact permission is introduced. Native voice is unavailable; use text/touch.
 
-Current APK location `artifacts/munafa-debug.apk` (ignored) and `android/app/build/outputs/apk/debug/app-debug.apk`; final size/checksum is recorded in BATCH-7.md after verification. There is **no hosted HTTPS API configured**. For connected APK testing provide an approved public `VITE_API_BASE=https://HOST/api` and backend exact `APP_ORIGINS=https://localhost`; never put credentials in VITE variables. Without it the bundled shell opens but connected sign-in/AI cannot work.
+Current APK location `artifacts/munafa-debug.apk` (ignored) and `android/app/build/outputs/apk/debug/app-debug.apk`; final current size/checksum is recorded in BATCH-9.md after verification. There is **no hosted HTTPS API configured**. For connected APK testing provide an approved public `VITE_API_BASE=https://HOST/api` and backend exact `APP_ORIGINS=https://localhost`; never put credentials in VITE variables. Without it the bundled shell opens but connected sign-in/AI cannot work.
 
 ## Remaining acceptance / next phase dependencies
 
@@ -101,4 +116,4 @@ Current APK location `artifacts/munafa-debug.apk` (ignored) and `android/app/bui
 
 Suggested continuation prompt:
 
-> Pull origin/main, read docs/HANDOFF.md, BATCH-6.md, BATCH-7.md and inspect actual source/tests/Git status. Batches 6–7 prototype code is implemented; live Paytm, empirical provider comparisons, language/device trials and production acceptance remain gated. Preserve all supplier, paise/decimal, audit, approval, tenant and offline invariants. Do not import/reset data. I now authorise [specific next batch or acceptance work]; list files/schema/dependencies/risks/tests before editing. Commit/push and update this handoff before exit.
+> Pull origin/main, read docs/HANDOFF.md and BATCH-9.md plus the prior batch docs, then inspect actual source/tests/Git status. Batch 9 delivers readiness reporting and fail-closed gates only; actual P2 features remain blocked by unproven P1 source quality and missing supplier/lender/cohort foundations. Batch 8 has not been implemented. Preserve all supplier, paise/decimal, audit, approval, tenant and offline invariants. No reset/import or future batch is authorised implicitly. I now authorise [specific next prerequisite batch or evaluation work]; list files/schema/dependencies/risks/tests before editing. Build before running backend imports rather than rebuilding dist concurrently. Commit/push and update this handoff before exit.

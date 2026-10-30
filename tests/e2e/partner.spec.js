@@ -205,3 +205,69 @@ test('cited help, unsupported answers, reviewed translation and microphone denia
   await page.getByRole('button', { name: 'Review source record', exact: true }).click();
   await expect(page.getByRole('heading', { name: /Help Rice · movement history/ })).toBeVisible();
 });
+
+test('P2 readiness stays blocked and links only recorded store history on phones', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await login(page);
+  await request(page, '/products', { code: 'P2-READINESS', name: 'Readiness Rice', unit: 'kg' });
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'Planning readiness', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Planning readiness', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('Disabled · prerequisites unproven', { exact: true })).toHaveCount(3);
+  await page
+    .getByLabel('Recorded SKU to inspect', { exact: true })
+    .selectOption({ label: 'Readiness Rice (kg)' });
+  await page
+    .getByRole('button', { name: 'Inspect procurement prerequisites', exact: true })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'Readiness check only', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('No proposal created · No external action performed · Consent not verified', {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByLabel('Readiness purpose', { exact: true }).selectOption('lender_checklist');
+  await page.getByRole('button', { name: 'Inspect financial prerequisites', exact: true }).click();
+  await expect(
+    page.getByText(
+      'No lender-authorised, purpose-bound consent can be verified. This check does not register consent or submit data.',
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await page.getByLabel('Comparison readiness', { exact: true }).selectOption('peer_comparison');
+  await page
+    .getByRole('button', { name: 'Inspect benchmarking prerequisites', exact: true })
+    .click();
+  await expect(page.getByText(/All peer results are suppressed/)).toBeVisible();
+  for (const width of [320, 360, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  }
+  await page.screenshot({
+    path: 'artifacts/test-evidence/batch9-readiness-phone.png',
+    fullPage: true,
+  });
+  await page
+    .getByRole('button', { name: 'Review Readiness Rice movement history', exact: true })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: /Readiness Rice · movement history/ }),
+  ).toBeVisible();
+  // New readiness requests fail visibly; they are not silently queued as orders.
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'Planning readiness', exact: true }).click();
+  await expect(page.getByText('Disabled · prerequisites unproven', { exact: true })).toHaveCount(3);
+  await page.route('**/api/planning/readiness', (route) =>
+    route.fulfill({ status: 503, json: { detail: 'Readiness service temporarily unavailable.' } }),
+  );
+  await page.getByRole('button', { name: 'Refresh readiness', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Readiness service temporarily unavailable.');
+});

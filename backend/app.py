@@ -16,6 +16,7 @@ from .commerce_api import router as commerce_router
 from .payments import router as payments_router
 from .brief import router as brief_router
 from .ai_api import router as ai_router
+from .planning import router as planning_router
 from .db import engine
 from .security import guard, origins
 from sqlalchemy import text
@@ -722,6 +723,7 @@ app.include_router(commerce_router)
 app.include_router(payments_router)
 app.include_router(brief_router)
 app.include_router(ai_router)
+app.include_router(planning_router)
 
 DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if DIST.exists():

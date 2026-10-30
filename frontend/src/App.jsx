@@ -33,6 +33,7 @@ import { InvoiceModal } from './components/InvoiceIntake';
 import CaseDetail from './components/CaseDetail';
 import { Suppliers, Insights } from './components/LedgerViews';
 import { Commerce } from './components/Commerce';
+import { Planning } from './components/Planning';
 import { Assistant, CachedHelp } from './components/Assistant';
 import { BusinessBrief, Payments } from './components/BusinessBrief';
 
@@ -42,6 +43,7 @@ const navs = [
   { id: 'cases', label: 'Credit cases', Icon: ReceiptText },
   { id: 'suppliers', label: 'Suppliers', Icon: Store },
   { id: 'insights', label: 'Insights', Icon: ChartNoAxesCombined },
+  { id: 'planning', label: 'Planning readiness', Icon: ShieldCheck },
 ];
 
 function App() {
@@ -229,6 +231,7 @@ function App() {
                   {
                     assistant: 'Merchant help',
                     payments: 'Payments & reconciliation',
+                    planning: 'Planning readiness',
                     more: 'More',
                   }[view]}
             </strong>
@@ -288,7 +291,9 @@ function App() {
                   <button onClick={load}>Retry</button>
                 </div>
               )}
-              {view === 'assistant' ? (
+              {view === 'planning' ? (
+                <Planning follow={followSource} />
+              ) : view === 'assistant' ? (
                 <Assistant follow={followSource} />
               ) : view === 'payments' ? (
                 <Payments
@@ -490,6 +495,9 @@ function App() {
               {view === 'more' && (
                 <section className="panel more-panel">
                   <h2>More from your workspace</h2>
+                  <button className="button secondary full" onClick={() => navigate('planning')}>
+                    Planning readiness
+                  </button>
                   <button className="button secondary full" onClick={() => navigate('assistant')}>
                     Merchant help & language
                   </button>
@@ -563,7 +571,8 @@ function App() {
             key={id}
             aria-current={
               view === id ||
-              (id === 'more' && ['suppliers', 'insights', 'assistant', 'payments'].includes(view))
+              (id === 'more' &&
+                ['suppliers', 'insights', 'assistant', 'payments', 'planning'].includes(view))
                 ? 'page'
                 : undefined
             }

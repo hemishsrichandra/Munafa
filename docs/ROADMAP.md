@@ -33,3 +33,7 @@ Before any real pilot: review deployment access, DB privileges/backups, retentio
 ### Current checkpoint — 30 October 2026
 
 Batches 6–7 prototype implementation is delivered after the pulled Batch 5 completion. Deterministic fixture-backed payment reconciliation, evidence-linked brief and curated-source help work without cloud keys. Extraction/translation remain optional reviewed proposals; speech is disabled by default pending validation. Empirical provider/merchant/device acceptance and live Paytm integration are external gates, not completed benchmarks. Read HANDOFF.md before the next batch; Batch 8 requires explicit authorisation and truthful prerequisite checks.
+
+### Batch 9 prerequisite status
+
+P2 readiness reporting and safety gates are implemented; actual procurement, financial/lender planning and benchmarking remain blocked. Relevant P1 foundations and quality are unproven, and turning on feature flags cannot change that. Own SKU history links are the safe alternative to unavailable peer comparisons. Batch 8 remains unimplemented; no next implementation should begin without specific authorisation and the prerequisites in BATCH-9.md.
