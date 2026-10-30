@@ -9,6 +9,12 @@ export function Preparation() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [downloadUrl, setDownloadUrl] = useState('');
+  async function downloadPack(url) {
+    await downloadPrivate(url, 'unreviewed-preparation.json');
+    setDownloadUrl('');
+    setMessage('Preparation pack downloaded. It remains unreviewed; nothing was submitted.');
+  }
   async function run(work) {
     setBusy(true);
     setError('');
@@ -76,6 +82,15 @@ export function Preparation() {
         </p>
       )}
       {message && <p role="status">{message}</p>}
+      {downloadUrl && (
+        <button
+          className="button secondary"
+          disabled={busy}
+          onClick={() => run(() => downloadPack(downloadUrl))}
+        >
+          Retry approved download
+        </button>
+      )}
       {pack && (
         <>
           <p>
@@ -125,6 +140,12 @@ export function Preparation() {
       {proposal && (
         <div className="panel">
           <h3>Review exact export</h3>
+          <details>
+            <summary className="button secondary">View full export contents</summary>
+            <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+              {JSON.stringify(proposal.payload, null, 2)}
+            </pre>
+          </details>
           <p>
             Recipient: your device only. Purpose: bookkeeping preparation.{' '}
             {proposal.payload.records.length} accepted source records;{' '}
@@ -147,14 +168,9 @@ export function Preparation() {
                   method: 'POST',
                   body: { version: approved.version },
                 });
-                await downloadPrivate(
-                  result.download_url.replace('/api', ''),
-                  'unreviewed-preparation.json',
-                );
                 setProposal(null);
-                setMessage(
-                  'Preparation pack downloaded. It remains unreviewed; nothing was submitted.',
-                );
+                setDownloadUrl(result.download_url);
+                await downloadPack(result.download_url);
               })
             }
           >

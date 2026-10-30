@@ -51,6 +51,7 @@ try:
         "offline-owner",
         "commerce-owner",
         "partner-owner",
+        "extension-owner",
         "release-owner",
         "release-performance",
         "commerce-offline",

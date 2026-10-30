@@ -1,4 +1,8 @@
-# Cross-system handoff — Batch 10 demo candidate
+# Cross-system handoff — current extension work
+
+**Read [EXTENSION-HANDOFF.md](EXTENSION-HANDOFF.md) first for the latest state**, then [POST-PLAYBOOK-STATUS.md](POST-PLAYBOOK-STATUS.md) for all 47 extension acceptance gates. The historical Batch 10 snapshot below remains useful for local setup and earlier release evidence; its counts/APK hash are superseded by the extension report.
+
+## Historical Batch 10 demo candidate
 
 Updated **30 October 2026, Asia/Kolkata**. Start with BATCH-10.md and DEMO.md, then inspect actual source/tests and Git status. Historical batch guides are descriptions, not proof of current implementation.
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 import { Preparation } from './Preparation';
+import { Intelligence } from './Intelligence';
 
 export function Integrations() {
   const [data, setData] = useState(null);
@@ -29,7 +30,7 @@ export function Integrations() {
     };
   }, []);
   return (
-    <section className="panel">
+    <section className="panel partner-screen">
       <h2>Connections & readiness</h2>
       <p>No live provider is connected. Public documentation does not establish account access.</p>
       {!online && (
@@ -56,11 +57,14 @@ export function Integrations() {
                 <strong>{c.status}</strong>
               </p>
               <p>Not connected · No successful sync · No external execution</p>
-              <ul>
-                {c.missing.map((reason) => (
-                  <li key={reason}>{reason}</li>
-                ))}
-              </ul>
+              <details>
+                <summary className="button secondary">Setup requirements for {c.label}</summary>
+                <ul>
+                  {c.missing.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              </details>
             </article>
           ))}
           {data.available_paths.map((p) => (
@@ -71,6 +75,7 @@ export function Integrations() {
         </>
       )}
       <Preparation />
+      <Intelligence />
     </section>
   );
 }

@@ -28,7 +28,7 @@ jobs:
       - run: .venv/bin/pip install -r backend/requirements-dev.txt
       - run: npm ci
       - run: .venv/bin/python -m pytest backend/tests -q
-      - run: .venv/bin/ruff check backend scripts/serve_e2e.py scripts/build_eval_corpus.py scripts/evaluate_ai.py scripts/audit_release.py
+      - run: .venv/bin/ruff check backend scripts/serve_e2e.py scripts/build_eval_corpus.py scripts/evaluate_ai.py scripts/audit_release.py scripts/analyse_pilot.py scripts/evaluate_forecast.py
       - run: npm run format:check
       - run: npm run test:offline
       - run: npx playwright install --with-deps chromium

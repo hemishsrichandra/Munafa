@@ -241,6 +241,7 @@ function App() {
                     assistant: 'Merchant help',
                     payments: 'Payments & reconciliation',
                     planning: 'Planning readiness',
+                    connections: 'Connections & readiness',
                     more: 'More',
                   }[view]}
             </strong>
