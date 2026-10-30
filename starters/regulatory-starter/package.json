@@ -1,0 +1,20 @@
+{
+  "name": "regulatory-workspace-starter",
+  "private": true,
+  "version": "0.0.1",
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently -k \"node scripts/python.cjs -m uvicorn backend.app:app --host 127.0.0.1 --port 8010 --reload\" \"npm run dev --workspace frontend\"",
+    "build": "npm run build --workspace frontend && node scripts/build-pwa.cjs",
+    "start": "node scripts/python.cjs -m uvicorn backend.app:app --host 127.0.0.1 --port 8010",
+    "test": "node scripts/python.cjs -m pytest backend/tests -q",
+    "test:e2e": "npm run build && playwright test"
+  },
+  "devDependencies": {
+    "concurrently": "9.1.2",
+    "prettier": "3.6.2",
+    "@playwright/test": "1.56.1"
+  }
+}

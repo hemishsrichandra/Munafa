@@ -1,0 +1,164 @@
+:root {
+  font-family:
+    'DM Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: #26352c;
+  background: #f7f8f4;
+  font-synthesis: none;
+  font-weight: 400;
+  font-size: 14px;
+  --green: #2b5138;
+  --lime: #d4eab7;
+  --muted: #7b847c;
+  --line: #e8ebe3;
+  --bg: #f7f8f4;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button {
+  color: inherit;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #96b97e;
+  outline-offset: 3px;
+}
+button {
+  border: 0;
+  background: none;
+}
+input,
+select,
+textarea {
+  border: 1px solid #dce1d6;
+  border-radius: 7px;
+  background: #fff;
+  color: #26352c;
+  padding: 11px 12px;
+  width: 100%;
+  min-width: 0;
+}
+textarea {
+  resize: vertical;
+}
+
+:root {
+  --muted: #536451;
+}
+button {
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 10px 16px;
+  background: #edf3e7;
+}
+button.primary {
+  background: var(--green);
+  color: white;
+}
+main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 20px 110px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+section {
+  background: white;
+  border: 1px solid var(--line);
+  padding: 24px;
+  border-radius: 14px;
+  margin: 20px 0;
+}
+label {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+}
+p {
+  line-height: 1.6;
+}
+small {
+  color: var(--muted);
+}
+nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+nav button[aria-current] {
+  background: var(--green);
+  color: white;
+}
+.error {
+  color: #9b3225;
+  background: #fff2ec;
+  padding: 12px;
+  border-radius: 8px;
+}
+.notice {
+  padding: 12px;
+  border-left: 3px solid var(--green);
+}
+@media (max-width: 600px) {
+  main {
+    padding: 18px 16px 100px;
+  }
+  section {
+    padding: 18px;
+  }
+  h1 {
+    font-size: 26px;
+  }
+  nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}

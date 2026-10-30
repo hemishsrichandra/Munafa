@@ -1,0 +1,18 @@
+{
+  "id": "/regpulse",
+  "name": "Regulatory Workspace",
+  "short_name": "RegPulse",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#264e36",
+  "background_color": "#f7f8f4",
+  "icons": [
+    {
+      "src": "/mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+# Extracted helper; requires a tenant-scoped audit_events model and verified principal. NOT wired.
+def audit_record(
+    db,
+    entity_id,
+    action,
+    prior=None,
+    new=None,
+    source_ids=None,
+    snapshot=None,
+    detail="",
+    entity_type="case",
+    at=None,
+):
+    p = current()
+    db.execute(
+        insert(m.audit_events).values(
+            id=uid(),
+            store_id=p.store_id,
+            actor_id=p.user_id,
+            entity_id=entity_id,
+            entity_type=entity_type,
+            action=action,
+            prior_version=prior,
+            new_version=new,
+            source_ids=source_ids or [entity_id],
+            snapshot=snapshot,
+            detail=detail,
+            at=stamp(at) if at else datetime.now(timezone.utc),
+        )
+    )

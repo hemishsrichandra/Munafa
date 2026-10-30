@@ -1,0 +1,252 @@
+{
+  "source_repository": "https://github.com/hemishsrichandra/Munafa",
+  "source_commit": "aa8d097ad9e8b39c916212f5b9e3696a04315cce",
+  "packaged_at": "2026-10-30",
+  "purpose": "Inherited pre-event infrastructure only; not a completed regulatory project",
+  "regulatory_core_implemented": false,
+  "entries": [
+    {
+      "source": "backend/db.py",
+      "destination": "backend/db.py",
+      "kind": "copied",
+      "source_sha256": "51466d7ad319fa4d73b48e6414b3c78636a4977b20f49c48863119e8d6a7bfc9",
+      "prepared_sha256": "51466d7ad319fa4d73b48e6414b3c78636a4977b20f49c48863119e8d6a7bfc9"
+    },
+    {
+      "source": "backend/requirements.txt",
+      "destination": "backend/requirements.txt",
+      "kind": "copied",
+      "source_sha256": "febfc8650d6d49b29760081d8c48ae1f4253a98b6ebe75b536ba4ad46214675c",
+      "prepared_sha256": "febfc8650d6d49b29760081d8c48ae1f4253a98b6ebe75b536ba4ad46214675c"
+    },
+    {
+      "source": "backend/requirements.lock.txt",
+      "destination": "backend/requirements.lock.txt",
+      "kind": "copied",
+      "source_sha256": "4042e90688d27fd0e31475d8e978dcbccc7999cca316a99717699d60330f61f8",
+      "prepared_sha256": "4042e90688d27fd0e31475d8e978dcbccc7999cca316a99717699d60330f61f8"
+    },
+    {
+      "source": "backend/requirements-dev.txt",
+      "destination": "backend/requirements-dev.txt",
+      "kind": "copied",
+      "source_sha256": "61ed8986c94e2a5a19780667e1882f3eafb45a5c7d816e98a59459d7c3f0e720",
+      "prepared_sha256": "61ed8986c94e2a5a19780667e1882f3eafb45a5c7d816e98a59459d7c3f0e720"
+    },
+    {
+      "source": "backend/migrations/env.py",
+      "destination": "backend/migrations/env.py",
+      "kind": "copied",
+      "source_sha256": "a58e92abaf9f685f9e2b3274443a7d3952e3c51b8a0bf1bd3c3071c086d574a5",
+      "prepared_sha256": "a58e92abaf9f685f9e2b3274443a7d3952e3c51b8a0bf1bd3c3071c086d574a5"
+    },
+    {
+      "source": "backend/migrations/script.py.mako",
+      "destination": "backend/migrations/script.py.mako",
+      "kind": "copied",
+      "source_sha256": "fe01d33f24f0a48060ce699ac3ddb855b6c021274636102c225d3f79fc9badc3",
+      "prepared_sha256": "fe01d33f24f0a48060ce699ac3ddb855b6c021274636102c225d3f79fc9badc3"
+    },
+    {
+      "source": "scripts/build-pwa.cjs",
+      "destination": "scripts/build-pwa.cjs",
+      "kind": "copied",
+      "source_sha256": "fefe38506082c508eac66e4628259f64fd74b6cef1a8e3866c721b5da33d927a",
+      "prepared_sha256": "fefe38506082c508eac66e4628259f64fd74b6cef1a8e3866c721b5da33d927a"
+    },
+    {
+      "source": "alembic.ini",
+      "destination": "alembic.ini",
+      "kind": "copied",
+      "source_sha256": "8aae88c3600b0663c5b436cec2de900c7d6aa5536dff84b0414dcc20fa033a72",
+      "prepared_sha256": "8aae88c3600b0663c5b436cec2de900c7d6aa5536dff84b0414dcc20fa033a72"
+    },
+    {
+      "source": "backend/actions.py",
+      "destination": "reference/backend/actions.py.txt",
+      "kind": "reference only; dependencies not wired",
+      "source_sha256": "6c79e042a903325a7487cd392098ed4510c95603b6383ccf5d01e00580737881",
+      "prepared_sha256": "6c79e042a903325a7487cd392098ed4510c95603b6383ccf5d01e00580737881"
+    },
+    {
+      "source": "backend/providers.py",
+      "destination": "reference/backend/providers.py.txt",
+      "kind": "reference only; dependencies not wired",
+      "source_sha256": "a7e5c47c0cf2ee59d3f7e964d19223d313711403e100f2868bea55e3a9be9bfd",
+      "prepared_sha256": "a7e5c47c0cf2ee59d3f7e964d19223d313711403e100f2868bea55e3a9be9bfd"
+    },
+    {
+      "source": "backend/security.py",
+      "destination": "reference/backend/security.py.txt",
+      "kind": "reference only; dependencies not wired",
+      "source_sha256": "150ad9edcb65904df389bf8b4a16f76d63632b556191759c1eaf370ff2a14efe",
+      "prepared_sha256": "150ad9edcb65904df389bf8b4a16f76d63632b556191759c1eaf370ff2a14efe"
+    },
+    {
+      "source": "frontend/src/offline/db.js",
+      "destination": "reference/frontend/src/offline/db.js.txt",
+      "kind": "reference only; dependencies not wired",
+      "source_sha256": "2bb953827c3c595d54a2cc9f6f67adb22f5482081c2640333a28585a5c00150f",
+      "prepared_sha256": "2bb953827c3c595d54a2cc9f6f67adb22f5482081c2640333a28585a5c00150f"
+    },
+    {
+      "source": "frontend/src/offline/sync.js",
+      "destination": "reference/frontend/src/offline/sync.js.txt",
+      "kind": "reference only; dependencies not wired",
+      "source_sha256": "970993a23cbbb4f9cdaeb6a2c6e17d35ebae267e2f5c989a4c3346a41c3891dd",
+      "prepared_sha256": "970993a23cbbb4f9cdaeb6a2c6e17d35ebae267e2f5c989a4c3346a41c3891dd"
+    },
+    {
+      "source": "frontend/src/pwa.jsx",
+      "destination": "reference/frontend/src/pwa.jsx.txt",
+      "kind": "reference only; dependencies not wired",
+      "source_sha256": "df85397d6d2602c2417b9e9ec2577f1c7e24231547c71cfdbc39f7195cf8a27b",
+      "prepared_sha256": "df85397d6d2602c2417b9e9ec2577f1c7e24231547c71cfdbc39f7195cf8a27b"
+    },
+    {
+      "source": "frontend/src/components/MoneyInput.jsx",
+      "destination": "reference/frontend/src/components/MoneyInput.jsx.txt",
+      "kind": "reference only; dependencies not wired",
+      "source_sha256": "5b496533e8e02c8c93fa96443876262af92a349bf8a47688a60595e773a8a3e8",
+      "prepared_sha256": "5b496533e8e02c8c93fa96443876262af92a349bf8a47688a60595e773a8a3e8"
+    },
+    {
+      "source": "frontend/src/api.js",
+      "destination": "reference/frontend/src/api.js.txt",
+      "kind": "reference only; dependencies not wired",
+      "source_sha256": "317ed58d7aac01e4b410ade427d3afceb94781100e26b877a90819acb5b05f1f",
+      "prepared_sha256": "317ed58d7aac01e4b410ade427d3afceb94781100e26b877a90819acb5b05f1f"
+    },
+    {
+      "source": ".gitignore",
+      "destination": ".gitignore",
+      "kind": "copied",
+      "source_sha256": "754db73470dfa784e0e3e67996652275b38d01c988eebd9fb74216ed1be875c0",
+      "prepared_sha256": "754db73470dfa784e0e3e67996652275b38d01c988eebd9fb74216ed1be875c0"
+    },
+    {
+      "source": "backend/models.py",
+      "destination": "backend/models.py",
+      "kind": "extracted identity helpers and six trust tables only",
+      "source_sha256": "49fb9be8b1d8545395dee1d6515bd3d379adf4dd2c9dfdeee53904a2df5dde7e",
+      "prepared_sha256": "167fc962f6a36cf10504fafa120336dbb4c3993ac77356e598fdff2de4a3c4fe"
+    },
+    {
+      "source": "backend/auth.py",
+      "destination": "backend/auth.py",
+      "kind": "adapted; no demo account creation; generic business name",
+      "source_sha256": "54e3054b00f07c128923e3403dce7e034bfe018e094ade9fa1b0db9bfb7e76e0",
+      "prepared_sha256": "fb54374a1f2a774f09642cd5f3a3281bdc97ad3d72adbb54be1ffa53e75dc27e"
+    },
+    {
+      "source": "backend/security.py",
+      "destination": "backend/security.py",
+      "kind": "adapted cookie names, ports and public endpoints",
+      "source_sha256": "150ad9edcb65904df389bf8b4a16f76d63632b556191759c1eaf370ff2a14efe",
+      "prepared_sha256": "677f45de0cd88dd4b4a9ec08388e10add14f81f2efa8e7ed64625f04e2a0c1a3"
+    },
+    {
+      "source": "backend/store.py",
+      "destination": "backend/store.py",
+      "kind": "extracted scoped connection/helpers only",
+      "source_sha256": "cc7600eb7bf746c652f7b780ff6be8f69ab5fe44ad2e33f621ecdd4e6eba7991",
+      "prepared_sha256": "daf70651bf40f2d72ce99e38a28674ef0224b57fb1ad321b4f8ccf1b27e48143"
+    },
+    {
+      "source": "frontend/src/components/ui.jsx",
+      "destination": "frontend/src/components/Modal.jsx",
+      "kind": "extracted accessible modal only",
+      "source_sha256": "3192fa230cff60e379d355b527cfd9a57b36fcd078c8eab8aed9f9ae24ecf0b4",
+      "prepared_sha256": "b7bde1aed192968880532c51cf3c7341b802bd47d52f2f1b35d5f0f528876718"
+    },
+    {
+      "source": "frontend/src/api.js",
+      "destination": "frontend/src/api.js",
+      "kind": "adapted browser-only API client; distinct CSRF cookie",
+      "source_sha256": "317ed58d7aac01e4b410ade427d3afceb94781100e26b877a90819acb5b05f1f",
+      "prepared_sha256": "2dd60c5d8dcf26b1b35bc1dce848496fbcfb70f1bbc38d02fca59f52e1c3aacb"
+    },
+    {
+      "source": "frontend/public/sw.js",
+      "destination": "frontend/public/sw.js",
+      "kind": "copied",
+      "source_sha256": "1c3b680d4200defc26e005439ca71ee54a4187eaeb09b27fc454b71df8b3f812",
+      "prepared_sha256": "f97697ec92b8a70e6b28555a6df3b63792f36a76c54fd9b115b7e63fb8625dff"
+    },
+    {
+      "source": "scripts/python.cjs",
+      "destination": "scripts/python.cjs",
+      "kind": "copied",
+      "source_sha256": "f7d6bec35c20890fbbbe5bf17ca2496921a85035550c71b32e204fb705304ffa",
+      "prepared_sha256": "4e5e6af3455f1a70570ab7437c4618f4c5b9ff730fa8e5bae409d814f826d59e"
+    },
+    {
+      "source": "frontend/src/styles.css",
+      "destination": "frontend/src/styles.css",
+      "kind": "extracted base controls/tokens plus new neutral shell styles",
+      "source_sha256": "374dec3f3717eabf72fd9128529c4cf4b18667e40c794ef7ea70bc7927073298",
+      "prepared_sha256": "ae8f186fcc82eb407f214c983196205e228351980be8d0a5bc1038d2c3e3fab2"
+    },
+    {
+      "source": "frontend/src/session.jsx",
+      "destination": "reference/frontend/src/session.jsx.txt",
+      "kind": "reference only; dependencies not wired",
+      "source_sha256": "cbb8cdfe5e7bf7669e314c2c45d7bb149fd27f0b4bcf389c662e7d64fd4b1093",
+      "prepared_sha256": "cbb8cdfe5e7bf7669e314c2c45d7bb149fd27f0b4bcf389c662e7d64fd4b1093"
+    },
+    {
+      "source": "frontend/src/offline/provider.jsx",
+      "destination": "reference/frontend/src/offline/provider.jsx.txt",
+      "kind": "reference only; dependencies not wired",
+      "source_sha256": "51bfc005979fd296069198ff3439ddfb5ef91c8ed31232ccfc8a52955fd966cc",
+      "prepared_sha256": "51bfc005979fd296069198ff3439ddfb5ef91c8ed31232ccfc8a52955fd966cc"
+    },
+    {
+      "source": "backend/tests/conftest.py",
+      "destination": "reference/backend/tests/conftest.py.txt",
+      "kind": "reference only; dependencies not wired",
+      "source_sha256": "02a213e3a67531f197c42373308ada9d4303c94490536f95cf307d8f3c71bc8a",
+      "prepared_sha256": "02a213e3a67531f197c42373308ada9d4303c94490536f95cf307d8f3c71bc8a"
+    },
+    {
+      "source": "backend/store.py",
+      "destination": "reference/backend/audit_record.py.txt",
+      "kind": "reference only; audit_record function excerpt",
+      "source_sha256": "cc7600eb7bf746c652f7b780ff6be8f69ab5fe44ad2e33f621ecdd4e6eba7991",
+      "prepared_sha256": "757c75ed9f219bc1f9f21aa5c57a2c57ecf646e9ff43456f5cb83a82108a8123"
+    }
+  ],
+  "new_pre_event_glue": [
+    "backend/app.py",
+    "backend/domain.py",
+    "backend/manage.py",
+    "backend/migrations/versions/0001_identity.py",
+    "backend/tests/test_foundation.py",
+    "frontend/src/App.jsx",
+    "frontend/src/main.jsx",
+    "frontend/vite.config.js",
+    "frontend/index.html",
+    "frontend/public/mark.svg",
+    "frontend/public/manifest.webmanifest",
+    "scripts/serve_e2e.py",
+    "tests/foundation.spec.js",
+    "playwright.config.js",
+    "package.json",
+    "frontend/package.json",
+    ".env.example",
+    "README.md",
+    "MASTER-PROMPT.md",
+    "VERIFICATION.md"
+  ],
+  "excluded": [
+    ".env and secrets",
+    "application/test database contents",
+    "merchant/customer files",
+    "Munafa purchase/recovery/inventory/payment domains",
+    "synthetic regulatory data",
+    "AI-generated legal answers",
+    "existing Git metadata",
+    "node_modules/.venv/build outputs",
+    "native SDK/APK/signing material"
+  ]
+}
