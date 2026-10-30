@@ -34,6 +34,7 @@ import CaseDetail from './components/CaseDetail';
 import { Suppliers, Insights } from './components/LedgerViews';
 import { Commerce } from './components/Commerce';
 import { Planning } from './components/Planning';
+import { Integrations } from './components/Integrations';
 import { Assistant, CachedHelp } from './components/Assistant';
 import { BusinessBrief, Payments } from './components/BusinessBrief';
 
@@ -299,7 +300,9 @@ function App() {
                   <button onClick={load}>Retry</button>
                 </div>
               )}
-              {view === 'planning' ? (
+              {view === 'connections' ? (
+                <Integrations />
+              ) : view === 'planning' ? (
                 <Planning follow={followSource} />
               ) : view === 'assistant' ? (
                 <Assistant follow={followSource} />
@@ -503,6 +506,9 @@ function App() {
               {view === 'more' && (
                 <section className="panel more-panel">
                   <h2>More from your workspace</h2>
+                  <button className="button secondary full" onClick={() => navigate('connections')}>
+                    Connections & readiness
+                  </button>
                   <button className="button secondary full" onClick={() => navigate('planning')}>
                     Planning readiness
                   </button>
@@ -580,7 +586,14 @@ function App() {
             aria-current={
               view === id ||
               (id === 'more' &&
-                ['suppliers', 'insights', 'assistant', 'payments', 'planning'].includes(view))
+                [
+                  'suppliers',
+                  'insights',
+                  'assistant',
+                  'payments',
+                  'planning',
+                  'connections',
+                ].includes(view))
                 ? 'page'
                 : undefined
             }

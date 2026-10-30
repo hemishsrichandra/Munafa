@@ -19,6 +19,7 @@ from .payments import router as payments_router
 from .brief import router as brief_router
 from .ai_api import router as ai_router
 from .planning import router as planning_router
+from .integrations import router as integrations_router
 from .db import engine
 from .security import guard, origins
 from sqlalchemy import text
@@ -768,6 +769,7 @@ app.include_router(payments_router)
 app.include_router(brief_router)
 app.include_router(ai_router)
 app.include_router(planning_router)
+app.include_router(integrations_router)
 
 DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if (DIST / "assets").is_dir() and (DIST / "index.html").is_file():
