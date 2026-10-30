@@ -351,3 +351,14 @@ def test_draft_followup_uses_approved_source_and_permission_recheck(client):
     outsider, _ = other_client()
     usage = outsider.get("/api/assistant/usage").json()
     assert usage["calls"] == 0 and usage["billed_cost_paise"] is None
+
+
+def test_whitespace_key_is_unconfigured_and_never_sent(monkeypatch):
+    from backend import ai
+    from backend.domain import RuleError
+    import pytest
+
+    monkeypatch.setenv("SARVAM_API_KEY", " ")
+    assert not ai.configured()
+    with pytest.raises(RuleError, match="not configured"):
+        ai.post("/translate", {})

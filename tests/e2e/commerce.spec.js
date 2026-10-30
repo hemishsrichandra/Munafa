@@ -113,3 +113,23 @@ test('phone purchase drafts and attached evidence survive offline reload', async
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: 'test-results/batch5-offline-phone.png', fullPage: true });
 });
+
+test('new purchase works from stock and expiry and tab changes retain entered fields', async ({
+  page,
+}) => {
+  await login(page);
+  await page.getByRole('button', { name: 'Purchases & stock', exact: true }).click();
+  for (const tab of ['stock', 'expiry']) {
+    await page.getByRole('button', { name: tab, exact: true }).click();
+    await page.getByRole('button', { name: 'New purchase', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Review invoice', exact: true })).toBeVisible();
+    await page.getByLabel('Supplier', { exact: true }).fill('Unsaved supplier ' + tab);
+    await page.getByLabel('Invoice reference', { exact: true }).fill('KEEP-' + tab);
+    await page.getByRole('button', { name: 'stock', exact: true }).click();
+    await page.getByRole('button', { name: 'purchases', exact: true }).click();
+    await expect(page.getByLabel('Supplier', { exact: true })).toHaveValue(
+      'Unsaved supplier ' + tab,
+    );
+    await expect(page.getByLabel('Invoice reference', { exact: true })).toHaveValue('KEEP-' + tab);
+  }
+});

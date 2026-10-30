@@ -3,7 +3,7 @@ const fs = require('node:fs');
 
 test('extension preparation and data gates remain truthful on phones and offline', async ({
   page,
-}) => {
+}, testInfo) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto('/');
   await page.getByLabel('Username', { exact: true }).fill('extension-owner');
@@ -92,7 +92,9 @@ test('extension preparation and data gates remain truthful on phones and offline
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Confirm and download', exact: true }).click();
   const download = await downloadPromise;
-  const pack = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
+  const downloadPath = testInfo.outputPath('preparation.json');
+  await download.saveAs(downloadPath);
+  const pack = JSON.parse(fs.readFileSync(downloadPath, 'utf8'));
   expect(pack.total_recorded_paise).toBe(20000);
   expect(pack.mode).toBe('demo');
   expect(pack.status).toBe('needs_external_review');

@@ -373,6 +373,11 @@ export function Commerce({ openCase, initialRoute = '' }) {
         <button
           className="button primary"
           onClick={() => {
+            setTab('purchases');
+            setFile(null);
+            setText('');
+            setError('');
+            setNotice('');
             setSelected(null);
             setDraft(fresh());
             setDraftId(crypto.randomUUID());
@@ -384,15 +389,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
       </div>
       <div className="tabs">
         {['purchases', 'stock', 'expiry'].map((t) => (
-          <button
-            key={t}
-            onClick={() => {
-              setTab(t);
-              setSelected(null);
-              setDraft(null);
-              setReceiving(null);
-            }}
-          >
+          <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)}>
             {t}
           </button>
         ))}

@@ -65,7 +65,7 @@ def main():
     sqlite_imports = []
     for folder in ("backend", "scripts"):
         for path in (ROOT / folder).rglob("*.py"):
-            tree = ast.parse(path.read_text())
+            tree = ast.parse(path.read_text(encoding="utf-8"))
             for node in ast.walk(tree):
                 names = (
                     [a.name for a in node.names]

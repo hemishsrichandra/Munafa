@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/assistant")
 @router.get("/capabilities")
 def capabilities():
     return {
-        "cloud_configured": bool(os.getenv("SARVAM_API_KEY")),
+        "cloud_configured": bool(os.getenv("SARVAM_API_KEY", "").strip()),
         "speech_preview": os.getenv("ENABLE_SPEECH_PREVIEW") == "1",
         "languages": ["en-IN", "hi-IN", "kn-IN"],
         "language_validation": "not_field_validated",

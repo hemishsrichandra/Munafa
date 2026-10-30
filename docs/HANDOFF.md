@@ -1,5 +1,7 @@
 # Cross-system handoff — merchant UI polish
 
+**Local follow-up repair:** see [LOCAL-FIX-REPORT.md](LOCAL-FIX-REPORT.md) for Sarvam setup, purchase/stock tab fixes, Windows test isolation/export/audit fixes, live synthetic provider verification and final regression results. The key is local and ignored; the user authorised committing and pushing these repairs to origin/main.
+
 **Latest: [UI-POLISH.md](UI-POLISH.md)** documents the merchant-facing cleanup. Home/More/Connections/Stock planning/Exports now show task information without build diagnostics; bill inputs use rupees and still submit integer paise. P2 API gates and approvals are unchanged. Latest verification: 246 backend, 23 browser and 18 frontend tests pass; the final desktop More-route refinement also has a focused browser check. Read UI-POLISH.md for APK evidence and current screen names.
 
 ## Previous final checklist review

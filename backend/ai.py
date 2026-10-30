@@ -17,11 +17,11 @@ Only whole quantities are supported. If fractional quantities are present, retur
 
 
 def configured():
-    return bool(os.getenv("SARVAM_API_KEY"))
+    return bool(os.getenv("SARVAM_API_KEY", "").strip())
 
 
 def post(path, payload):
-    key = os.getenv("SARVAM_API_KEY")
+    key = os.getenv("SARVAM_API_KEY", "").strip()
     if not key:
         raise RuleError(
             "Sarvam AI is not configured. Add SARVAM_API_KEY to .env, or use the sample/manual entry."
