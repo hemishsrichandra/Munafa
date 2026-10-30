@@ -36,3 +36,4 @@ On Windows this session installed a temporary PostgreSQL 17.6 runtime under `%TE
 No live Paytm or Sarvam claims are made. The Linux PDF subprocess resource sandbox is not available on Windows; unsafe/unavailable text extraction falls back to a manual draft with the original preserved. Native Android installation, storage pressure and process-kill behavior still require a device test. AI-generated confidence is not invented when the provider gives none.
 
 Verification: full backend run 74 passed; expanded Batch 5 backend suite 18 passed (including one additional test added after the full run); IndexedDB 14 passed; browser journeys 16 passed; production build, migration drift, Ruff and Prettier passed. Detailed environment and limits are recorded in HANDOFF.md. The user authorised committing and pushing this completion to origin/main. Local credentials and generated output are excluded.
+

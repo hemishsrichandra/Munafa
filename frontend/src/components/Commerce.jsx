@@ -238,7 +238,7 @@ function ConversionForm({ product, onSave }) {
     </form>
   );
 }
-export function Commerce({ openCase }) {
+export function Commerce({ openCase, initialRoute = '' }) {
   const local = useOffline();
   const [tab, setTab] = useState('purchases'),
     [purchases, setPurchases] = useState([]),
@@ -292,6 +292,16 @@ export function Commerce({ openCase }) {
   useEffect(() => {
     load().catch((e) => setError(e.message));
   }, []);
+  useEffect(() => {
+    if (!initialRoute.startsWith('/stock/') || !products.length) return;
+    const product = products.find((p) => p.id === initialRoute.split('/')[2]);
+    if (product) {
+      setTab('stock');
+      api(`/products/${product.id}/movements`)
+        .then((rows) => setMovements({ product, rows }))
+        .catch((e) => setError(e.message));
+    }
+  }, [initialRoute, products.length]);
   async function run(fn) {
     setBusy(true);
     setError('');

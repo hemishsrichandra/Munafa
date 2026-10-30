@@ -13,6 +13,8 @@ from pydantic import Field
 from . import store, ai, auth, actions
 from .sync import router as sync_router
 from .commerce_api import router as commerce_router
+from .payments import router as payments_router
+from .brief import router as brief_router
 from .db import engine
 from .security import guard, origins
 from sqlalchemy import text
@@ -707,6 +709,8 @@ def execute_action(action_id: str, body: Version):
 
 app.include_router(sync_router)
 app.include_router(commerce_router)
+app.include_router(payments_router)
+app.include_router(brief_router)
 
 DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if DIST.exists():

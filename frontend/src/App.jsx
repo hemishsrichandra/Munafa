@@ -33,6 +33,7 @@ import { InvoiceModal } from './components/InvoiceIntake';
 import CaseDetail from './components/CaseDetail';
 import { Suppliers, Insights } from './components/LedgerViews';
 import { Commerce } from './components/Commerce';
+import { BusinessBrief, Payments } from './components/BusinessBrief';
 
 const navs = [
   { id: 'purchases', label: 'Purchases & stock', Icon: ReceiptText },
@@ -53,6 +54,7 @@ function App() {
     hi: { home: 'होम', purchases: 'खरीदारी', more: 'अधिक' },
     kn: { home: 'ಮುಖಪುಟ', purchases: 'ಖರೀದಿಗಳು', more: 'ಇನ್ನಷ್ಟು' },
   }[locale];
+  const [sourceRoute, setSourceRoute] = useState('');
   const [view, setView] = useState('overview'),
     [cases, setCases] = useState([]),
     [selected, setSelected] = useState(null),
@@ -257,8 +259,17 @@ function App() {
                   <button onClick={load}>Retry</button>
                 </div>
               )}
-              {view === 'purchases' ? (
+              {view === 'payments' ? (
+                <Payments
+                  initialId={
+                    sourceRoute.startsWith('/payments/')
+                      ? sourceRoute.split('/')[2].split('?')[0]
+                      : ''
+                  }
+                />
+              ) : view === 'purchases' ? (
                 <Commerce
+                  initialRoute={sourceRoute}
                   openCase={(c) => {
                     navigate('cases');
                     open(c);
@@ -319,33 +330,26 @@ function App() {
                   </div>
                   {view === 'overview' && (
                     <>
-                      <section className="brief-card">
-                        <div className="eyebrow">
-                          {session.store.demo ? 'SYNTHETIC DEMO LEDGER' : 'YOUR STORE LEDGER'}
-                        </div>
-                        <h2>
-                          {overdue.length
-                            ? 'A supplier follow-up needs attention.'
-                            : 'Keep your next delivery accounted for.'}
-                        </h2>
-                        <p>
-                          {overdue.length
-                            ? `${overdue[0].invoice.supplier}: ${money(overdue[0].remaining_paise)} still awaits verification. Follow up on the recorded promise.`
-                            : 'Add a bill and confirm what arrived. A promise remains open until a credit or refund is verified.'}
-                        </p>
-                        <button
-                          className="button primary"
-                          disabled={!overdue.length && !session.permissions.includes('write')}
-                          onClick={() => (overdue.length ? open(overdue[0]) : setAdding(true))}
-                        >
-                          {overdue.length ? 'Review follow-up' : 'Check a delivery'}{' '}
-                          <ArrowRight size={17} />
-                        </button>
-                        <small>
-                          Based on existing supplier cases. No payment, stock or sales data is
-                          connected.
-                        </small>
-                      </section>
+                      <BusinessBrief
+                        follow={async (route) => {
+                          setSourceRoute(route);
+                          if (route.startsWith('/cases/')) {
+                            try {
+                              const c = await api(route);
+                              navigate('cases');
+                              open(c);
+                            } catch (e) {
+                              setError(e.message);
+                            }
+                          } else if (route.startsWith('/payments/')) navigate('payments');
+                          else if (route.startsWith('/stock/')) {
+                            navigate('purchases');
+                            window.dispatchEvent(
+                              new CustomEvent('munafa-commerce-route', { detail: route }),
+                            );
+                          }
+                        }}
+                      />
                       <div className="section-caption">
                         <span>AT A GLANCE</span>
                         <span className="muted">All-time ledger · includes synthetic examples</span>
@@ -459,8 +463,8 @@ function App() {
                     <div className="bottom-note">
                       <span className="sarvam-symbol">✳</span>
                       <p>
-                        <strong>Made for the way India does business.</strong> Sarvam AI supports
-                        invoice understanding and supplier messages in Hindi and Kannada.
+                        <strong>Made for the way India does business.</strong> Optional AI drafts
+                        require merchant review. Provider and language evaluation is still pending.
                       </p>
                       <button className="text-button" onClick={() => setHelp(true)}>
                         Explore the workflow {icon(ArrowUpRight, 14)}
@@ -472,6 +476,9 @@ function App() {
               {view === 'more' && (
                 <section className="panel more-panel">
                   <h2>More from your workspace</h2>
+                  <button className="button secondary full" onClick={() => navigate('payments')}>
+                    Payments & reconciliation
+                  </button>
                   <button className="button secondary full" onClick={() => navigate('cases')}>
                     Credit cases
                   </button>

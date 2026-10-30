@@ -36,6 +36,7 @@ try:
     for name in (
         "offline-owner",
         "commerce-owner",
+        "partner-owner",
         "commerce-offline",
         "offline-second",
         "offline-quota",

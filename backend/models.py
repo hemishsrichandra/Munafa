@@ -559,3 +559,94 @@ receipt_lines.append_constraint(
         name="fk_receipt_line_purchase_product",
     )
 )
+
+# Provider records are immutable observations, never inferred SKU sales.
+payment_events = table(
+    "payment_events",
+    identity(),
+    scoped(),
+    C("mode", String(8), nullable=False),
+    C("provider", String(24), nullable=False),
+    C("source_id", String(120), nullable=False),
+    C("transaction_id", String(120), nullable=False),
+    C("event_id", String(120), nullable=False),
+    C("kind", String(16), nullable=False),
+    C("status", String(16), nullable=False),
+    C("amount_paise", BigInteger, nullable=False),
+    instant("occurred_at"),
+    instant("ingested_at"),
+    C("source_digest", String(64), nullable=False),
+    C("provenance", JSONB, nullable=False),
+    U("store_id", "mode", "provider", "source_id"),
+    owned_unique(),
+    Check("mode IN ('demo','live')", name="payment_mode"),
+    Check("kind IN ('payment','refund','reversal')", name="payment_kind"),
+    Check("status IN ('pending','succeeded','failed')", name="payment_status"),
+    Check("amount_paise >= 0 AND amount_paise <= 9000000000000000", name="payment_paise"),
+)
+settlement_batches = table(
+    "settlement_batches",
+    identity(),
+    scoped(),
+    C("mode", String(8), nullable=False),
+    C("provider", String(24), nullable=False),
+    C("source_id", String(120), nullable=False),
+    C("status", String(16), nullable=False),
+    C("settled_paise", BigInteger),
+    C("payout_reference", String(120)),
+    C("settlement_at", DateTime(timezone=True)),
+    C("payout_at", DateTime(timezone=True)),
+    C("cutoff_at", DateTime(timezone=True)),
+    instant("observed_at"),
+    instant("ingested_at"),
+    C("source_digest", String(64), nullable=False),
+    C("provenance", JSONB, nullable=False),
+    U("store_id", "mode", "provider", "source_id"),
+    owned_unique(),
+    U("store_id", "id", "mode"),
+    Check("mode IN ('demo','live')", name="settlement_mode"),
+    Check("status IN ('pending','settled','failed')", name="settlement_status"),
+    Check(
+        "settled_paise IS NULL OR settled_paise BETWEEN 0 AND 9000000000000000",
+        name="settlement_paise",
+    ),
+)
+settlement_lines = table(
+    "settlement_lines",
+    identity(),
+    scoped(),
+    C("batch_id", String(64), nullable=False),
+    C("mode", String(8), nullable=False),
+    C("source_id", String(120), nullable=False),
+    C("transaction_id", String(120), nullable=False),
+    C("gross_paise", BigInteger),
+    C("commission_paise", BigInteger),
+    C("gst_paise", BigInteger),
+    C("refund_paise", BigInteger),
+    C("reversal_paise", BigInteger),
+    C("adjustment_paise", BigInteger),
+    ForeignKeyConstraint(
+        ["store_id", "batch_id", "mode"],
+        ["settlement_batches.store_id", "settlement_batches.id", "settlement_batches.mode"],
+    ),
+    U("store_id", "batch_id", "source_id"),
+    U("store_id", "batch_id", "transaction_id"),
+    owned_unique(),
+    *[
+        Check(
+            f"{field}_paise IS NULL OR {field}_paise BETWEEN 0 AND 9000000000000000",
+            name=f"line_{field}",
+        )
+        for field in ("gross", "commission", "gst", "refund", "reversal")
+    ],
+    Check(
+        "adjustment_paise IS NULL OR adjustment_paise BETWEEN -9000000000000000 AND 9000000000000000",
+        name="line_adjustment",
+    ),
+)
+Index(
+    "ix_payment_transaction",
+    payment_events.c.store_id,
+    payment_events.c.mode,
+    payment_events.c.transaction_id,
+)

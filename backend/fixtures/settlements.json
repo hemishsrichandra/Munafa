@@ -1,0 +1,44 @@
+{
+  "synthetic": true,
+  "schema_version": 1,
+  "events": [
+    {
+      "source_id": "DEMO-COLLECTION-1",
+      "transaction_id": "DEMO-TXN-1",
+      "kind": "payment",
+      "status": "succeeded",
+      "amount_paise": 100000,
+      "minute_offset": 0,
+      "event_id": "DEMO-COLLECTION-1"
+    },
+    {
+      "source_id": "DEMO-REFUND-1",
+      "transaction_id": "DEMO-TXN-1",
+      "kind": "refund",
+      "status": "succeeded",
+      "amount_paise": 5000,
+      "minute_offset": 30,
+      "event_id": "DEMO-REFUND-1"
+    }
+  ],
+  "batches": [
+    {
+      "source_id": "DEMO-SETTLEMENT-1",
+      "status": "settled",
+      "settled_paise": 93000,
+      "payout_reference": "SYNTHETIC-NOT-A-BANK-UTR",
+      "lines": [
+        {
+          "source_id": "DEMO-LINE-1",
+          "transaction_id": "DEMO-TXN-1",
+          "gross_paise": 100000,
+          "commission_paise": 1000,
+          "gst_paise": 180,
+          "refund_paise": 5000,
+          "reversal_paise": 0,
+          "adjustment_paise": 0
+        }
+      ]
+    }
+  ]
+}
