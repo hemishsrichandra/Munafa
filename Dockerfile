@@ -3,10 +3,11 @@
 FROM node:22-bookworm-slim AS frontend-builder
 WORKDIR /app
 
-# Copy all project files needed for build
+# Copy project files needed for frontend build
 COPY package*.json ./
 COPY capacitor.config.json ./
 COPY scripts/ ./scripts/
+COPY backend/knowledge/ ./backend/knowledge/
 COPY frontend/ ./frontend/
 
 # Clean install dependencies across workspaces and build PWA
