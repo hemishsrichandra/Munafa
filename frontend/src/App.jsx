@@ -48,6 +48,14 @@ const navs = [
 
 function App() {
   const session = useSession();
+  const storeInitials =
+    session.store.name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase() || 'M';
   const local = useOffline();
   const [deviceWorkspace, setDeviceWorkspace] = useState(false);
   const openIntake = () => (navigator.onLine ? setAdding(true) : setDeviceWorkspace(true));
@@ -211,7 +219,7 @@ function App() {
             {icon(CircleHelp)} Help & demo guide {icon(ArrowUpRight, 15)}
           </button>
           <div className="profile">
-            <span className="avatar">LK</span>
+            <span className="avatar">{storeInitials}</span>
             <div>
               <strong>{session.store.name}</strong>
               <span>Merchant workspace</span>
@@ -258,7 +266,7 @@ function App() {
               {icon(Bell)}
               {overdue.length > 0 && <i />}
             </button>
-            <span className="top-avatar">LK</span>
+            <span className="top-avatar">{storeInitials}</span>
           </div>
         </header>
         <main>

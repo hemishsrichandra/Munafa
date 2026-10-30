@@ -370,7 +370,8 @@ function ResolveModal({ c, close, update, notify }) {
     <Modal
       title="Verify the money came back."
       subtitle={`${money(c.remaining_paise)} remains on invoice ${c.invoice.reference}`}
-      close={busy ? () => {} : close}
+      close={close}
+      closeDisabled={busy}
       wide
     >
       <form onSubmit={submit}>

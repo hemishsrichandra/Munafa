@@ -153,7 +153,7 @@ function Empty({ onAdd }) {
     </div>
   );
 }
-function Modal({ title, subtitle, close, children, wide = false }) {
+function Modal({ title, subtitle, close, children, wide = false, closeDisabled = false }) {
   const ref = useRef(null),
     oldFocus = useRef(document.activeElement);
   useEffect(() => {
@@ -166,7 +166,7 @@ function Modal({ title, subtitle, close, children, wide = false }) {
     };
   }, []);
   const keys = (e) => {
-    if (e.key === 'Escape') close();
+    if (e.key === 'Escape' && !closeDisabled) close();
     if (e.key === 'Tab') {
       const els = [
         ...ref.current.querySelectorAll(
@@ -175,7 +175,15 @@ function Modal({ title, subtitle, close, children, wide = false }) {
       ];
       const first = els[0],
         last = els[els.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
+      if (!els.length) {
+        e.preventDefault();
+        ref.current?.focus();
+        return;
+      }
+      if (
+        e.shiftKey &&
+        (document.activeElement === first || document.activeElement === ref.current)
+      ) {
         e.preventDefault();
         last?.focus();
       } else if (!e.shiftKey && document.activeElement === last) {
@@ -185,7 +193,10 @@ function Modal({ title, subtitle, close, children, wide = false }) {
     }
   };
   return (
-    <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && close()}>
+    <div
+      className="modal-backdrop"
+      onMouseDown={(e) => !closeDisabled && e.target === e.currentTarget && close()}
+    >
       <section
         className={`modal ${wide ? 'wide' : ''}`}
         role="dialog"
@@ -200,7 +211,12 @@ function Modal({ title, subtitle, close, children, wide = false }) {
             <h2 id="dialog-title">{title}</h2>
             {subtitle && <p>{subtitle}</p>}
           </div>
-          <button className="icon-button" onClick={close} aria-label="Close dialog">
+          <button
+            className="icon-button"
+            onClick={close}
+            aria-label="Close dialog"
+            disabled={closeDisabled}
+          >
             <X size={20} />
           </button>
         </div>

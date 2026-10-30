@@ -65,6 +65,22 @@ def permission(path, method):
     return "write"
 
 
+async def bounded_body(request, limit):
+    """Bound streamed/chunked requests before allocating a complete body.
+
+    Starlette's cached request replays _body to the downstream parser. This is
+    intentionally done before database checkout/provider calls.
+    """
+    chunks, size = [], 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > limit:
+            raise HTTPException(413, "Request is too large.")
+        chunks.append(chunk)
+    request._body = b"".join(chunks)
+    return request._body
+
+
 async def guard(request, call_next):
     path = request.url.path
     write = request.method not in ("GET", "HEAD", "OPTIONS")
@@ -85,12 +101,20 @@ async def guard(request, call_next):
                 if origin and origin not in origins():
                     raise HTTPException(403, "Origin not permitted.")
                 length = request.headers.get("content-length")
-                if length and int(length) > 9 * 1024 * 1024:
-                    raise HTTPException(413, "Request is too large.")
+                if length:
+                    try:
+                        size = int(length)
+                    except ValueError:
+                        raise HTTPException(400, "Invalid request length.") from None
+                    if size < 0:
+                        raise HTTPException(400, "Invalid request length.")
+                    if size > 9 * 1024 * 1024:
+                        raise HTTPException(413, "Request is too large.")
             public = path in ("/api/health", "/api/auth/login", "/api/auth/dev-login")
             if public:
                 if write:
                     rate_limit(("login", request.client.host if request.client else "unknown"), 10)
+                    await bounded_body(request, 16384)
             else:
                 bearer = request.headers.get("authorization", "")
                 token = (
@@ -110,6 +134,10 @@ async def guard(request, call_next):
                 token_ctx = auth.principal.set(p)
                 auth.current(permission(path, request.method))
                 rate_limit(("api", p.user_id), 120)
+                if write:
+                    body = await bounded_body(
+                        request, 16384 if path.startswith("/api/auth/") else 9 * 1024 * 1024
+                    )
                 conn = await run_in_threadpool(engine().connect)
                 transaction = conn.begin()
                 db_ctx = store.request_connection.set(conn)
@@ -118,9 +146,6 @@ async def guard(request, call_next):
                     if not key or len(key) > 100:
                         raise HTTPException(400, "A valid Idempotency-Key is required.")
                     rate_limit(("write", p.user_id), 60)
-                    body = await request.body()
-                    if len(body) > 9 * 1024 * 1024:
-                        raise HTTPException(413, "Request is too large.")
                     fingerprint = hashlib.sha256(
                         request.method.encode() + path.encode() + body
                     ).hexdigest()
@@ -223,7 +248,7 @@ def headers(response):
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(self), camera=(self)"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
     )
     if os.getenv("APP_ENV", "production") == "production":
         response.headers["Strict-Transport-Security"] = "max-age=31536000"

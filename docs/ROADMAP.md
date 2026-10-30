@@ -37,3 +37,7 @@ Batches 6–7 prototype implementation is delivered after the pulled Batch 5 com
 ### Batch 9 prerequisite status
 
 P2 readiness reporting and safety gates are implemented; actual procurement, financial/lender planning and benchmarking remain blocked. Relevant P1 foundations and quality are unproven, and turning on feature flags cannot change that. Own SKU history links are the safe alternative to unavailable peer comparisons. Batch 8 remains unimplemented; no next implementation should begin without specific authorisation and the prerequisites in BATCH-9.md.
+
+### Batch 10 — demo candidate, not production sign-off
+
+Integration/hardening is verified locally (210 backend / 21 browser / 17 frontend unit tests, synthetic restore rehearsal and debug APK). BATCH-10.md records explicit pass/skipped/unavailable results and remaining acceptance. Follow DEMO.md without deleting real audit history. Next work requires a separately authorised device/provider/deployment/merchant-validation scope; Batch 8/P1 absence and P2 gates are unchanged. Do not treat a successful synthetic demo as Paytm integration, growth evidence or legal/security certification.

@@ -6,7 +6,7 @@ from copy import deepcopy
 from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict, BeforeValidator, PlainSerializer
 from typing import Annotated
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 
 
 class StrictModel(BaseModel):
@@ -18,7 +18,10 @@ def exact_quantity(value):
         raise ValueError(
             "Use an integer or decimal string; binary floating quantities are not accepted."
         )
-    quantity = Decimal(str(value))
+    try:
+        quantity = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        raise ValueError("Enter a valid decimal quantity.") from None
     if not quantity.is_finite() or quantity.as_tuple().exponent < -6:
         raise ValueError("Quantities support at most six decimal places.")
     return quantity

@@ -22,6 +22,13 @@ def database(monkeypatch):
     monkeypatch.setenv("APP_ENV", "test")
     monkeypatch.setenv("ALLOW_DEV_LOGIN", "0")
     monkeypatch.delenv("SARVAM_API_KEY", raising=False)
+    for flag in (
+        "ENABLE_SPEECH_PREVIEW",
+        "ENABLE_P2_PROCUREMENT",
+        "ENABLE_P2_FINANCIAL_PLANNING",
+        "ENABLE_P2_BENCHMARKING",
+    ):
+        monkeypatch.setenv(flag, "0")
     command.upgrade(Config("alembic.ini"), "head")
     from backend.security import buckets
 

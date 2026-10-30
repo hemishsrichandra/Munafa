@@ -6,11 +6,18 @@ const path = require('node:path');
 const { chromium } = require('playwright');
 const cli = require.resolve('@playwright/test/cli');
 async function main() {
+  if (!process.env.npm_execpath) throw new Error('Run npm run test:e2e so the test build uses the supported npm executable.');
+  const built=await new Promise((resolve,reject)=>{
+    const build=spawn(process.execPath,[process.env.npm_execpath,'run','build'],{stdio:'inherit',env:{...process.env,VITE_API_BASE:''}});
+    build.once('error',reject);build.once('exit',code=>resolve(code??1));
+  });
+  if (built!==0) return built;
   const files = readdirSync('tests/e2e').filter((f) => f.endsWith('.spec.js'));
   for (const group of [
     files.filter((f) => f === 'commerce.spec.js'),
     files.filter((f) => f === 'partner.spec.js'),
-    files.filter((f) => !['commerce.spec.js','partner.spec.js'].includes(f)),
+    files.filter((f) => f === 'release.spec.js'),
+    files.filter((f) => !['commerce.spec.js','partner.spec.js','release.spec.js'].includes(f)),
   ]) {
     if (!group.length) continue;
     // A remote connection avoids Windows browser-fixture shutdown hanging after

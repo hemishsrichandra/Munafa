@@ -74,12 +74,15 @@ export async function api(path, options = {}) {
     parentSignal?.removeEventListener('abort', cancel);
   }
 }
-export const money = (p = 0) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: p % 100 ? 2 : 0,
-  }).format(p / 100);
+// Format integer paise without a floating division that can round large cents.
+// Missing/invalid amounts must never masquerade as a confirmed zero balance.
+export const money = (p = null) => {
+  if (!Number.isSafeInteger(p)) return p == null ? 'Not recorded' : 'Amount unavailable';
+  const digits = Math.abs(p).toString().padStart(3, '0');
+  const whole = Number(digits.slice(0, -2)),
+    cents = digits.slice(-2);
+  return `${p < 0 ? '-' : ''}₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(whole)}${cents === '00' ? '' : '.' + cents}`;
+};
 export const day = (s) =>
   s
     ? new Date(`${s.slice(0, 10)}T12:00:00`).toLocaleDateString('en-IN', {

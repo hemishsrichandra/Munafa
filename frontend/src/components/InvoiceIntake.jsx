@@ -55,7 +55,8 @@ function InvoiceModal({ close, create, config }) {
     <Modal
       title="Let’s check a delivery."
       subtitle="Start with a bill. You’ll confirm what actually arrived."
-      close={busy ? () => {} : close}
+      close={close}
+      closeDisabled={busy}
       wide
     >
       <form onSubmit={submit}>

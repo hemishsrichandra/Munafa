@@ -136,3 +136,11 @@ For Batch 7, open More → Merchant help & language, ask about receiving/offline
 ## P2 readiness (Batch 9)
 
 More → **Planning readiness** shows the three default-off P2 gates, current store-scoped source counts and links to your own SKU movement history. The optional `ENABLE_P2_PROCUREMENT`, `ENABLE_P2_FINANCIAL_PLANNING` and `ENABLE_P2_BENCHMARKING` flags default to `0`; setting `1` cannot supply missing prerequisites or enable external execution. No purchase order, financial/credit decision, lender checklist/application or peer result is generated. Read [the Batch 9 evidence status and risk register](docs/BATCH-9.md). Relevant P1 source quality, verified supplier offers, complete financial ledgers, an authorised lender process and approved cohort controls remain blocked prerequisites. Batch 8 has not been implemented.
+
+## Final integration / demo candidate (Batch 10)
+
+See [release verification and limitations](docs/BATCH-10.md), [four-minute demo and safe reset instructions](docs/DEMO.md) and [cross-system handoff](docs/HANDOFF.md). Batch 10 adds security fixes and integration coverage, not merchant features. Vite is patched to 6.4.5; use `npm ci` with the updated lockfile. Run builds before backend collection, then tests sequentially. `npm run test:e2e` builds with a forced same-origin API so a local live API setting cannot receive test traffic.
+
+The optional restore rehearsal needs supported `pg_dump`/`pg_restore` on PATH or `PG_BIN` and a disposable PostgreSQL test role with CREATE DATABASE privileges. It backs up only its generated synthetic test schema, restores into a newly created scratch database, compares counts/content hashes and cleans only its own objects. Do not grant production application roles extra privileges for this test. Missing client binaries produce an explicit skip, not a successful restore claim.
+
+No real Android device/emulator, OS install, live Paytm, measured cloud OCR/speech/translation or production legal/security certification is claimed. P1 modules remain absent and P2 execution stays gated. No application database reset or real-data import was performed.

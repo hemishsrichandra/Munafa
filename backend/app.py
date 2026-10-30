@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Literal
 from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.responses import JSONResponse, Response, FileResponse
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from . import store, ai, auth, actions
@@ -70,6 +72,31 @@ app.add_middleware(
     ],
 )
 app.middleware("http")(guard)
+
+
+@app.exception_handler(RequestValidationError)
+async def invalid_request(request, exc):
+    # Pydantic's default error includes submitted `input`, which may be a secret,
+    # customer contact or document. Keep only field locations and safe messages.
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": [
+                {"loc": list(e["loc"]), "msg": e["msg"], "type": e["type"]} for e in exc.errors()
+            ]
+        },
+    )
+
+
+@app.exception_handler(ValidationError)
+async def invalid_proposal(request, exc):
+    # Nested proposal schema validation occurs inside service adapters too.
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": "The proposal has invalid fields. Review the source and enter corrected values manually."
+        },
+    )
 
 
 @app.exception_handler(RuleError)
@@ -192,6 +219,17 @@ def validate_file(data, mime, proof=False):
     )
     if proof and mime == "application/pdf" and data.startswith(b"%PDF-"):
         valid = True
+    if valid and mime == "application/pdf":
+        # Reject obvious active content. This is not antivirus/content disarm and
+        # does not establish safety for arbitrary PDF syntax or encoded objects.
+        import re
+
+        if re.search(
+            rb"/(?:JavaScript|JS|Launch|EmbeddedFile|OpenAction|RichMedia|XFA)\b", data, re.I
+        ):
+            raise RuleError(
+                "Active or embedded PDF content is unsupported. Use a static image or a safe document."
+            )
     if not valid:
         raise RuleError("Use a PNG, JPEG or WebP image" + (" or PDF proof." if proof else "."))
 
@@ -500,6 +538,9 @@ def attachment(attachment_id: str):
 @app.get("/api/export")
 def export(action_id: str):
     with store.connect("export") as db:
+        # Validation and CSV rendering must share a consistent ledger snapshot,
+        # even when another request creates/edits a case after approval checking.
+        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         approved = actions.get(db, action_id)
         if (
             approved["action_type"] != "export_ledger"
@@ -535,7 +576,10 @@ def export(action_id: str):
         # Protect spreadsheet consumers from formula injection in merchant-controlled strings.
         def safe(s):
             return (
-                "'" + s if isinstance(s, str) and s[:1] in ("=", "+", "-", "@", "\t", "\r") else s
+                "'" + s
+                if isinstance(s, str)
+                and (s[:1] in ("\t", "\r", "\n") or s.lstrip()[:1] in ("=", "+", "-", "@"))
+                else s
             )
 
         w.writerow(
@@ -544,7 +588,7 @@ def export(action_id: str):
                 safe(c["invoice"]["supplier"]),
                 safe(c["invoice"]["reference"]),
                 c["status"],
-                f"{(c['approved_amount_paise'] or 0) / 100:.2f}",
+                rupees(c["approved_amount_paise"] or 0),
                 f"{rupees(p['recovered_paise'])}",
                 f"{rupees(p['remaining_paise'])}",
                 c["follow_up"],
@@ -687,7 +731,7 @@ def approve_action(action_id: str, body: ActionApproval):
 
 
 @app.post("/api/actions/{action_id}/execute")
-def execute_action(action_id: str, body: Version):
+def execute_action(action_id: str, body: Version, request: Request):
     with store.connect("approve") as db:
         a = actions.consume(db, action_id, body.version)
         if a["action_type"] == "approve_case":
@@ -706,7 +750,7 @@ def execute_action(action_id: str, body: Version):
         elif a["action_type"] in ("accept_purchase", "accept_receiving", "inventory_movement"):
             from .commerce_api import execute
 
-            return execute(db, a, __import__("uuid").uuid4().hex)
+            return execute(db, a, request.headers["idempotency-key"])
         else:
             auth.current("export")
             if a["payload"] != actions.export_payload(db):
@@ -726,7 +770,7 @@ app.include_router(ai_router)
 app.include_router(planning_router)
 
 DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
-if DIST.exists():
+if (DIST / "assets").is_dir() and (DIST / "index.html").is_file():
     app.mount("/assets", StaticFiles(directory=DIST / "assets"), name="assets")
 
     @app.get("/{path:path}", include_in_schema=False)

@@ -1,42 +1,36 @@
-# Cross-system handoff — Batch 9 prerequisite gates
+# Cross-system handoff — Batch 10 demo candidate
 
-Updated **30 October 2026 (Asia/Kolkata)**. Read this, BATCH-9.md, BATCH-6.md, BATCH-7.md, PAYTM-INTEGRATION.md, AI-EVALUATION.md and AI-DATA-HANDLING.md before continuing. Inspect actual source/tests and Git status; historical guides are descriptions, not proof.
+Updated **30 October 2026, Asia/Kolkata**. Start with BATCH-10.md and DEMO.md, then inspect actual source/tests and Git status. Historical batch guides are descriptions, not proof of current implementation.
 
-## Current Batch 9 checkpoint
+## Git, scope and release decision
 
-The owner authorised Batch 9 after Batches 6–7. Actual P2 procurement, financial/lender planning and benchmarking prerequisites are absent/unproven, so **all three business capabilities remain disabled/blocked**. Implemented readiness/evidence reporting, typed inspection, fail-closed feature flags, rejection of external execution, minimal audited/idempotent checks and phone UI. No PO, offer comparison, cashflow/credit decision, lender checklist/application or peer statistic is generated. No Batch 8/P1 backfill was performed.
+- Repository: `https://github.com/hemishsrichandra/Munafa.git`; this checkout `/Users/hemish/Sem-3/Munafa`, branch `main`.
+- Batch 10 follows **4e7fcb9** (Batch 9 gates), **85eaefb** (Batch 7), **9408088** (Batch 6) and **cba2166** (Batch 5 completion). `git log -1 --oneline` identifies the final published Batch 10 commit.
+- Owner authorised integration/hardening/testing/documentation only, no new merchant product features. Standing instruction: update this handoff, commit and push before exiting so another machine/chat can continue.
+- **Local synthetic demo candidate only.** No production readiness, live Paytm, real bank verification, real-provider performance, revenue uplift, fraud prevention or legal certification is claimed.
+- Preserve exact paise/decimal math, store scope, approval digest/version, append-only history, duplicate guards and offline conflict handling. Never reset/import/delete existing merchant data or downgrade populated schemas without verified backup, reviewed plan and explicit approval.
+- No future batch is implicitly authorised. **Batch 8/P1 remains absent.** P2 business capabilities remain disabled/blocked; their readiness checks are working safeguards, not order/lending/peer engines.
 
-New files: `backend/planning.py`, `backend/tests/test_planning.py`, `frontend/src/components/Planning.jsx`, `docs/BATCH-9.md`. Existing app/router/navigation, `.env.example` and docs were extended. **No migration or new dependency**; head remains `c6ec82a178d3`. Use More → Planning readiness, or the desktop sidebar. `ENABLE_P2_PROCUREMENT`, `ENABLE_P2_FINANCIAL_PLANNING`, `ENABLE_P2_BENCHMARKING` default to `0`; `1` only requests activation and cannot lift missing gates. Their actual blockers and the risk register are in BATCH-9.md.
+## Actual implementation and Batch 10 changes
 
-APIs: `GET /api/planning/readiness`, `POST /api/planning/assess` (inspection only; financial checks require owner/admin), and `POST /api/planning/{capability}/execute` (always rejected). Inspection checks store-owned source IDs, expected SKU/stock versions, units, unconfirmed need and declared offer-date plausibility/expiry. An attachment/date/consent/cohort-size supplied by a client grants no verification or authority. All peer results are suppressed with no cross-store query. Own recorded movement history is linked, not reinterpreted as a growth comparison.
+React **19.2.6** + Vite **6.4.5**, FastAPI/Pydantic, SQLAlchemy Core/Psycopg, PostgreSQL only; Alembic head remains **c6ec82a178d3**. No schema migration/dependency framework replacement in Batch 10. Startup checks migrations and never create-all/seeds/resets/imports. Browser offline state is scoped IndexedDB, not SQL.
 
-Final Batch 9 verification: **126 backend tests**, **19 browser journeys** (2 commerce + 3 partner/readiness + 14 legacy/offline/PWA), **14 IndexedDB tests**, lint/format/build, Alembic drift and shared Android debug build/lint. The 25 new backend cases test gates, not actual order lifecycle, verified lending consent or privacy-approved cohorts. Gate-only duplicate inspection/replay is not a working purchase-order idempotency claim. Screenshots: ignored `artifacts/test-evidence/batch9-readiness-phone.png` (visually inspected, 320–430px viewport checks). Android final size/checksum is in BATCH-9.md; this supersedes the local artifact from the historical Batch 7 report. No real device/provider/supplier/lender/cohort acceptance is claimed.
+Working: reviewed purchase intake, independent partial/final physical receiving, exact append-only inventory, SKU thresholds/actual expiry, original six-stage supplier recovery, durable outbox, PWA shell, deterministic labelled settlement fixtures and source-linked brief, curated-source help, optional unverified cloud proposal adapters, P2 readiness gates. Invoice acceptance does not add stock; accepted undamaged physical receiving does. Supplier promises do not count as recovery. Actual SKU sale data requires explicit merchant/POS evidence; payments do not imply sales or debt.
 
-Run builds **before** backend collection/API startup; do not rebuild frontend/dist concurrently with importing backend.app. An initial parallel verification attempt raced Vite's replacement of dist/assets and failed collection; the completed sequential backend rerun is the result counted here. No test was weakened or deleted. Do not run two full frontend builds against one dist concurrently.
+Batch 10 fixes:
 
-Before proceeding: explicit owner approval for the relevant missing P1 foundations/source evaluation, current permissioned supplier offers and PO lifecycle, complete authorised financial/consent/lender process or privacy-reviewed cohort methodology. Do not enable P2 results just by changing a flag, and do not infer that all of Batch 8 is now authorised. The owner's standing instruction remains: commit/push and update this handoff before exit so another system can continue.
+- Bounded chunked request reads (9 MB API / 16 KB auth) before full allocation/DB work; safe malformed-length rejection.
+- Redacted validation inputs, nested safe 422 and caught invalid decimal conversion.
+- Repeatable-read export snapshot, formula escaping and exact paise rendering; real request operation ID on accepted inventory/receipt events.
+- Obvious active/embedded PDF rejection on new uploads; this is not antivirus/content disarm or retroactive scanning.
+- Complete-build check before mounting static assets; build/test sequence remains explicit.
+- Small text/focus contrast and phone form readability, reverse-tab containment, disabled busy close controls, actual store initials and missing/large-money display fixes.
+- Vite **6.4.1→6.4.5**, source-map-js **1.2.1→1.2.2** patched; clean lockfile install and npm audit show zero known findings at this check. Python dependency compatibility passes; Python CVE scanning is not performed because pip-audit is absent.
+- Expanded release security matrix, image/manual-fallback corpus tests, complete phone purchase-to-partial/full recovery and throttled/offline/keyboard checks. Browser builds force a same-origin API so tests cannot target a configured live host. Test server forces cloud keys off and has graceful cleanup confined to its own child/schema.
 
-## Git / authorization / scope
+Key new files: `backend/tests/test_release.py`, `frontend/tests/money.test.mjs`, `tests/e2e/release.spec.js`, `scripts/audit_release.py`, `docs/BATCH-10.md`. Existing small core fixes are in app/security/domain, money/UI helpers and verification scripts. No real messages/orders/credit applications/tax submissions were sent.
 
-- Repository: `https://github.com/hemishsrichandra/Munafa.git`; current macOS checkout `/Users/hemish/Sem-3/Munafa`, branch `main`.
-- Pulled GitHub Batch 5 completion **cba2166** by fast-forward, preserving the local whitespace-only report edit in a stash. The report was later normalized for formatting; no substantive owner content was removed. The local stash remains as a backup, not application state.
-- Batch 6 checkpoint: **9408088** (`Implement Batch 6: deterministic reconciliation and evidence-linked daily brief`). Batch 7 follows it; `git log -2 --oneline` identifies the final published revision.
-- Owner previously requested pulling, completing Batches 6 **and** 7 sequentially, a cross-system handoff and committing/pushing before exit; the subsequent Batch 9 request authorises the gate work described above. The pasted Batch 8 specification was treated as future context because the request named Batches 6–7. **Do not implement Batch 8 without explicit approval.**
-- Preserve PostgreSQL-only persistence, existing six-stage supplier invariants, approvals/idempotency, scoped sessions and IndexedDB conflict handling. No SQLite import/reset, destructive migration, demo reset, real-document upload, automatic messaging or external live provider call was performed.
-
-## Current implementation / boundaries
-
-React 19/Vite and FastAPI/Pydantic remain. PostgreSQL 17, SQLAlchemy Core/Psycopg and Alembic remain the only server persistence path. Migration head **c6ec82a178d3** (following **ec82825043aa** payment tables and **67e38dd313f8** purchase/stock). Startup checks the head; it does not create/seed/import tables.
-
-Batch 5 purchase review, physical receiving, exact append-only inventory and original supplier recovery UI/offline workflow are preserved. Invoice acceptance never adds stock; accepted undamaged physical receiving does. A promise is not recovery; unique proof/reference, applied-confirmed, approval digest/version and remaining-balance checks remain enforced.
-
-Batch 6: immutable payment observations and settlement components; typed internal fixture adapter; demo/live discriminators and store-scoped queries; deterministic net/difference and incomplete/stale/timing/cutoff/correlation explanations; source-linked brief over supplier claims, ledger thresholds, actual expiry and reconciliation exceptions. LIVE is disabled with no webhook ingestion route. Demo import is explicit and administrator/demo-store only. No bank verification, statement import, payment export, customer debt inference or SKU sales inference exists.
-
-Batch 7: narrow provider interfaces, strict billed-field extraction and persistent two-invalid-output budget; minimal AI telemetry; opt-in speech note preview; source/translation review and numeric checks; deterministic cited help with explicitly selected scoped read sources and non-executing follow-up drafts. Manual capture and deterministic retrieval remain defaults. Twelve synthetic invoice fixtures and evaluator are committed. Dedicated OCR options are researched candidates, not integrated or measured providers. No live-provider or human-performance benchmark is claimed.
-
-Key new files: `backend/payments.py`, `brief.py`, `providers.py`, `extraction_schema.py`, `ai_api.py`, `help.py`, `knowledge/product-v1.json`; React `BusinessBrief.jsx`, `Assistant.jsx`; new payment/assistant tests; `evaluation/`, `scripts/evaluate_ai.py`, `build_eval_corpus.py`, `render_eval.cjs`. Existing app/commerce/legacy AI/share/voice screens were adapted incrementally. No new runtime dependency/framework/state library was added in these batches.
-
-## Fresh machine setup
+## Reproduce on another system
 
 ```sh
 git clone https://github.com/hemishsrichandra/Munafa.git
@@ -45,75 +39,78 @@ python3 -m venv .venv
 .venv/bin/pip install -r backend/requirements-dev.txt
 npm ci
 cp .env.example .env
-# Supply private PostgreSQL URLs/credentials and exact APP_ORIGINS in .env.
-# Keep APP_ENV=development locally; development demo access is explicit only.
-# Provision a new PostgreSQL database (README Docker Compose is supported).
+# Fill private PostgreSQL URLs/credentials and exact APP_ORIGINS.
+# Provision PostgreSQL using README/Compose; never use a fallback database.
 .venv/bin/alembic upgrade head
 .venv/bin/python -m backend.manage create-owner
 npm run dev
 ```
 
-On Windows use `.venv/Scripts/python.exe` / `alembic.exe`; npm scripts choose Python cross-platform through `scripts/python.cjs`. Use PostgreSQL, never a fallback database. Configure TEST_DATABASE_URL for a separate test database/schema permission. No credentials, private DB, local draft, APK, SDK, signing key or merchant attachment is in Git. Transfer private data only through an explicit separately approved backup/restore process. Code can be rebuilt without it.
+Use `.venv/Scripts/python.exe` / `alembic.exe` on Windows. npm Python scripts select the platform path. No API key is needed for manual workflows, deterministic help or explicitly loaded synthetic settlement demo. Production must not enable development login. Keep speech preview/P2 flags off until their acceptance requirements are actually satisfied.
 
-No AI key is required for manual purchase/receiving/stock/recovery, deterministic help or explicit isolated payment demo. `SARVAM_API_KEY` is optional/server-only. `ENABLE_SPEECH_PREVIEW=0` is the safe default; languages remain unvalidated previews. Verify provider retention and terms before any real input. Source-document review dates expire 29 November 2026; maintain/reapprove versioned sources before making current-support claims.
+For a resettable **disposable synthetic rehearsal**, see DEMO.md: `npm run build`, then `node scripts/python.cjs scripts/serve_e2e.py`, browse `http://127.0.0.1:8001` and use its explicitly public test-only account. This creates a new random schema in TEST_DATABASE_URL, not the application schema. Ctrl+C/graceful stop cleans only that runner's own schema/child. Abrupt kill may leave a disposable namespace; do not guess/drop existing namespaces. Start a fresh one. `backend.reset_demo` intentionally refuses to delete data.
 
-The browser UI is `http://127.0.0.1:5173`; API/built PWA `http://127.0.0.1:8000`. `npm run build && npm start` serves the production PWA; first cache/install/sign-in requires connectivity. Backend static routes require startup after a build. Service worker never broadly caches authenticated API responses. The existing eight-hour verified offline grant, private cache cleanup, durable outbox, leases and explicit conflicts are unchanged. Public product guide can be read with the offline workspace.
+The final review servers were left running by `npm run dev` in local exec session 90186 (session IDs are not portable). Health was checked without signing in/seeding. On another system run your own setup; inspect ports before starting a duplicate. Normal UI: `http://127.0.0.1:5173`; API/built PWA: `http://127.0.0.1:8000`. PWA tests use the production build. Build before API startup/collection, never rebuild the same dist concurrently with serving. First connected cache/sign-in is required; offline dynamic APIs/AI and a first sign-in are unavailable. Verified local workspace grant is eight hours. No interactive store selector exists: session selects the active store; spoofed client store fields/headers cannot switch it.
 
-## This Mac's local state (not portable)
+## Final verified commands / pass versus skipped
 
-- Existing PostgreSQL **17.11 Homebrew**, cluster `/private/tmp/munafa-pg-b23-20261030`, log `/private/tmp/munafa-pg-b23.log`, listen `127.0.0.1:55432`, database `munafa_b23`. It was already running; a sandboxed status check falsely could not see it. Elevated verification confirmed its PID/version. No lock file was deleted, new cluster initialized or data reset.
-- Ignored private `.env` retains local URLs/demo code. Do not print/commit it. Test suites create fresh random `test_...` / `e2e_...` schemas and clean only their own schemas.
-- Private backup `artifacts/private/pre-batch6-postgres.dump`, mode 0600; archive list checked, **restore not tested**. SHA-256 `bc0ea9013ee2b7d1b161671cde5ea2216d96a45f502dc119c35e593b6ca73b53`. It is excluded from Git. Existing Batches 2–5 backups/legacy data remain untouched.
-- Current migrations were additive and applied to the development schema. Never downgrade populated tables/import old databases without verified backup and explicit owner approval.
-
-## Historical Batches 6–7 checks / shared commands
-
-Batches 6–7 baseline backend suite **101 passed** (one existing Starlette/HTTPX deprecation warning); all browser groups **18 passed** (2 commerce + 2 partner + 14 legacy/offline/PWA); IndexedDB **14 passed**. Full backend suite includes empty-schema migration down/up, exact paise/decimal rules, source/stock/recovery regressions, tenant/mode/role isolation, duplicate/out-of-order components, approval/idempotency, invalid AI attempts, timeouts/429, cited/stale/contradictory help, draft permissions and no financial/inventory AI authority.
+Execute sequentially around frontend builds:
 
 ```sh
+npm ci
 npm run build
-npm test
+# PG_BIN is optional tool location, not an application DB mode.
+PG_BIN=/opt/homebrew/opt/postgresql@17/bin RELEASE_EVIDENCE_DIR=artifacts/test-evidence npm test
 npm run test:offline
-npm run test:e2e
-.venv/bin/alembic check
-.venv/bin/ruff check backend scripts/serve_e2e.py scripts/build_eval_corpus.py scripts/evaluate_ai.py
-.venv/bin/ruff format --check backend scripts/serve_e2e.py scripts/build_eval_corpus.py scripts/evaluate_ai.py
-npm run format:check
-npm run build
-```
-
-Production/PWA build, Alembic drift check, Ruff/format, Prettier and diff whitespace checks passed. Remote CI is configured, including evaluator-script lint, but its result has not been claimed. Chromium fallback on this Mac:
-
-```sh
 PLAYWRIGHT_EXECUTABLE_PATH=/Users/hemish/Library/Caches/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-mac-arm64/chrome-headless-shell npm run test:e2e
+.venv/bin/alembic check
+.venv/bin/ruff check backend scripts/serve_e2e.py scripts/build_eval_corpus.py scripts/evaluate_ai.py scripts/audit_release.py
+.venv/bin/ruff format --check backend scripts/serve_e2e.py scripts/build_eval_corpus.py scripts/evaluate_ai.py scripts/audit_release.py
+npm run format:check
+.venv/bin/python scripts/audit_release.py
+.venv/bin/python -m pip check
+npm audit --json
+npm run android:check
 ```
 
-Browser evidence checks 320/360/390/430px plus the existing viewport/rotation/PWA tests. New helper cases simulate microphone permission denial and a noisy transcript with explicit start/stop and track disposal; **they are not real microphone/device/provider tests**. Screenshots: ignored `artifacts/test-evidence/batch6-brief-phone.png`, `batch7-help-phone.png`; visually inspected. Public synthetic corpus SVG/PNG files are committed; fixture parser matches 132 annotated slots, not merchant OCR performance. See AI-EVALUATION.md for unmeasured metrics and how to score private provider responses.
+**PASS:** 210 backend tests, 21 browser journeys (2 commerce + 3 partner + 2 release + 14 legacy/offline/PWA), 17 frontend unit tests (14 IndexedDB/outbox + 3 exact money formatting). No skips in these final runs. Backend has one existing Starlette/HTTPX deprecation warning. Build, lockfile install, lint/format/syntax/compile, PostgreSQL drift, source audit and Capacitor doctor/build/lint pass. JS/JSX project has no configured TypeScript semantic checker; syntax/build is not type-safety certification. CI is configured, including source audit; remote job result is not claimed without checking it.
 
-## Android / artifacts
+**SKIPPED/UNAVAILABLE:** actual Android/emulator (adb found none), physical camera/OS PWA installation, native process-kill/storage-pressure/update and assistive-technology sessions, broad Safari/Firefox testing, actual Paytm/Sarvam/messaging/lender contracts and measured real language/merchant trials. Python CVE scan (`pip_audit` module missing) is not replaced by pip check. Store selector and Batch 8 modules are not implemented. These are not counted as passing tests.
 
-Same React frontend, no duplicate domain implementation. `npm run android:sync` and `assembleDebug lintDebug --no-daemon` pass; lint **0 errors / 28 pre-existing warnings**, with Gradle flatDir/SDK XML warnings. Debug APK signature verifies (standard META-INF coverage warnings); packaged public assets byte-match frontend/dist. Debug signing only. No emulator/device or release signing claim.
+Release checks cover all **57 private API operations** for anonymous denial (60 API operations total), valid-body cross-store entity families, intentional same-store collaborative reads by role, actor-bound receipts/export denial, source versions/digests, CSRF/session/rate limits, streamed size limits, obvious malicious uploads, CSV formula/concurrency, actual idempotency provenance and offline account purge/conflict/exact retry. Local source/bundle scan found zero known private-config/key matches and zero SQLite imports; no full history/semantic PII/malware/security certification claim.
+
+One local Chromium simulated-network sample is recorded in ignored `artifacts/test-evidence/batch10-browser-performance.json`; BATCH-10.md gives its exact timing values and limitations. It includes scripted login and no CPU throttle, not a field task-time study or Web Vitals/FMP score. Selected key text contrast is ~6.35/8.99:1, phone nav ≥44px and dialog forward/reverse focus checks pass; full WCAG/screen-reader certification did not run.
+
+## PostgreSQL / local state / restore
+
+- This Mac: PostgreSQL **17.11 Homebrew**, existing cluster `/private/tmp/munafa-pg-b23-20261030`, log `/private/tmp/munafa-pg-b23.log`, loopback `127.0.0.1:55432`, DB `munafa_b23`. Ignore sandboxed process-visibility failures; elevated verification showed the actual server. Never initialise over or delete its lock files.
+- Private ignored `.env` holds local URLs/demo code; never print/commit it. Local loopback trust/superuser setup is test convenience, not production security. Use least-privilege application roles in deployment.
+- Tests use generated `test_...` / `e2e_...` schemas. Release restore needs supported pg_dump/pg_restore via PATH or PG_BIN and a **disposable test role** with CREATE DATABASE rights; do not grant production roles extra rights for tests. Missing/older tools produce an explicit skip, not successful restore evidence.
+- **PASS synthetic restore:** backup of an owned random synthetic fixture schema, archive TOC verification before import, restore to a newly created `release_restore_...` database, matching counts/canonical content hashes across 32 app tables. Synthetic 8000 paise recovery and 2 kg stock plus indexes/constraint validation match. Only generated test objects were cleaned. The configured application database was not restored over.
+- Result: ignored `artifacts/test-evidence/postgres-restore.json`; archive is private in pytest temp output. This does not prove recovery of any real merchant backup. Earlier private backup `artifacts/private/pre-batch6-postgres.dump` remains untouched and excluded from Git; no real-data import/reset was performed. Legacy `.data` files were never opened/imported by the app/tests.
+
+## Android and evidence artifacts
+
+Same React build and business rules, Capacitor 7.6.10, no duplicate native screens. Debug APK `artifacts/munafa-debug.apk` and `android/app/build/outputs/apk/debug/app-debug.apk` are **ignored**, not in Git. Final size/SHA-256 is in BATCH-10.md and ignored `artifacts/test-evidence/batch10-android.json`; it supersedes prior local artifacts. Signature verifies and every packaged public asset matches frontend/dist. Debug signing only; standard META-INF/Gradle flatDir/SDK XML warnings remain. Lint: **0 errors / 0 fatal / 28 existing warnings**.
 
 ```sh
 npm run android:sync
-cd android
-JAVA_HOME=/private/tmp/munafa-jdk21/jdk-21.0.13+9/Contents/Home ANDROID_HOME=/private/tmp/munafa-android-sdk ./gradlew assembleDebug lintDebug --no-daemon
+JAVA_HOME=/private/tmp/munafa-jdk21/jdk-21.0.13+9/Contents/Home ANDROID_HOME=/private/tmp/munafa-android-sdk ./android/gradlew -p android assembleDebug lintDebug --no-daemon
 ```
 
-Tool paths are temporary and may disappear: Java 21.0.13+9, Gradle 8.11.1, SDK 35. Install permanent tools on another system. Owner previously authorised Google SDK licence acceptance. No additional microphone/location/contact permission is introduced. Native voice is unavailable; use text/touch.
+Temporary Java **21.0.13+9**, Gradle **8.11.1**, SDK **35** paths may disappear; install permanent tools elsewhere. Owner previously authorised the Android SDK licence. No microphone/location/contacts permission was introduced. `adb devices -l` found no device/emulator; no real-device test ran. No hosted HTTPS API is configured in this APK: provide an approved public VITE_API_BASE and exact native APP_ORIGINS before connected device login; never put a credential in VITE values. Bundled public shell can open without backend, private offline drafts require a previous verified sign-in.
 
-Current APK location `artifacts/munafa-debug.apk` (ignored) and `android/app/build/outputs/apk/debug/app-debug.apk`; final current size/checksum is recorded in BATCH-9.md after verification. There is **no hosted HTTPS API configured**. For connected APK testing provide an approved public `VITE_API_BASE=https://HOST/api` and backend exact `APP_ORIGINS=https://localhost`; never put credentials in VITE variables. Without it the bundled shell opens but connected sign-in/AI cannot work.
+Ignored screenshots include `artifacts/test-evidence/batch10-integrated-recovery.png` (visually inspected), previous partner/readiness captures and PWA/offline outputs. Public corpus images under evaluation/ are synthetic and committed. No private documents, credentials, backups, keys, logs or APKs should be added to Git.
 
-## Remaining acceptance / next phase dependencies
+## Remaining risks / next work (separate authorisation)
 
-1. **Live Paytm gate:** official merchant authorisation, API environment entitlement, verified signature/schema/pagination/timezone contract and real E2E. Public settlement APIs state no staging availability. No guessed integration should be enabled.
-2. **AI evaluation gate:** authorised credentials, configured provider retention/terms, independently checked consented real-image ground truth, held-out runs for current and dedicated providers, billing evidence and merchant acceptance/correction/time trials. Synthetic/mocked results cannot satisfy these claims.
-3. **Voice/language gate:** actual devices, speakers, noise/accents/code-mix/network tests, correction-adjusted touch comparison and consent review. Keep speech disabled until acceptance; no speed claim.
-4. **Android gate:** real device install/login/offline cold-start/file/share/Back/process-kill/low-storage/update tests and approved HTTPS backend. Current build is a debug artifact only.
-5. **Production gate:** identity/account operations, least-privilege database roles, verified restore, retention/purge, upload scanning and privacy/support review. Source queries are prototype-sized; paginate/profile before scale. AI telemetry has no automatic purge; records persist until approved maintenance.
-6. **Batch 8 needs separate approval.** Customer-credit/consent/events, CRM audience permissions, and CA-reviewed accounting exports do not yet exist. Reliable SKU sales history is not supplied by payments; forecast sufficiency/baselines cannot be invented. Staff roles exist but store tasks/checklists do not. Future modules must meet their data/UX prerequisites or show honest disabled states. No P2 procurement/lending/benchmark agents are authorised.
-7. Hackathon merchant field validation, presentation and demo video remain separate deliverables. No causal growth, stock accuracy, time-saving or recovery uplift metric is fabricated.
+1. Real device/browser/OS install/camera/share/Back/update/process-kill/eviction and assistive-technology testing; approved HTTPS hosting, native origin setup and release signing.
+2. Authorised Paytm merchant/environment entitlement, official signature/schema/timezone contract, real bank/settlement feed and authorised E2E; no staging assumption. WhatsApp handoff is not a delivery receipt. No automatic supplier/customer messages exist.
+3. Real consented/redacted invoice ground truth, held-out provider comparisons, actual billing and correction-adjusted merchant trials; actual voice/language/noise matrix. Synthetic parser/mocks are not OCR/merchant outcome metrics. Verify provider retention/DPA/region before real documents/audio; account defaults were not inspected.
+4. Production account/store operations, least-privilege DB roles, real backup/restore objectives, file scanning/retention/deletion and distributed rate limiting/log/security/privacy review. Original documents/audits have no full deletion administration; do not claim compliance. Python dependency CVE review/full history-secret/PII/penetration testing remains.
+5. Batch 8/P1 source models and quality evaluation need explicit scope. P2 ordering/lending/peer results remain gated until real evidence, consent/contracts/methodology and fresh central approvals exist. No creditworthiness or sales should be inferred from unrelated records.
+6. Record the demo video/presentation from DEMO.md and validate with actual merchants. No outcome uplift or time-saved claim is justified by synthetic rehearsal timings.
 
-Suggested continuation prompt:
+Suggested continuation:
 
-> Pull origin/main, read docs/HANDOFF.md and BATCH-9.md plus the prior batch docs, then inspect actual source/tests/Git status. Batch 9 delivers readiness reporting and fail-closed gates only; actual P2 features remain blocked by unproven P1 source quality and missing supplier/lender/cohort foundations. Batch 8 has not been implemented. Preserve all supplier, paise/decimal, audit, approval, tenant and offline invariants. No reset/import or future batch is authorised implicitly. I now authorise [specific next prerequisite batch or evaluation work]; list files/schema/dependencies/risks/tests before editing. Build before running backend imports rather than rebuilding dist concurrently. Commit/push and update this handoff before exit.
+> Pull origin/main, inspect Git status/history, read docs/HANDOFF.md, BATCH-10.md and DEMO.md. Batch 10 is a tested local synthetic demo candidate with explicit skipped/external checks; no live Paytm/real device/provider performance or production/legal readiness is established. Preserve exact-money, source, tenant, approval, append-only and offline invariants; do not reset/import data. I authorise [specific remaining acceptance or separately scoped implementation]. Update docs/this handoff and commit/push before exit.

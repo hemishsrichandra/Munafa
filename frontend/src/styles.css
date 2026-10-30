@@ -4257,3 +4257,37 @@ details summary {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Batch 10: improve contrast of small supporting text and avoid iOS form zoom. */
+:root {
+  --muted: #536451;
+}
+.field,
+.metric-top,
+.metric-foot,
+.breadcrumb,
+.prototype-label,
+.section-caption,
+footer,
+.table-date,
+.timeline time {
+  color: #536451;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline-color: #315a3d;
+}
+@media (max-width: 760px) {
+  .field {
+    font-size: 12px;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    font-size: 16px;
+  }
+}
