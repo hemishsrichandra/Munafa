@@ -117,7 +117,7 @@ See [Batch 2](docs/BATCH-2.md) for schema, authentication, migration and backup/
 
 Legacy `.data/*.db` files are untouched archives. They are never opened by the current app/tests. There is no automatic importer and the former reset command refuses deletion. Any real-data import or destructive migration requires verified backup and explicit owner approval.
 
-For a new session, start with [resume context](docs/HANDOFF.md). See [progress](docs/PROGRESS.md), [demo instructions](docs/DEMO.md) and [remaining roadmap](docs/ROADMAP.md). Batch 4 includes the owner-authorized Git commit/push; consult the handoff and `git status` for the exact current revision.
+For a new session, start with [resume context](docs/HANDOFF.md). See [progress](docs/PROGRESS.md), [demo instructions](docs/DEMO.md) and [remaining roadmap](docs/ROADMAP.md). Batch 5 adds purchase capture, separate physical receiving, stock, expiry and offline commerce drafts; see [Batch 5](docs/BATCH-5.md). The owner authorised pushing this completion to origin/main; consult the handoff and `git status` for the current revision.
 
 ## Offline data safety
 

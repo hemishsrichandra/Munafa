@@ -227,8 +227,12 @@ export async function cacheCases(scope, cases) {
   });
 }
 export async function saveDraft(scope, draft, file) {
-  if (!['invoice', 'receiving'].includes(draft.kind))
-    throw new Error('Stock operations are ineligible until a server stock ledger exists.');
+  if (
+    !['invoice', 'receiving', 'purchase', 'purchase_receiving', 'inventory_movement'].includes(
+      draft.kind,
+    )
+  )
+    throw new Error('Unsupported device draft type.');
   let attachment;
   if (file) {
     if (!file.size || file.size > 4 * 1024 * 1024)
@@ -297,10 +301,16 @@ export async function queueDraft(scope, id) {
       operation_id: opId,
       scope,
       draft_id: id,
-      operation_type: draft.kind === 'invoice' ? 'invoice_create' : 'receiving_save',
+      operation_type: {
+        invoice: 'invoice_create',
+        receiving: 'receiving_save',
+        purchase: 'purchase_create',
+        purchase_receiving: 'purchase_receiving_capture',
+        inventory_movement: 'inventory_movement',
+      }[draft.kind],
       payload_schema_version: 1,
       entity_id: draft.entity_id || null,
-      expected_version: draft.expected_version || null,
+      expected_version: draft.expected_version ?? null,
       client_created_at: new Date().toISOString(),
       dependency_ids: [],
       payload: draft.payload,
@@ -308,9 +318,14 @@ export async function queueDraft(scope, id) {
       attempts: 0,
       next_attempt_at: 0,
     };
-    s.outbox.add(transition(row, 'pending_sync'));
     const attachment = await requestValue(s.attachments.get(id));
-    if (attachment && draft.kind === 'invoice') {
+    if (attachment && draft.kind === 'purchase')
+      row.payload = {
+        ...row.payload,
+        document: { name: attachment.name, mime: attachment.mime, sha256: attachment.sha256 },
+      };
+    s.outbox.add(transition(row, 'pending_sync'));
+    if (attachment && ['invoice', 'purchase'].includes(draft.kind)) {
       const attachmentId = crypto.randomUUID();
       s.outbox.add(
         transition(
@@ -318,7 +333,8 @@ export async function queueDraft(scope, id) {
             ...row,
             id: attachmentId,
             operation_id: attachmentId,
-            operation_type: 'attachment_upload',
+            operation_type:
+              draft.kind === 'purchase' ? 'purchase_document_upload' : 'attachment_upload',
             payload: null,
             attachment_id: id,
             entity_ref: opId,

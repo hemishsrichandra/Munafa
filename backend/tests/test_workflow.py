@@ -1,3 +1,4 @@
+import sys
 import copy
 import json
 from datetime import date
@@ -463,7 +464,7 @@ def test_reset_is_disabled_and_does_not_delete(client):
     import subprocess
 
     result = subprocess.run(
-        [".venv/bin/python", "-m", "backend.reset_demo"], capture_output=True, text=True
+        [sys.executable, "-m", "backend.reset_demo"], capture_output=True, text=True
     )
     assert result.returncode != 0
     assert "Reset is disabled" in result.stderr

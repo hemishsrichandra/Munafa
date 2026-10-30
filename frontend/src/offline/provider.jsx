@@ -28,7 +28,7 @@ export function OfflineProvider({ session, onAuthProblem, children }) {
       const [drafts, operations, caches, status] = await Promise.all(
         ['drafts', 'outbox', 'cache', 'status'].map((s) => db.list(s, scope)),
       );
-      const cache = caches.find((c) => c.expires_at > Date.now()) || null;
+      const cache = caches.find((c) => Array.isArray(c.cases) && c.expires_at > Date.now()) || null;
       setSnapshot({ drafts, operations, cache, status: status[0] });
       setReady(true);
     } catch (e) {

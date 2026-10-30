@@ -111,7 +111,8 @@ test('mobile overview, case detail and manual intake are usable without overflow
     true,
   );
   await page.screenshot({ path: 'test-results/overview-mobile.png', fullPage: true });
-  await page.getByRole('button', { name: 'Purchases', exact: true }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'Credit cases', exact: true }).click();
   await page.getByRole('textbox', { name: 'Search cases' }).fill('A-104');
   await page.getByRole('button', { name: 'Open invoice A-104', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Invoice A-104', exact: true })).toBeVisible();
@@ -194,7 +195,8 @@ for (const viewport of [
       }
     }
     if (mobile) {
-      await page.getByRole('button', { name: 'Purchases', exact: true }).click();
+      await page.getByRole('button', { name: 'More', exact: true }).click();
+      await page.getByRole('button', { name: 'Credit cases', exact: true }).click();
       await expect(page.getByRole('heading', { name: 'Every credit. One place.' })).toBeVisible();
       await page.getByRole('button', { name: 'More', exact: true }).click();
       await expect(page.getByRole('heading', { name: 'More from your workspace' })).toBeVisible();

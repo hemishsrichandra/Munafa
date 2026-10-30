@@ -15,7 +15,8 @@ module.exports = defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command: '.venv/bin/python scripts/serve_e2e.py',
+    timeout: 180000,
+    command: 'node scripts/python.cjs scripts/serve_e2e.py',
     url: 'http://127.0.0.1:8001/api/health',
     reuseExistingServer: false,
     env: { APP_ENV: 'test', SARVAM_API_KEY: '' },

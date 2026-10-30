@@ -1,5 +1,11 @@
 # Approved batch boundaries and next work
 
+## Current scope � Batch 5 completed
+
+The owner authorised Batch 5 completion from the attached status report. The purchase register, invoice review, physical receiving, SKU/stock, expiry and offline commerce workflows are now implemented. See [Batch 5](BATCH-5.md) and [handoff](HANDOFF.md). Future batches require a new scope. Earlier authorisation notes below are historical.
+
+## Historical report
+
 Batches 2 and 3 were authorized together, sequentially. They cover PostgreSQL/trust foundations, then the mobile PWA and shared Android shell. Batch 4 was subsequently authorized with a Git push and cross-session handoff. Future batches remain unapproved.
 
 ## Batch 4 complete; wait for Batch 5 scope

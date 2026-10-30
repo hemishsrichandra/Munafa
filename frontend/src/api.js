@@ -140,7 +140,7 @@ export async function saveBlob(blob, name) {
     await Filesystem.deleteFile({ path, directory: Directory.Cache });
   }
 }
-export async function downloadPrivate(path, name) {
+export async function downloadPrivate(path, name, returnBlob = false) {
   if (!path.startsWith('/api/')) throw new Error('Unsupported private file path.');
   const base = import.meta.env.VITE_API_BASE || '/api';
   if (isNative() && !/^https:\/\//.test(base))
@@ -157,7 +157,9 @@ export async function downloadPrivate(path, name) {
   if (!response.ok) throw new Error('File unavailable or access denied. Refresh and try again.');
   const disposition = response.headers.get('Content-Disposition') || '';
   const filename = name || disposition.match(/filename="?([^";]+)"?/)?.[1] || 'merchant-evidence';
-  await saveBlob(await response.blob(), filename);
+  const blob = await response.blob();
+  if (returnBlob) return blob;
+  await saveBlob(blob, filename);
 }
 
 // Decimal UI conversion only; authoritative amounts are calculated on the server.
@@ -167,3 +169,36 @@ export function paiseFromInput(value) {
   const paise = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
   return Number.isSafeInteger(paise) ? paise : 0;
 }
+
+export const getPurchases = () => api('/purchases');
+export const getPurchase = (id) => api(`/purchases/${id}`);
+export const createManualPurchase = (draft) =>
+  api('/purchases/manual', { method: 'POST', body: draft });
+export const editPurchase = (id, version, draft) =>
+  api(`/purchases/${id}`, { method: 'PATCH', body: { version, draft } });
+export const createReceiving = (id, payload) =>
+  api(`/purchases/${id}/receivings`, { method: 'POST', body: payload });
+export const getProducts = () => api('/products');
+export const createProduct = (product) => api('/products', { method: 'POST', body: product });
+export const getMovements = (id) => api(`/products/${id}/movements`);
+export const getExpiry = () => api('/inventory/expiry');
+export async function proposeCommerceAction(
+  action_type,
+  entity_id,
+  expected_version,
+  payload = {},
+) {
+  let a = await api('/commerce/proposals', {
+    method: 'POST',
+    body: { action_type, entity_id, expected_version, payload },
+  });
+  a = await api(`/actions/${a.id}/approve`, {
+    method: 'POST',
+    body: { version: a.version, payload_digest: a.payload_digest },
+  });
+  return api(`/actions/${a.id}/execute`, { method: 'POST', body: { version: a.version } });
+}
+export const acceptPurchase = (id, version) =>
+  proposeCommerceAction('accept_purchase', id, version);
+export const acceptReceiving = (id, version) =>
+  proposeCommerceAction('accept_receiving', id, version);

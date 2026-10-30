@@ -33,6 +33,48 @@ beforeEach(async () => {
 });
 afterEach(reset);
 
+test('commerce drafts preserve exact operation types and stock version zero', async () => {
+  for (const [kind, type] of [
+    ['purchase', 'purchase_create'],
+    ['purchase_receiving', 'purchase_receiving_capture'],
+    ['inventory_movement', 'inventory_movement'],
+  ]) {
+    const d = {
+      id: crypto.randomUUID(),
+      kind,
+      entity_id: kind === 'purchase' ? null : 'source',
+      expected_version: kind === 'purchase' ? null : 0,
+      payload:
+        kind === 'purchase'
+          ? { draft: { supplier: 'Shop', reference: 'B5' } }
+          : { quantity: '2.500001' },
+    };
+    await db.saveDraft(scope, d);
+    const id = await db.queueDraft(scope, d.id);
+    const row = await db.getRecord('outbox', id, scope);
+    assert.equal(row.operation_type, type);
+    assert.equal(row.expected_version, d.expected_version);
+  }
+});
+
+test('purchase evidence queues with checksum and a dependent document upload', async () => {
+  const blob = new Blob(['%PDF-1.4\nSynthetic purchase'], { type: 'application/pdf' });
+  blob.name = 'purchase.pdf';
+  const d = {
+    id: crypto.randomUUID(),
+    kind: 'purchase',
+    payload: { draft: { supplier: 'Synthetic', reference: 'B5' } },
+  };
+  await db.saveDraft(scope, d, blob);
+  await db.queueDraft(scope, d.id);
+  const rows = await db.list('outbox', scope);
+  const create = rows.find((r) => r.operation_type === 'purchase_create');
+  const upload = rows.find((r) => r.operation_type === 'purchase_document_upload');
+  assert.equal(create.payload.document.sha256.length, 64);
+  assert.deepEqual(upload.dependency_ids, [create.id]);
+  assert.equal(upload.entity_ref, create.id);
+});
+
 test('minimal scoped cache and identity exclude credentials and history', async () => {
   await db.activate({ ...session, csrf: 'never-persist', session_token: 'secret' });
   await db.cacheCases(scope, [

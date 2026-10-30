@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from '../session';
 import { api, money, today, saveBlob } from '../api';
+import { Commerce, CommerceDraftFields } from '../components/Commerce';
 import { InvoiceFields } from '../components/InvoiceIntake';
 import { ErrorBox, Busy } from '../components/ui';
 import { useOffline } from './provider';
@@ -60,6 +61,7 @@ const when = (t) => (t ? new Date(t).toLocaleString('en-IN') : 'Not yet');
 export function OfflineWorkspace({ standalone = false, onClose, onServerChange }) {
   const session = useSession(),
     local = useOffline();
+  const [commerce, setCommerce] = useState(false);
   const [editor, setEditor] = useState(null),
     [file, setFile] = useState(null),
     [error, setError] = useState(''),
@@ -100,10 +102,39 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
         const latest = await api(`/cases/${draft.entity_id}`);
         setConflict({ draft, latest });
       } else {
-        setEditor({ ...draft, id: crypto.randomUUID(), state: 'local_draft' });
-        setFile(null);
+        let copy = { ...draft, id: crypto.randomUUID(), state: 'local_draft' };
+        if (draft.kind === 'purchase_receiving') {
+          const latest = await api(`/purchases/${draft.entity_id}`);
+          if (latest.status !== 'accepted' || latest.delivery_complete)
+            throw new Error(
+              'This purchase is no longer open for receiving. Keep the original draft and inspect its accepted receipts.',
+            );
+          copy = {
+            ...copy,
+            expected_version: latest.version,
+            payload: { ...draft.payload, purchase_version: latest.version },
+          };
+        } else if (draft.kind === 'inventory_movement') {
+          const latest = (await api('/products')).find((p) => p.id === draft.entity_id);
+          if (!latest) throw new Error('SKU is no longer available in this store.');
+          copy = {
+            ...copy,
+            expected_version: latest.stock_version,
+            payload: {
+              ...draft.payload,
+              movement: { ...draft.payload.movement, expected_stock_version: latest.stock_version },
+            },
+          };
+        }
+        setEditor(copy);
+        const attachment = await db.getRecord('attachments', draft.id, local.scope);
+        setFile(
+          attachment?.blob
+            ? new File([attachment.blob], attachment.name, { type: attachment.mime })
+            : null,
+        );
         setNotice(
-          'This is a new editable copy. The previous operation is retained. Check the supplier/reference against the server before queuing.',
+          `New editable copy; source version ${copy.expected_version ?? 'new record'}. The previous operation is retained. Recheck quantities, stock and supplier/reference before saving and queuing.`,
         );
       }
     } catch (e) {
@@ -227,6 +258,14 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
           invoice.
         </p>
       )}
+      <button className="button secondary" onClick={() => setCommerce(!commerce)}>
+        Purchase and stock draft editors
+      </button>
+      {commerce && (
+        <Commerce
+          openCase={() => setNotice('Connect and open the linked recovery case from Purchases.')}
+        />
+      )}
       {editor && (
         <form
           className="offline-editor"
@@ -243,9 +282,15 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
           <h2>
             {editor.kind === 'invoice'
               ? 'Manual invoice draft'
-              : `Receiving · ${editor.source.invoice.reference}`}
+              : `${editor.kind} · ${editor.source?.invoice?.reference || editor.payload?.draft?.reference || editor.entity_id || 'New draft'}`}
           </h2>
-          {editor.kind === 'invoice' ? (
+          {!['invoice', 'receiving'].includes(editor.kind) ? (
+            <CommerceDraftFields
+              kind={editor.kind}
+              payload={editor.payload}
+              change={changePayload}
+            />
+          ) : editor.kind === 'invoice' ? (
             <InvoiceFields
               draft
               review
@@ -341,25 +386,27 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
               </label>
             </>
           )}
-          <label className="field">
-            Invoice / receiving notes
-            <textarea
-              maxLength={500}
-              value={
-                editor.kind === 'invoice'
-                  ? editor.payload.invoice.pricing_note
-                  : editor.payload.note
-              }
-              onChange={(e) =>
-                editor.kind === 'invoice'
-                  ? changePayload({
-                      invoice: { ...editor.payload.invoice, pricing_note: e.target.value },
-                    })
-                  : changePayload({ ...editor.payload, note: e.target.value })
-              }
-            />
-          </label>
-          {editor.kind === 'invoice' && (
+          {['invoice', 'receiving'].includes(editor.kind) && (
+            <label className="field">
+              Invoice / receiving notes
+              <textarea
+                maxLength={500}
+                value={
+                  editor.kind === 'invoice'
+                    ? editor.payload.invoice.pricing_note
+                    : editor.payload.note || ''
+                }
+                onChange={(e) =>
+                  editor.kind === 'invoice'
+                    ? changePayload({
+                        invoice: { ...editor.payload.invoice, pricing_note: e.target.value },
+                      })
+                    : changePayload({ ...editor.payload, note: e.target.value })
+                }
+              />
+            </label>
+          )}
+          {['invoice', 'purchase'].includes(editor.kind) && (
             <label className="field">
               Capture invoice attachment (optional, up to 4 MB)
               <input
@@ -393,11 +440,13 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
             Preview:{' '}
             {editor.kind === 'invoice'
               ? editor.payload.invoice.reference
-              : editor.source.invoice.reference}{' '}
+              : editor.source?.invoice?.reference ||
+                editor.payload?.draft?.reference ||
+                editor.entity_id}{' '}
             ·{' '}
             {editor.kind === 'invoice'
               ? editor.payload.invoice.lines.length
-              : editor.payload.lines.length}{' '}
+              : (editor.payload.draft?.lines || editor.payload.lines || []).length}{' '}
             items. Amounts and eligibility will be checked on the server.
           </p>
           <div className="offline-actions">
@@ -484,7 +533,7 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
           <strong>
             {d.kind === 'invoice'
               ? d.payload?.invoice?.reference || 'Untitled invoice'
-              : `Receiving ${d.source?.invoice?.reference || d.entity_id}`}
+              : `${d.kind}: ${d.payload?.draft?.reference || d.source?.invoice?.reference || d.entity_id || 'New draft'}`}
           </strong>
           <span className={`sync-state ${d.state}`}>{stateLabel(d.state)}</span>
           <p>
@@ -498,7 +547,13 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
           )}
           {d.state === 'local_draft' &&
             d.schema_version === 1 &&
-            ['invoice', 'receiving'].includes(d.kind) && (
+            [
+              'invoice',
+              'receiving',
+              'purchase',
+              'purchase_receiving',
+              'inventory_movement',
+            ].includes(d.kind) && (
               <>
                 <button
                   className="button secondary"

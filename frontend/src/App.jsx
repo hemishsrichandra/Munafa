@@ -32,8 +32,10 @@ import { icon, Metric, CaseTable, Empty, Modal } from './components/ui';
 import { InvoiceModal } from './components/InvoiceIntake';
 import CaseDetail from './components/CaseDetail';
 import { Suppliers, Insights } from './components/LedgerViews';
+import { Commerce } from './components/Commerce';
 
 const navs = [
+  { id: 'purchases', label: 'Purchases & stock', Icon: ReceiptText },
   { id: 'overview', label: 'Overview', Icon: LayoutDashboard },
   { id: 'cases', label: 'Credit cases', Icon: ReceiptText },
   { id: 'suppliers', label: 'Suppliers', Icon: Store },
@@ -255,7 +257,14 @@ function App() {
                   <button onClick={load}>Retry</button>
                 </div>
               )}
-              {loading ? (
+              {view === 'purchases' ? (
+                <Commerce
+                  openCase={(c) => {
+                    navigate('cases');
+                    open(c);
+                  }}
+                />
+              ) : loading ? (
                 <div className="loading">{icon(LoaderCircle, 26)} Loading your workspace…</div>
               ) : selected ? (
                 <CaseDetail
@@ -463,6 +472,9 @@ function App() {
               {view === 'more' && (
                 <section className="panel more-panel">
                   <h2>More from your workspace</h2>
+                  <button className="button secondary full" onClick={() => navigate('cases')}>
+                    Credit cases
+                  </button>
                   <button className="button secondary full" onClick={() => navigate('suppliers')}>
                     Supplier balances <ChevronRight size={18} />
                   </button>
@@ -520,7 +532,7 @@ function App() {
       <nav className="bottom-nav" aria-label="Main navigation">
         {[
           ['overview', shellLabels.home, LayoutDashboard],
-          ['cases', shellLabels.purchases, ReceiptText],
+          ['purchases', shellLabels.purchases, ReceiptText],
           ['more', shellLabels.more, CircleHelp],
         ].map(([id, label, Icon]) => (
           <button

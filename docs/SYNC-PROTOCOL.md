@@ -105,3 +105,9 @@ IndexedDB is same-origin browser/WebView storage. This app has **not implemented
 Browser quota/eviction/user-clearing can remove the entire origin, including pending drafts. `navigator.storage.persist()` is an explicit best-effort request, not a guarantee or backup. Complete eviction cannot be reconstructed from an erased local marker; the UI explains the risk and online server-accepted records remain authoritative. See [MDN storage quotas/eviction](https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria) and [IndexedDB transaction behavior](https://developer.mozilla.org/en-US/docs/Web/API/IDBTransaction).
 
 A native WebView and a browser installation use their own origin storage; no cross-install/device synchronization of unsynced drafts is claimed. App uninstall/site clearing may lose unsynced records. Physical-device encryption, installation migrations, storage pressure and Android process-kill behavior remain unverified.
+
+## Batch 5 commerce extensions
+
+The same scoped immutable outbox now supports `purchase_create`, dependent `purchase_document_upload`, `purchase_receiving_capture` and explicitly reviewed `inventory_movement`. A document upload waits for the purchase receipt and binds its returned entity/version. The declared checksum must match the original attachment. A purchase with an expected missing document cannot be accepted.
+
+Purchase and receiving sync create drafts only. Receiving acceptance remains online and adds undamaged goods. A queued stock movement requires explicit merchant confirmation, server approval permission and the exact reviewed stock version; only the accepted server event changes confirmed stock. Offline quantities stay decimal strings and monetary values integer paise. Stock version zero is valid. Conflicts retain the original operation; reviewing the latest source creates a new editable copy for an explicit new submission.

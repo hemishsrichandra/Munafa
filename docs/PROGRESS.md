@@ -1,5 +1,11 @@
 # Build progress and handoff
 
+## Current status � Batch 5
+
+Batch 5 purchase, physical receiving, inventory and offline commerce work is implemented locally. See [Batch 5](BATCH-5.md) for delivered scope and [handoff](HANDOFF.md) for current verification. The Batch 2�4 report below is historical; its instruction to wait for Batch 5 is superseded by the current user request.
+
+## Historical report
+
 Updated **30 October 2026**. Batches **2, 3 and 4** implemented in the existing Munafa repository. No Batch 5 feature was started. The owner authorized committing and pushing the completed work before handoff.
 
 ## Completed product and foundations

@@ -33,7 +33,9 @@ export async function makeWire(row, rows, scope) {
     entity = parent.result.entity_id;
     version = parent.result.entity_version;
   }
-  if (row.operation_type === 'attachment_upload') {
+  if (
+    ['attachment_upload', 'purchase_document_upload', 'proof_upload'].includes(row.operation_type)
+  ) {
     const a = await getRecord('attachments', row.attachment_id, scope);
     if (!a?.blob)
       throw new Error(

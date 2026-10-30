@@ -547,15 +547,8 @@ def receipt_payload(db, rid, expected):
         good, ids2 = inventory.convert(
             db, sku["id"], item.quantity - item.damaged_quantity, item.unit, sku["unit"]
         )
-        prior = db.execute(
-            select(func.coalesce(func.sum(m.receipt_lines.c.invoice_quantity), 0)).where(
-                store.scope(m.receipt_lines), m.receipt_lines.c.purchase_line_id == line["id"]
-            )
-        ).scalar_one()
-        if Decimal(prior) + invqty > line["billed_quantity"]:
-            raise RuleError(
-                "Overdelivery needs separate reviewed evidence or a stock-count adjustment. It cannot create a negative shortage."
-            )
+        # Preserve physical overdelivery in the receipt and stock ledger. The linked
+        # claim calculator flags it for review and never creates negative recovery.
         computed.append(
             {
                 "purchase_line_id": line["id"],
