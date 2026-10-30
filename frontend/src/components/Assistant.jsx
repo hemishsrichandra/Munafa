@@ -4,7 +4,7 @@ import guide from '../../../backend/knowledge/product-v1.json';
 export function CachedHelp() {
   return (
     <details className="panel">
-      <summary>Offline product guide · version 1</summary>
+      <summary>Offline help</summary>
       <p>Bundled implementation guidance. Account policies need current official support.</p>
       {guide.documents
         .filter((d) => d.kind === 'product_source')
@@ -12,9 +12,7 @@ export function CachedHelp() {
           <section key={d.id}>
             <h3>{d.section}</h3>
             <p>{d.text}</p>
-            <small>
-              Version {d.version} · reviewed {d.reviewed_at} · review due {d.valid_until}
-            </small>
+            <small>Updated {d.reviewed_at}</small>
           </section>
         ))}
     </details>
@@ -134,10 +132,7 @@ export function VoiceNote({ enabled, change }) {
   }
   return (
     <section className="panel" aria-label="Voice note preview">
-      <p>
-        Experimental voice note · English/Hindi/Kannada have not passed merchant/device evaluation.
-        Text entry remains available.
-      </p>
+      <p>Voice notes are optional. Check the transcript before using it, or type instead.</p>
       <label className="field">
         Speech language
         <select
@@ -158,8 +153,7 @@ export function VoiceNote({ enabled, change }) {
           onChange={(e) => setConsent(e.target.checked)}
           disabled={state !== 'idle'}
         />
-        I agree to send this recording to Sarvam for transcription. Check provider retention
-        settings before use.
+        Send this recording to Sarvam to turn it into text.
       </label>
       <div className="action-row">
         <button
@@ -185,7 +179,7 @@ export function VoiceNote({ enabled, change }) {
           Stop recording
         </button>
       </div>
-      {!enabled && <p>Voice preview is disabled by the server. Use text entry.</p>}
+      {!enabled && <p>Voice notes are unavailable. Type your message instead.</p>}
       <p role="status" aria-live="polite">
         {message}
       </p>
@@ -234,7 +228,7 @@ export function Assistant({ follow }) {
   return (
     <section className="panel partner-screen">
       <h1>Merchant help & language</h1>
-      <p>Source-grounded help. AI drafts never change stock, payments, approvals or recovery.</p>
+      <p>Get help with your store. Check any draft before using it.</p>
       {error && (
         <p role="alert" className="error-box">
           {error}
@@ -314,7 +308,7 @@ export function Assistant({ follow }) {
             (['case_read', 'stock_read', 'draft_followup'].includes(context) && !entity)
           }
         >
-          {busy ? 'Checking…' : 'Ask grounded help'}
+          {busy ? 'Checking…' : 'Ask for help'}
         </button>
       </form>
       {result && (
@@ -327,11 +321,9 @@ export function Assistant({ follow }) {
               </h3>
               <p>{d.text}</p>
               <a href={d.citation} target="_blank" rel="noreferrer">
-                Source {d.document_id} · v{d.version}
+                Read {d.title}
               </a>
-              <p>
-                Reviewed {d.reviewed_at} · review due {d.valid_until}
-              </p>
+              <p>Updated {d.reviewed_at}</p>
             </article>
           ))}
           <h2>Recorded store facts</h2>
@@ -390,14 +382,16 @@ export function Assistant({ follow }) {
           maxLength={2000}
         />
       </label>
-      <VoiceNote
-        enabled={caps?.speech_preview}
-        change={(v) => {
-          setSource(v);
-          setTranslation(null);
-          setReviewed(false);
-        }}
-      />
+      {caps?.speech_preview && (
+        <VoiceNote
+          enabled={caps.speech_preview}
+          change={(v) => {
+            setSource(v);
+            setTranslation(null);
+            setReviewed(false);
+          }}
+        />
+      )}
       <label className="field">
         Translate to
         <select

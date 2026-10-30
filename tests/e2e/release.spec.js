@@ -53,7 +53,16 @@ test('phone bill photo → reviewed purchase → receipt → shortage → promis
     .getByLabel('Bill photo or PDF', { exact: true })
     .setInputFiles('evaluation/corpus/images/fractional.png');
   await page.getByRole('button', { name: 'Read document', exact: true }).click();
-  await expect(page.getByText(/Cloud extraction is not configured/)).toBeVisible();
+  await expect(
+    page.getByText(
+      'Check the bill details before confirming. Enter delivered quantities separately.',
+    ),
+  ).toBeVisible();
+  expect(
+    (await get(page, '/purchases'))[0].revisions.some((r) =>
+      /Cloud extraction is not configured/.test(r.provenance?.warning || ''),
+    ),
+  ).toBe(true);
   // Manual review of this exact public synthetic source: 2.5 kg @ ₹80 = ₹200.
   await page.getByLabel('Supplier', { exact: true }).fill('Synthetic Wholesale 11');
   await page.getByLabel('Invoice reference', { exact: true }).fill('SYNTH-11');
@@ -63,12 +72,12 @@ test('phone bill photo → reviewed purchase → receipt → shortage → promis
     .getByRole('combobox', { name: 'Reviewed SKU', exact: true })
     .selectOption({ label: 'Rice (kg)' });
   await page.getByRole('combobox', { name: 'Unit', exact: true }).selectOption('kg');
-  await page.getByLabel('Billed quantity (decimal)', { exact: true }).fill('2.5');
-  await page.getByLabel('Printed unit price (paise)', { exact: true }).fill('8000');
-  await page.getByLabel('Effective claim unit price (paise)', { exact: true }).fill('8000');
-  await page.getByLabel('Tax (paise)', { exact: true }).fill('0');
-  await page.getByLabel('Discount (paise)', { exact: true }).fill('0');
-  await page.getByLabel('Invoice total (paise)', { exact: true }).fill('20000');
+  await page.getByLabel('Billed quantity', { exact: true }).fill('2.5');
+  await page.getByLabel('Unit price (₹)', { exact: true }).fill('80');
+  await page.getByLabel('Claim price per unit (₹)', { exact: true }).fill('80');
+  await page.getByLabel('Tax (₹)', { exact: true }).fill('0');
+  await page.getByLabel('Discount (₹)', { exact: true }).fill('0');
+  await page.getByLabel('Invoice total (₹)', { exact: true }).fill('200');
   await page.getByRole('button', { name: 'Save invoice draft', exact: true }).click();
   await page
     .getByRole('button', { name: 'Confirm reviewed invoice (no stock change)', exact: true })

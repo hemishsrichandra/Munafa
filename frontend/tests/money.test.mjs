@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { money } from '../src/api.js';
+import { money, parseRupeeInput, rupeeInput } from '../src/api.js';
 test('paise formatting preserves normal rupees, cents and negative differences', () => {
   assert.equal(money(0), '₹0');
   assert.equal(money(8000), '₹80');
@@ -17,4 +17,15 @@ test('unavailable or invalid money is never presented as a zero ledger value', (
   assert.equal(money(), 'Not recorded');
   for (const p of [NaN, Infinity, 1.5, Number.MAX_SAFE_INTEGER + 1, '8000'])
     assert.equal(money(p), 'Amount unavailable');
+});
+test('merchant rupee entry preserves exact cents, null and signed rounding', () => {
+  assert.equal(parseRupeeInput('80.05'), 8005);
+  assert.equal(parseRupeeInput('0'), 0);
+  assert.equal(parseRupeeInput('1.'), 100);
+  assert.equal(parseRupeeInput('-0.25', true), -25);
+  for (const value of ['', '-', '-1', '1.001', '1e2', 'NaN', '1,000', '900719925474099.99'])
+    assert.equal(parseRupeeInput(value), null);
+  for (const value of [0, 1, -25, 8005, 9000000000000001])
+    assert.equal(parseRupeeInput(rupeeInput(value), true), value);
+  assert.equal(rupeeInput(null), '');
 });

@@ -1,4 +1,8 @@
-# Cross-system handoff — final checklist review
+# Cross-system handoff — merchant UI polish
+
+**Latest: [UI-POLISH.md](UI-POLISH.md)** documents the merchant-facing cleanup. Home/More/Connections/Stock planning/Exports now show task information without build diagnostics; bill inputs use rupees and still submit integer paise. P2 API gates and approvals are unchanged. Latest verification: 246 backend, 23 browser and 18 frontend tests pass; the final desktop More-route refinement also has a focused browser check. Read UI-POLISH.md for APK evidence and current screen names.
+
+## Previous final checklist review
 
 **Latest: [FINAL-CHECKLIST-REVIEW.md](FINAL-CHECKLIST-REVIEW.md)** checks all 31 owner checklist items, records the synthetic data now on the website and lists required access/decisions. Latest run: 246 backend, 22 browser and 17 frontend tests pass. Three exact-money audit/evidence formatting conversions were repaired; no schema/dependency changes. Existing merchant data was preserved.
 

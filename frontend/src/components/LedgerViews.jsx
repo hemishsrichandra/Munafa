@@ -137,19 +137,10 @@ function Insights({ cases, verified, outstanding }) {
         <span className="section-icon">
           <ChartNoAxesCombined size={24} />
         </span>
-        <h2>Measure the value that matters.</h2>
+        <h2>What’s included</h2>
         <p>
-          These numbers describe this local ledger, including synthetic examples. They are not
-          measured business outcomes.
-        </p>
-        <h3>For the merchant pilot</h3>
-        <ul>
-          <li>Compare case preparation time with the current process.</li>
-          <li>Measure documented closure and repeat weekly use.</li>
-          <li>Track model cost per store and willingness to pay.</li>
-        </ul>
-        <p className="muted">
-          Start with 3–5 merchants. Subscription pricing remains a hypothesis.
+          Recovery totals include confirmed credits and received refunds. Open claims and supplier
+          promises are shown separately.
         </p>
       </section>
     </div>

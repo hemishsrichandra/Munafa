@@ -4291,3 +4291,41 @@ textarea:focus-visible,
     font-size: 16px;
   }
 }
+
+/* Merchant-facing summaries reuse the existing shell and controls. */
+.connection-status {
+  justify-self: start;
+  padding: 5px 10px;
+  border-radius: 99px;
+  background: #f1f5ed;
+  color: #37533b;
+  font-size: 12px;
+  font-weight: 600;
+}
+.brief-payments {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.brief-payments summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+.partner-screen details > summary {
+  cursor: pointer;
+}
+.brief-screen {
+  gap: 12px;
+}
+.brief-heading {
+  display: grid;
+  gap: 6px;
+}
+.brief-screen .commerce-list article {
+  gap: 10px;
+}
+.field [aria-invalid='true'] {
+  border-color: #b54732;
+}

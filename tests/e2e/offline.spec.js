@@ -269,7 +269,9 @@ test('stale receiving becomes a human-reviewed conflict without overwriting serv
   await expect.poll(async () => (await rows(page, 'outbox'))[0]?.state).toBe('conflict');
   await page.getByRole('button', { name: 'Review / revise draft' }).click();
   await expect(page.getByRole('heading', { name: 'Review receiving conflict' })).toBeVisible();
-  await expect(page.getByText(/Your saved base: v1. Server: v2/)).toBeVisible();
+  await expect(page.getByText(/This record changed while you were offline/)).toBeVisible();
+  await expect(page.getByText(/Local counts:.*9/)).toBeVisible();
+  await expect(page.getByText(/Latest saved counts:.*11/)).toBeVisible();
   const latest = await (await page.request.get('/api/cases/' + c.id)).json();
   expect(latest.invoice.lines[0].received).toBe(11);
   expect(latest.version).toBe(2);

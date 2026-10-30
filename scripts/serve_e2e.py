@@ -52,6 +52,7 @@ try:
         "commerce-owner",
         "partner-owner",
         "extension-owner",
+        "polish-owner",
         "release-owner",
         "release-performance",
         "commerce-offline",

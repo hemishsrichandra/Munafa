@@ -95,9 +95,9 @@ export function PwaControls() {
         )}
         {guidance && !installed && (
           <div className="install-guide" role="status">
-            Connect first and open the site once to cache the shell. In Chrome use “Install app”; in
-            Safari use Share → Add to Home Screen. Installation support varies. Server records and
-            AI require a connection. Device drafts are stored separately in IndexedDB.
+            Open the app online first. In Chrome choose “Install app”; in Safari use Share → Add to
+            Home Screen. Saved drafts are available offline. AI and up-to-date records need a
+            connection.
           </div>
         )}
       </div>

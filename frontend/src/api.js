@@ -8,9 +8,7 @@ export async function api(path, options = {}) {
   const { body, timeout = 20000, signal: parentSignal, ...rest } = options;
   const base = import.meta.env.VITE_API_BASE || '/api';
   if (isNative() && !/^https:\/\//.test(base))
-    throw new Error(
-      'Android backend is not configured. Rebuild with VITE_API_BASE=https://YOUR_HOST/api. The bundled shell opens offline.',
-    );
+    throw new Error('Your store connection is not set up. Ask your administrator for help.');
   const controller = new AbortController(),
     timer = setTimeout(() => controller.abort(), timeout);
   const cancel = () => controller.abort();
@@ -147,7 +145,7 @@ export async function downloadPrivate(path, name, returnBlob = false) {
   if (!path.startsWith('/api/')) throw new Error('Unsupported private file path.');
   const base = import.meta.env.VITE_API_BASE || '/api';
   if (isNative() && !/^https:\/\//.test(base))
-    throw new Error('Configure an HTTPS Android backend before downloading private files.');
+    throw new Error('Your store connection is not set up. Ask your administrator for help.');
   let response;
   try {
     response = await fetch(`${base}${path.slice(4)}`, {
@@ -171,6 +169,21 @@ export function paiseFromInput(value) {
   const [whole, fraction = ''] = value.split('.');
   const paise = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
   return Number.isSafeInteger(paise) ? paise : 0;
+}
+
+// Presentation boundary only: exact decimal text to integer paise, never rounding.
+export function parseRupeeInput(value, signed = false) {
+  const pattern = signed ? /^-?\d+(?:\.\d{0,2})?$/ : /^\d+(?:\.\d{0,2})?$/;
+  if (!pattern.test(value)) return null;
+  const negative = value.startsWith('-');
+  const [whole, cents = ''] = (negative ? value.slice(1) : value).split('.');
+  const paise = Number(whole) * 100 + Number(cents.padEnd(2, '0'));
+  return Number.isSafeInteger(paise) ? (negative ? -paise : paise) : null;
+}
+export function rupeeInput(paise) {
+  if (!Number.isSafeInteger(paise)) return '';
+  const digits = Math.abs(paise).toString().padStart(3, '0');
+  return `${paise < 0 ? '-' : ''}${digits.slice(0, -2)}.${digits.slice(-2)}`;
 }
 
 export const getPurchases = () => api('/purchases');

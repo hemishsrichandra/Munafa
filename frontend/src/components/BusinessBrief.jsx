@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api, money } from '../api';
+import { useSession } from '../session';
 export function BusinessBrief({ follow }) {
   const [data, setData] = useState(null),
     [error, setError] = useState('');
@@ -22,9 +23,11 @@ export function BusinessBrief({ follow }) {
     };
   }, []);
   return (
-    <section className="panel partner-screen" aria-label="Evidence-backed daily brief">
-      <h2>Your next recorded actions</h2>
-      <p>{data?.payment_label || 'Checking connected data…'}</p>
+    <section className="panel partner-screen brief-screen" aria-label="Evidence-backed daily brief">
+      <header className="brief-heading">
+        <h2>Needs your attention</h2>
+        <small>{data?.payment_label || 'Checking connected data…'}</small>
+      </header>
       {error && (
         <div role="alert" className="error-box">
           {error}
@@ -34,24 +37,30 @@ export function BusinessBrief({ follow }) {
       {!data && !error && <p role="status">Loading brief…</p>}
       {data && (
         <>
-          <p>
-            Updated {new Date(data.generated_at).toLocaleString()} · {data.timezone}
-          </p>
-          <p>
-            Yesterday’s recorded collections:{' '}
-            {data.yesterday.recorded_collections_paise === null
-              ? 'Unavailable'
-              : money(data.yesterday.recorded_collections_paise)}{' '}
-            · Recorded settlements:{' '}
-            {data.yesterday.recorded_settlements_paise === null
-              ? 'Unavailable'
-              : money(data.yesterday.recorded_settlements_paise)}
-          </p>
-          <small>{data.yesterday.coverage}</small>
+          <small>
+            Updated{' '}
+            {new Date(data.generated_at).toLocaleTimeString('en-IN', {
+              hour: 'numeric',
+              minute: '2-digit',
+            })}
+          </small>
+          <details className="brief-payments">
+            <summary>Yesterday’s payments</summary>
+            <p>
+              Yesterday’s recorded collections:{' '}
+              {data.yesterday.recorded_collections_paise === null
+                ? 'Unavailable'
+                : money(data.yesterday.recorded_collections_paise)}{' '}
+              · Recorded settlements:{' '}
+              {data.yesterday.recorded_settlements_paise === null
+                ? 'Unavailable'
+                : money(data.yesterday.recorded_settlements_paise)}
+            </p>
+            <small>{data.yesterday.coverage}</small>
+          </details>
           {!data.items.length && (
             <p>
-              No evidence-backed actions are recorded. Add a purchase or set a SKU threshold to
-              begin.
+              You’re all caught up. Add a purchase to start tracking your stock and supplier claims.
             </p>
           )}
           <div className="commerce-list">
@@ -59,13 +68,24 @@ export function BusinessBrief({ follow }) {
               <article className="panel" key={item.action_id}>
                 <small>
                   {item.mode === 'demo' ? 'SYNTHETIC DEMO · ' : ''}
-                  {item.status} ·{' '}
-                  {item.data_freshness.stale ? 'Stale source · review freshness' : 'Source checked'}
+                  {item.data_freshness.stale
+                    ? 'Older records · check for updates'
+                    : 'Ready to review'}
                 </small>
                 <h3>{item.title}</h3>
-                <p>{item.reason}</p>
+                <p>
+                  {item.type === 'reconciliation'
+                    ? 'Check the settlement breakdown against the recorded payout.'
+                    : item.reason}
+                </p>
+                {item.type === 'reconciliation' && (
+                  <details>
+                    <summary>Why this needs review</summary>
+                    <p>{item.reason}</p>
+                  </details>
+                )}
                 <small>
-                  Source updated {new Date(item.data_freshness.source_updated_at).toLocaleString()}
+                  Record updated {new Date(item.data_freshness.source_updated_at).toLocaleString()}
                 </small>
                 <button className="button secondary" onClick={() => follow(item.route)}>
                   Review source
@@ -85,13 +105,14 @@ export function BusinessBrief({ follow }) {
   );
 }
 export function Payments({ initialId = '' }) {
+  const session = useSession();
   const [data, setData] = useState(null),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
   async function load() {
     setError('');
     try {
-      let result = await api('/payments?mode=live');
+      let result = await api(`/payments?mode=${session.store.demo ? 'demo' : 'live'}`);
       if (initialId) result = await api('/payments?mode=demo');
       setData(result);
     } catch (e) {
@@ -117,16 +138,18 @@ export function Payments({ initialId = '' }) {
     <section className="panel partner-screen">
       <h1>Payments & reconciliation</h1>
       <p>
-        Live Paytm access is disabled. Recorded statement fields explain differences; bank receipt
-        is not verified.
+        Review recorded settlements and any differences. Paytm is not connected; bank receipt is not
+        verified.
       </p>
       <div className="commerce-tabs">
         <button className="button secondary" onClick={load} disabled={busy}>
           Check connection status
         </button>
-        <button className="button secondary" onClick={demo} disabled={busy}>
-          {busy ? 'Loading…' : 'Load isolated synthetic payment demo'}
-        </button>
+        {session.store.demo && session.permissions.includes('admin') && (
+          <button className="button secondary" onClick={demo} disabled={busy}>
+            {busy ? 'Loading…' : 'Load sample settlements'}
+          </button>
+        )}
       </div>
       {error && (
         <p role="alert" className="error-box">
@@ -139,10 +162,7 @@ export function Payments({ initialId = '' }) {
           <h2>{data.label}</h2>
           <p>Checked {new Date(data.updated_at).toLocaleString()}</p>
           {!data.settlements.length && (
-            <p>
-              No connected payment records. Unavailable data is not zero activity. Demo loading
-              requires a demo store and administrator permission.
-            </p>
+            <p>No payment records yet. Connect Paytm to review your settlements here.</p>
           )}
           {data.settlements
             .filter((r) => !initialId || r.batch_id === initialId)
@@ -159,7 +179,16 @@ export function Payments({ initialId = '' }) {
                 <dl>
                   {Object.entries(r.components_paise).map(([k, v]) => (
                     <div key={k}>
-                      <dt>{k}</dt>
+                      <dt>
+                        {{
+                          gross: 'Collections',
+                          commission: 'Fees',
+                          gst: 'GST on fees',
+                          refund: 'Refunds',
+                          reversal: 'Reversals',
+                          adjustment: 'Adjustments',
+                        }[k] || k}
+                      </dt>
                       <dd>
                         {r.missing_fields.some((f) => f.endsWith(':' + k + '_paise'))
                           ? 'Incomplete'
@@ -187,7 +216,6 @@ export function Payments({ initialId = '' }) {
                     <li key={x.code}>{x.detail}</li>
                   ))}
                 </ul>
-                <small>Linked source records: {r.source_entity_ids.join(', ')}</small>
               </article>
             ))}
         </>

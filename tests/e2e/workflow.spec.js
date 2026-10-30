@@ -11,8 +11,8 @@ test.beforeEach(async ({ page, context }) => {
     return;
   }
   await page.goto('/');
-  await page.getByRole('button', { name: 'Development demo access', exact: true }).click();
-  await page.getByLabel('Private development access code').fill('e2e-isolated-demo-access');
+  await page.getByRole('button', { name: 'Try a demo', exact: true }).click();
+  await page.getByLabel('Demo access code').fill('e2e-isolated-demo-access');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Daily business brief', exact: true }),
@@ -197,11 +197,13 @@ for (const viewport of [
     if (mobile) {
       await page.getByRole('button', { name: 'More', exact: true }).click();
       await page.getByRole('button', { name: 'Credit cases', exact: true }).click();
-      await expect(page.getByRole('heading', { name: 'Every credit. One place.' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Supplier claims' })).toBeVisible();
       await page.getByRole('button', { name: 'More', exact: true }).click();
-      await expect(page.getByRole('heading', { name: 'More from your workspace' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Manage your business' })).toBeVisible();
       await page.getByLabel('Interface language').selectOption('hi');
-      await expect(page.getByText('Navigation language preview.', { exact: false })).toBeVisible();
+      await expect(
+        page.getByText('Only navigation labels change.', { exact: false }),
+      ).toBeVisible();
       await page.getByLabel('Interface language').selectOption('en');
       await page.getByRole('button', { name: 'Home', exact: true }).click();
     }

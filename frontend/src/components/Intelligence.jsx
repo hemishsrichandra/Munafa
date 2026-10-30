@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 
-export function Intelligence() {
+export function Intelligence({ follow }) {
   const [data, setData] = useState(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
@@ -16,17 +16,21 @@ export function Intelligence() {
       setBusy(false);
     }
   }
+  useEffect(() => {
+    load();
+  }, []);
   return (
-    <section className="panel">
-      <h2>Data readiness & evaluation</h2>
-      <p>
-        No forecast or peer benchmark is enabled. Payment totals and billed invoice quantities are
-        not SKU sales.
+    <section className="panel partner-screen">
+      <header>
+        <div className="eyebrow">PLAN YOUR STOCK</div>
+        <h1>Stock planning</h1>
+        <p>Your reorder levels, in one place.</p>
+      </header>
+      <p className="info-box">
+        Forecasts need more reliable sales history. Reorder levels below are rules you set, not
+        predictions.
       </p>
-      <button className="button secondary" disabled={busy} onClick={load}>
-        Check recorded SKU data
-      </button>
-      {busy && <p role="status">Checking recorded sources…</p>}
+      {busy && <p role="status">Loading products…</p>}
       {error && (
         <p className="error-box" role="alert">
           {error}
@@ -34,45 +38,38 @@ export function Intelligence() {
       )}
       {data && (
         <>
-          <p>
-            {data.mode === 'demo' ? 'DEMO DATA · ' : ''}
-            {data.coverage} · Queried {new Date(data.queried_at).toLocaleString()}. Refresh requires
-            connection; this is a snapshot.
-          </p>
+          {data.mode === 'demo' && <span className="demo-tag">Synthetic demo data</span>}
           {!data.products.length && (
-            <p>
-              No SKU records yet. Create a product and record actual physical receiving; sales
-              require separate evidence.
-            </p>
+            <p>No products yet. Add a product in Purchases & stock to set its reorder level.</p>
           )}
           {data.products.map((p) => (
-            <article className="panel" key={p.product_id}>
-              <h3>
+            <article key={p.product_id}>
+              <h2>
                 {p.name} · {p.unit}
-              </h3>
+              </h2>
               <p>
-                <strong>{p.status}</strong>
+                Reorder level:{' '}
+                <strong>
+                  {p.simple_rule.threshold === null
+                    ? 'Not set'
+                    : `${p.simple_rule.threshold} ${p.unit}`}
+                </strong>
               </p>
-              <p>
-                {p.event_counts.sale || 0} accepted sale events on{' '}
-                {p.observed_sales_period.distinct_days} observed days. Unrecorded days are unknown,
-                not zero sales.
-              </p>
-              <p>
-                Merchant reorder threshold: {p.simple_rule.threshold ?? 'Not set'} {p.unit}. This is
-                a simple rule, not a forecast.
-              </p>
-              <ul>
-                {p.reasons.map((r) => (
-                  <li key={r}>{r}</li>
-                ))}
-              </ul>
+              <small>Not enough sales history for a forecast.</small>
+              <button className="button secondary" onClick={() => follow(p.route)}>
+                Review {p.name} movement history
+              </button>
             </article>
           ))}
-          <p>Peer comparison suppressed: {data.benchmark.reason}</p>
-          <p>{data.pilot.status} · Measured merchant outcomes not available.</p>
+          {data.truncated && (
+            <p>Showing the first 100 products. Open Purchases & stock to see more.</p>
+          )}
+          <small>Updated {new Date(data.queried_at).toLocaleString()}. Reconnect to refresh.</small>
         </>
       )}
+      <button className="button secondary" disabled={busy} onClick={load}>
+        Refresh products
+      </button>
     </section>
   );
 }

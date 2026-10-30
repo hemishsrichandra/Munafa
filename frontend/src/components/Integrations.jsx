@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
-import { Preparation } from './Preparation';
-import { Intelligence } from './Intelligence';
 
 export function Integrations() {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [data, setData] = useState(null),
+    [error, setError] = useState(''),
+    [busy, setBusy] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
   async function load() {
     setBusy(true);
@@ -31,51 +29,44 @@ export function Integrations() {
   }, []);
   return (
     <section className="panel partner-screen">
-      <h2>Connections & readiness</h2>
-      <p>No live provider is connected. Public documentation does not establish account access.</p>
+      <header>
+        <div className="eyebrow">YOUR ACCOUNT</div>
+        <h1>Connections</h1>
+        <p>Manage how you get payment updates and share messages.</p>
+      </header>
       {!online && (
-        <p role="status">Offline. Any displayed status is from this visit; reconnect to refresh.</p>
+        <p className="info-box" role="status">
+          You’re offline. Reconnect to refresh connection status.
+        </p>
       )}
-      {busy && <p role="status">Checking connection readiness…</p>}
       {error && (
         <p className="error-box" role="alert">
           {error}
         </p>
       )}
+      {busy && <p role="status">Checking connections…</p>}
+      {data && (
+        <>
+          <article>
+            <h2>Paytm</h2>
+            <span className="connection-status">Not connected</span>
+            <p>Your Paytm payments aren’t connected to this store.</p>
+            {data.mode === 'demo' && <small>Sample settlements are labelled as demo data.</small>}
+          </article>
+          <article>
+            <h2>WhatsApp</h2>
+            <span className="connection-status">Manual sharing</span>
+            <p>
+              Review a supplier message, then open WhatsApp to send it yourself. Delivery status
+              isn’t tracked here.
+            </p>
+          </article>
+          <small>Last checked {new Date(data.checked_at).toLocaleString()}</small>
+        </>
+      )}
       <button className="button secondary" disabled={busy || !online} onClick={load}>
         Refresh status
       </button>
-      {data && (
-        <>
-          <p>
-            Checked {new Date(data.checked_at).toLocaleString()} · Store mode: {data.mode}
-          </p>
-          {data.capabilities.map((c) => (
-            <article className="panel" key={c.id}>
-              <h3>{c.label}</h3>
-              <p>
-                <strong>{c.status}</strong>
-              </p>
-              <p>Not connected · No successful sync · No external execution</p>
-              <details>
-                <summary className="button secondary">Setup requirements for {c.label}</summary>
-                <ul>
-                  {c.missing.map((reason) => (
-                    <li key={reason}>{reason}</li>
-                  ))}
-                </ul>
-              </details>
-            </article>
-          ))}
-          {data.available_paths.map((p) => (
-            <p key={p.label}>
-              {p.label}: {p.status}
-            </p>
-          ))}
-        </>
-      )}
-      <Preparation />
-      <Intelligence />
     </section>
   );
 }

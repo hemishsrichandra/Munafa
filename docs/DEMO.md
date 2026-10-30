@@ -1,6 +1,6 @@
 # Hackathon demo — synthetic kirana rehearsal
 
-Batch 10 · 30 October 2026. This is a **demo candidate**, not a production or live Paytm release. All supplier proof and settlement fixtures in this walkthrough are synthetic. Do not send them to real suppliers or lenders.
+Batch 10 · 30 October 2026. UI copy and navigation have since been polished; see [UI-POLISH.md](UI-POLISH.md). Enter money in **rupees** in the current app; API amounts remain integer paise. This is a **demo candidate**, not a production or live Paytm release. All supplier proof and settlement fixtures in this walkthrough are synthetic. Do not send them to real suppliers or lenders.
 
 ## Clean start / repeatable reset without deleting merchant records
 
@@ -35,7 +35,7 @@ Do not claim these timings are measured merchant savings. The script duration is
 
 1. Under Purchases → stock, create SKU code `DEMO-RICE`, name `Rice`, unit `kg`. An optional reorder threshold of **3 kg** is the demonstrator's explicitly chosen simple rule, not an AI forecast.
 2. Purchases → New purchase → choose `evaluation/corpus/images/fractional.png` → Read document. This is a rendered public synthetic bill, not a real camera image. With keys off the original is saved and manual fallback is shown.
-3. Review the exact printed source: supplier **Synthetic Wholesale 11**, reference **SYNTH-11**, date **2026-10-29**, description **ಅಕ್ಕಿ / चावल**, billed **2.5 kg**, printed unit price **8000 paise (₹80)**, effective claim unit price **8000 paise**, subtotal/total **20000 paise (₹200)**, tax/discount **0**. Select the reviewed Rice SKU. Enter zero rounding. Confirm effective-price interpretation manually.
+3. Review the exact printed source: supplier **Synthetic Wholesale 11**, reference **SYNTH-11**, date **2026-10-29**, description **ಅಕ್ಕಿ / चावल**, billed **2.5 kg**, Unit price (₹) **80**, Claim price per unit (₹) **80**, subtotal/total **200** (API values: 8000 and 20000 paise respectively), tax/discount **0**. Select the reviewed Rice SKU. Enter zero rounding. Confirm effective-price interpretation manually.
 4. Save the draft, inspect the original, then confirm the reviewed invoice. Stock is still **0 kg**. No received quantity came from extraction.
 5. Record a physical delivery: actual **2 kg**, damaged **0 kg**. Explicitly confirm units, delivery complete and effective prices. Save the receiving draft, review it, then accept it. Stock is **2 kg**, with one accepted receipt event. Do not enter an expiry date unless demonstrating a separately observed synthetic batch.
 6. Open the linked supplier case. Deterministic shortage: `(2.5 − 2) kg × ₹80 = ₹40`. Approve the evidence. Show the source link and immutable snapshot.

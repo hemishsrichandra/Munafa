@@ -11,11 +11,14 @@ test('extension preparation and data gates remain truthful on phones and offline
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Daily business brief' })).toBeVisible();
   await page.getByRole('button', { name: 'More', exact: true }).click();
-  await page.getByRole('button', { name: 'Connections & readiness', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Connections & readiness' })).toBeVisible();
-  await expect(page.getByText('BLOCKED — SPECIFICATION', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Review accepted records', exact: true }).click();
-  await expect(page.getByText(/No accepted purchases in this period/)).toBeVisible();
+  await page.getByRole('button', { name: 'Connections', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Connections' })).toBeVisible();
+  await expect(page.getByText('Not connected', { exact: true })).toBeVisible();
+  await expect(page.getByText(/BLOCKED|SPECIFICATION|API|prototype/)).toHaveCount(0);
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'Export purchases', exact: true }).click();
+  await page.getByRole('button', { name: 'Review purchases', exact: true }).click();
+  await expect(page.getByText(/No confirmed purchases in this period/)).toBeVisible();
   const call = async (path, body) =>
     page.evaluate(
       async ({ path, body }) => {
@@ -75,33 +78,31 @@ test('extension preparation and data gates remain truthful on phones and offline
     payload_digest: action.payload_digest,
   });
   await call(`/actions/${action.id}/execute`, { version: action.version });
-  await page.getByRole('button', { name: 'Review accepted records', exact: true }).click();
+  await page.getByRole('button', { name: 'Review purchases', exact: true }).click();
   await expect(page.getByText('SYNTHETIC Wholesale · SYNTHETIC-EXT-1')).toBeVisible();
-  await page
-    .getByRole('button', { name: 'Prepare local export for approval', exact: true })
-    .click();
-  await expect(page.getByRole('heading', { name: 'Review exact export' })).toBeVisible();
-  await page.getByText('View full export contents', { exact: true }).click();
-  await expect(page.locator('pre')).toContainText(purchase.id);
-  await expect(page.locator('pre')).toContainText('needs_external_review');
+  await page.getByRole('button', { name: 'Review download', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Confirm download' })).toBeVisible();
+  await page.getByText('View included purchases', { exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'SYNTHETIC Wholesale · SYNTHETIC-EXT-1' }).last(),
+  ).toBeVisible();
+  await expect(page.getByText('Recorded tax: ₹0')).toBeVisible();
+  await expect(page.locator('pre')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const downloadPromise = page.waitForEvent('download');
-  await page
-    .getByRole('button', { name: 'Approve this local export and download', exact: true })
-    .click();
+  await page.getByRole('button', { name: 'Confirm and download', exact: true }).click();
   const download = await downloadPromise;
   const pack = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
   expect(pack.total_recorded_paise).toBe(20000);
   expect(pack.mode).toBe('demo');
   expect(pack.status).toBe('needs_external_review');
   expect(pack.records[0].purchase_id).toBe(purchase.id);
-  await expect(
-    page.getByText('Preparation pack downloaded. It remains unreviewed; nothing was submitted.'),
-  ).toBeVisible();
-  await page.getByRole('button', { name: 'Check recorded SKU data', exact: true }).click();
+  await expect(page.getByText('Downloaded to your device. Nothing was submitted.')).toBeVisible();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'Stock planning', exact: true }).click();
   await expect(page.getByText('Synthetic Rice · kg', { exact: true })).toBeVisible();
-  await expect(page.getByText('DATA NOT READY', { exact: true })).toBeVisible();
-  await expect(page.getByText(/PILOT NOT RUN/)).toBeVisible();
+  await expect(page.getByText('Not enough sales history for a forecast.')).toBeVisible();
+  await expect(page.getByText(/PILOT|schema|evaluation|DATA NOT READY/)).toHaveCount(0);
   for (const width of [320, 360, 390, 430, 844]) {
     await page.setViewportSize({ width, height: 844 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
@@ -114,13 +115,17 @@ test('extension preparation and data gates remain truthful on phones and offline
     path: 'artifacts/test-evidence/extension-readiness.png',
     fullPage: true,
   });
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'Connections', exact: true }).click();
+  await expect(page.getByText('Not connected', { exact: true })).toBeVisible();
   await page.context().setOffline(true);
   await expect(
-    page.getByText('Offline. Any displayed status is from this visit; reconnect to refresh.'),
+    page.getByText('You’re offline. Reconnect to refresh connection status.'),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Review accepted records', exact: true }).click();
-  await expect(page.getByRole('alert').last()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Refresh status', exact: true })).toBeDisabled();
   await page.context().setOffline(false);
   await page.getByRole('button', { name: 'Refresh status', exact: true }).click();
-  await expect(page.getByText(/Offline. Any displayed status/)).toHaveCount(0);
+  await expect(
+    page.getByText('You’re offline. Reconnect to refresh connection status.'),
+  ).toHaveCount(0);
 });

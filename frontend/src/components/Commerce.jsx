@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api, money, today, downloadPrivate, proposeCommerceAction } from '../api';
+import { MoneyInput } from './MoneyInput';
 import { useOffline } from '../offline/provider';
 import * as db from '../offline/db';
 const units = ['pack', 'piece', 'carton', 'kg'];
@@ -52,18 +53,24 @@ export function CommerceDraftFields({ kind, payload, change }) {
         : ['received_on', 'note'];
   return (
     <>
-      <p>Saved device draft; server validation and source version checks still apply.</p>
+      <p>Saved on this device. Review the details before adding them to your records.</p>
       <div className="form-grid">
-        {fields.map((k) => (
-          <Input
-            key={k}
-            label={k.replaceAll('_', ' ')}
-            value={d[k]}
-            change={(v) =>
-              set({ ...d, [k]: k.endsWith('_paise') ? (v === '' ? null : Number(v)) : v })
-            }
-          />
-        ))}
+        {fields.map((k) => {
+          const Component = k.endsWith('_paise') ? MoneyInput : Input;
+          return (
+            <Component
+              key={k}
+              label={
+                k.endsWith('_paise')
+                  ? k.replace('_paise', '').replaceAll('_', ' ') + ' (₹)'
+                  : k.replaceAll('_', ' ')
+              }
+              signed={k === 'rounding_paise'}
+              value={d[k]}
+              change={(v) => set({ ...d, [k]: v })}
+            />
+          );
+        })}
       </div>
       {d.lines?.map((l, i) => {
         const update = (k, v) =>
@@ -77,24 +84,23 @@ export function CommerceDraftFields({ kind, payload, change }) {
           <div className="panel" key={i}>
             <h3>Item {i + 1}</h3>
             {(kind === 'purchase'
-              ? [
-                  'description',
-                  'product_id',
-                  'billed_quantity',
-                  'unit_price_paise',
-                  'effective_price_paise',
-                ]
+              ? ['description', 'billed_quantity', 'unit_price_paise', 'effective_price_paise']
               : ['quantity', 'damaged_quantity', 'batch_reference', 'expiry_date']
-            ).map((k) => (
-              <Input
-                key={k}
-                label={k.replaceAll('_', ' ')}
-                value={l[k]}
-                change={(v) =>
-                  update(k, k.endsWith('_paise') ? (v === '' ? null : Number(v)) : v || null)
-                }
-              />
-            ))}
+            ).map((k) => {
+              const Component = k.endsWith('_paise') ? MoneyInput : Input;
+              return (
+                <Component
+                  key={k}
+                  label={
+                    k.endsWith('_paise')
+                      ? k.replace('_paise', '').replaceAll('_', ' ') + ' (₹)'
+                      : k.replaceAll('_', ' ')
+                  }
+                  value={l[k]}
+                  change={(v) => update(k, k.endsWith('_paise') ? v : v || null)}
+                />
+              );
+            })}
             <Unit
               value={l.unit}
               change={(v) => {
@@ -546,32 +552,23 @@ export function Commerce({ openCase, initialRoute = '' }) {
                         </select>
                       </Field>
                       <Input
-                        label="Billed quantity (decimal)"
+                        label="Billed quantity"
                         value={l.billed_quantity}
                         change={(v) => changeLine(i, 'billed_quantity', v || null)}
                       />
                       <Unit value={l.unit} change={(v) => changeLine(i, 'unit', v)} />
-                      <Input
-                        label="Printed unit price (paise)"
+                      <MoneyInput
+                        label="Unit price (₹)"
                         value={l.unit_price_paise}
-                        change={(v) =>
-                          changeLine(i, 'unit_price_paise', v === '' ? null : Number(v))
-                        }
+                        change={(v) => changeLine(i, 'unit_price_paise', v)}
                       />
-                      <Input
-                        label="Effective claim unit price (paise)"
+                      <MoneyInput
+                        label="Claim price per unit (₹)"
                         value={l.effective_price_paise}
-                        change={(v) =>
-                          changeLine(i, 'effective_price_paise', v === '' ? null : Number(v))
-                        }
+                        change={(v) => changeLine(i, 'effective_price_paise', v)}
                       />
                     </div>
-                    <p>
-                      {l.review_note || 'Check the original bill.'}{' '}
-                      {l.confidence == null
-                        ? 'Confidence unavailable; review required.'
-                        : `Extraction score: ${l.confidence}; review required.`}
-                    </p>
+                    <p>{l.review_note || 'Check this item against the bill.'}</p>
                     {draft.lines.length > 1 && (
                       <button
                         type="button"
@@ -598,11 +595,12 @@ export function Commerce({ openCase, initialRoute = '' }) {
                     ['rounding_paise', 'Rounding'],
                     ['total_paise', 'Invoice total'],
                   ].map(([k, label]) => (
-                    <Input
+                    <MoneyInput
                       key={k}
-                      label={`${label} (paise)`}
+                      label={`${label} (₹)`}
                       value={draft[k]}
-                      change={(v) => update(k, v === '' ? null : Number(v))}
+                      signed={k === 'rounding_paise'}
+                      change={(v) => update(k, v)}
                     />
                   ))}
                 </div>
@@ -640,34 +638,10 @@ export function Commerce({ openCase, initialRoute = '' }) {
                   {selected.draft.supplier} ·{' '}
                   {money(selected.accepted_total_paise ?? selected.draft.total_paise)}
                 </p>
-                {selected.revisions?.some(
-                  (r) => r.provenance?.provider || r.provenance?.warning,
-                ) && (
-                  <section className="info-box">
-                    <div>
-                      <strong>Extraction is an untrusted draft</strong>
-                      {selected.revisions
-                        .filter((r) => r.provenance?.provider || r.provenance?.warning)
-                        .map((r) => (
-                          <div key={r.revision}>
-                            <p>
-                              Version {r.revision} · {r.provenance.provider || 'manual fallback'} ·
-                              merchant review required
-                            </p>
-                            {r.provenance.warning && <p role="note">{r.provenance.warning}</p>}
-                            <small>
-                              {r.provenance.confidence == null
-                                ? 'Confidence not supplied'
-                                : 'Check provider confidence'}{' '}
-                              ·{' '}
-                              {r.provenance.coordinates == null
-                                ? 'Coordinates not supplied'
-                                : 'Provider coordinates retained'}
-                            </small>
-                          </div>
-                        ))}
-                    </div>
-                  </section>
+                {selected.status === 'draft' && (
+                  <p className="info-box">
+                    Check the bill details before confirming. Enter delivered quantities separately.
+                  </p>
                 )}
                 {selected.documents.map((d) => (
                   <div key={d.id}>
@@ -1027,10 +1001,6 @@ export function Commerce({ openCase, initialRoute = '' }) {
                       {event.occurred_on} · {event.reference}
                     </p>
                     <p>{event.reason}</p>
-                    <small>
-                      Source {event.source_entity_id} · actor {event.actor_id} · operation{' '}
-                      {event.operation_id}
-                    </small>
                   </article>
                 ))}
                 {!movements.rows.events.length && <p>No accepted stock movements.</p>}

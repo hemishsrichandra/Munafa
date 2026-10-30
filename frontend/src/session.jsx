@@ -173,7 +173,7 @@ export function SessionGate({ children }) {
           >
             {demo ? (
               <label className="field">
-                Private development access code
+                Demo access code
                 <input
                   type="password"
                   required
@@ -223,14 +223,11 @@ export function SessionGate({ children }) {
                   setError('');
                 }}
               >
-                {demo ? 'Use merchant account' : 'Development demo access'}
+                {demo ? 'Use merchant account' : 'Try a demo'}
               </button>
             )}
           </form>
-          <p className="tiny-help">
-            Demo access works only when the server explicitly enables it. Get the private code from
-            your local .env. Production disables it.
-          </p>
+          <p className="tiny-help">Ask your store administrator if you need help signing in.</p>
         </section>
       </main>
     );

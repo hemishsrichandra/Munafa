@@ -134,7 +134,7 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
             : null,
         );
         setNotice(
-          `New editable copy; source version ${copy.expected_version ?? 'new record'}. The previous operation is retained. Recheck quantities, stock and supplier/reference before saving and queuing.`,
+          'An editable copy is ready. Check quantities, stock and bill details before syncing. Your earlier record is kept.',
         );
       }
     } catch (e) {
@@ -168,9 +168,7 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
           </button>
         )}
       </div>
-      {session.store.demo && (
-        <p className="demo-note">Synthetic demo store · drafts entered here remain synthetic.</p>
-      )}
+      {session.store.demo && <p className="demo-note">Demo store · Sample records only.</p>}
       <p>
         Last server sync: <strong>{when(local.status?.last_synced_at)}</strong>. Cached receiving
         list: {when(local.cache?.saved_at)} (expires after 24 hours).
@@ -247,7 +245,7 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
             .filter((c) => c.status === 'review')
             .map((c) => (
               <option key={c.id} value={c.id}>
-                {c.invoice.reference} · {c.invoice.supplier} · v{c.version}
+                {c.invoice.reference} · {c.invoice.supplier}
               </option>
             ))}
         </select>
@@ -299,10 +297,7 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
             />
           ) : (
             <>
-              <p>
-                Based on server version {editor.expected_version}. This saves receiving only;
-                approval stays online.
-              </p>
+              <p>Saved as a receiving draft; approval stays online.</p>
               {editor.source.invoice.lines.map((line, i) => (
                 <div className="line-editor" key={i}>
                   <h3>{line.name}</h3>
@@ -490,7 +485,7 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
         <section className="conflict-review" role="region" aria-label="Resolve receiving conflict">
           <h2>Review receiving conflict</h2>
           <p>
-            Your saved base: v{conflict.draft.expected_version}. Server: v{conflict.latest.version},{' '}
+            This record changed while you were offline. Compare it with your saved draft:{' '}
             {conflict.latest.status}. Nothing has been overwritten.
           </p>
           <p>
@@ -500,7 +495,7 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
               .join(' · ')}
           </p>
           <p>
-            Server counts:{' '}
+            Latest saved counts:{' '}
             {conflict.latest.invoice.lines
               .map((l) => `${l.name}: ${l.received ?? '?'} ${l.received_unit}`)
               .join(' · ')}
@@ -512,7 +507,7 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
               setEditor(receiving(conflict.latest));
               setConflict(null);
               setNotice(
-                'Review the latest server items and re-enter your intended counts. A new operation ID will be created only when explicitly queued.',
+                'Review the latest record and enter your counts again. Nothing changes until you save and sync.',
               );
             }}
           >
@@ -620,8 +615,8 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
           <p>
             {o.error ||
               (o.state === 'synced'
-                ? 'Server acceptance confirmed.'
-                : 'This operation is provisional until accepted.')}
+                ? 'Synced and saved.'
+                : 'Waiting to sync. Your saved records have not changed yet.')}
           </p>
           {o.state === 'needs_attention' && (
             <button
@@ -639,12 +634,12 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
                 })
               }
             >
-              Retry unchanged operation
+              Retry sync
             </button>
           )}
         </article>
       ))}
-      {import.meta.env.DEV && (
+      {import.meta.env.DEV && new URLSearchParams(window.location.search).get('debug') === '1' && (
         <details className="sync-debug">
           <summary>Sync diagnostics (development only)</summary>
           <p>

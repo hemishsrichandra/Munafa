@@ -114,8 +114,8 @@ function InvoiceModal({ close, create, config }) {
                 <Sparkles size={18} />
                 <p>
                   {config?.sarvam_configured
-                    ? `Sarvam AI is configured. ${tab === 'photo' ? 'Sarvam-hosted vision reads the bill image.' : 'Sarvam’s native model structures your invoice text.'} Review every field against the bill.`
-                    : 'Add SARVAM_API_KEY in the server’s .env to enable AI extraction. Sample and manual entry work without a key.'}
+                    ? 'AI can help fill in the bill. Check each field before continuing.'
+                    : 'Automatic bill reading is unavailable. Enter the details manually or try a sample.'}
                 </p>
               </div>
               {tab === 'photo' ? (

@@ -13,7 +13,7 @@ export function Preparation() {
   async function downloadPack(url) {
     await downloadPrivate(url, 'unreviewed-preparation.json');
     setDownloadUrl('');
-    setMessage('Preparation pack downloaded. It remains unreviewed; nothing was submitted.');
+    setMessage('Downloaded to your device. Nothing was submitted.');
   }
   async function run(work) {
     setBusy(true);
@@ -35,14 +35,10 @@ export function Preparation() {
   }
   return (
     <section className="panel">
-      <h2>Prepare records for review</h2>
+      <h2>Export purchases</h2>
       <p>
-        Accepted purchase records only. Not CA-reviewed, a complete tax return, lender checklist or
-        loan application. No external sharing occurs here.
-      </p>
-      <p>
-        Connection required. Existing offline purchase drafts remain in Saved on this device; they
-        are excluded until accepted by the server.
+        Download confirmed purchases for your accountant. This is not a tax return; professional
+        review is still needed.
       </p>
       <label className="field">
         Period start
@@ -73,9 +69,9 @@ export function Preparation() {
           })
         }
       >
-        Review accepted records
+        Review purchases
       </button>
-      {busy && <p role="status">Preparing records…</p>}
+      {busy && <p role="status">Loading purchases…</p>}
       {error && (
         <p role="alert" className="error-box">
           {error}
@@ -94,13 +90,13 @@ export function Preparation() {
       {pack && (
         <>
           <p>
-            <strong>{pack.mode === 'demo' ? 'DEMO DATA · ' : ''}Needs external review</strong> ·{' '}
-            {pack.records.length} accepted purchases · {money(pack.total_recorded_paise)}
+            <strong>{pack.mode === 'demo' ? 'DEMO DATA · ' : ''}Accountant review needed</strong> ·{' '}
+            {pack.records.length} confirmed purchases · {money(pack.total_recorded_paise)}
           </p>
-          <p>{pack.coverage}</p>
+          <small>Only confirmed purchases in this period are included.</small>
           {!pack.records.length && (
             <p>
-              No accepted purchases in this period. Accept a reviewed purchase or choose another
+              No confirmed purchases in this period. Accept a reviewed purchase or choose another
               period.
             </p>
           )}
@@ -112,9 +108,12 @@ export function Preparation() {
               <p>
                 {r.date} · {money(r.total_paise)} · {r.documents.length} source documents
               </p>
-              {r.exceptions.map((e) => (
-                <p key={e}>{e}</p>
-              ))}
+              {r.exceptions.length > 0 && (
+                <small>
+                  Tax details need your accountant’s review.
+                  {!r.documents.length && ' No original bill is attached.'}
+                </small>
+              )}
             </article>
           ))}
           {!!pack.records.length && !proposal && (
@@ -132,28 +131,42 @@ export function Preparation() {
                 })
               }
             >
-              Prepare local export for approval
+              Review download
             </button>
           )}
         </>
       )}
       {proposal && (
         <div className="panel">
-          <h3>Review exact export</h3>
+          <h3>Confirm download</h3>
           <details>
-            <summary className="button secondary">View full export contents</summary>
-            <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
-              {JSON.stringify(proposal.payload, null, 2)}
-            </pre>
+            <summary className="button secondary">View included purchases</summary>
+            <p>
+              {proposal.payload.period.start} to {proposal.payload.period.end}
+            </p>
+            {proposal.payload.records.map((r) => (
+              <article key={r.purchase_id}>
+                <h4>
+                  {r.supplier} · {r.reference}
+                </h4>
+                <p>
+                  {r.date} · {money(r.total_paise)}
+                </p>
+                <p>
+                  Recorded tax:{' '}
+                  {r.tax_paise_recorded === null ? 'Not recorded' : money(r.tax_paise_recorded)}
+                </p>
+                <small>{r.documents.length} attached bills · Accountant review needed</small>
+              </article>
+            ))}
           </details>
           <p>
-            Recipient: your device only. Purpose: bookkeeping preparation.{' '}
-            {proposal.payload.records.length} accepted source records;{' '}
-            {money(proposal.payload.total_recorded_paise)}.
+            {proposal.payload.records.length} purchases ·{' '}
+            {money(proposal.payload.total_recorded_paise)}
           </p>
           <p>
-            No raw document bytes, customer contacts or provider credentials. Approval expires after
-            15 minutes. This is not CA approval or submission.
+            The file is saved to your device. Nothing is sent to an accountant or tax authority.
+            Confirm within 15 minutes.
           </p>
           <button
             className="button primary"
@@ -174,7 +187,7 @@ export function Preparation() {
               })
             }
           >
-            Approve this local export and download
+            Confirm and download
           </button>
         </div>
       )}

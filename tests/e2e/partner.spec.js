@@ -44,9 +44,7 @@ test('evidence brief and synthetic settlement reconciliation are usable on phone
   });
   await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: 'Payments & reconciliation', exact: true }).click();
-  await page
-    .getByRole('button', { name: 'Load isolated synthetic payment demo', exact: true })
-    .click();
+  await page.getByRole('button', { name: 'Load sample settlements', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'SYNTHETIC DEMO DATA', exact: true }),
   ).toBeVisible();
@@ -113,24 +111,23 @@ test('cited help, unsupported answers, reviewed translation and microphone denia
   await page
     .getByLabel('Your question', { exact: true })
     .fill('How does physical receiving update stock?');
-  await page.getByRole('button', { name: 'Ask grounded help', exact: true }).click();
-  await expect(page.getByRole('link', { name: /Source product-receiving-v1/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Ask for help', exact: true }).click();
+  await expect(
+    page.getByRole('link', { name: 'Read Munafa product guide' }).first(),
+  ).toHaveAttribute('href', '/api/assistant/sources/product-receiving-v1');
   await request(page, '/products', { code: 'HELP-RICE', name: 'Help Rice', unit: 'kg' });
   await page.getByLabel('Use a source', { exact: true }).selectOption('stock_read');
   await page.getByLabel('Source record', { exact: true }).selectOption({ label: 'Help Rice (kg)' });
-  await page.getByRole('button', { name: 'Ask grounded help', exact: true }).click();
+  await page.getByRole('button', { name: 'Ask for help', exact: true }).click();
   await expect(page.getByText('Confirmed stock: 0 kg', { exact: true })).toBeVisible();
 
   await page.getByLabel('Your question', { exact: true }).fill('guarantee a loan');
-  await page.getByRole('button', { name: 'Ask grounded help', exact: true }).click();
+  await page.getByRole('button', { name: 'Ask for help', exact: true }).click();
   await expect(
     page.getByText(/No current, consistent approved source answers this question/),
   ).toBeVisible();
   await page
-    .getByText(
-      'I agree to send this recording to Sarvam for transcription. Check provider retention settings before use.',
-      { exact: true },
-    )
+    .getByText('Send this recording to Sarvam to turn it into text.', { exact: true })
     .click();
   await page.getByRole('button', { name: 'Start recording', exact: true }).click();
   await expect(
@@ -206,45 +203,42 @@ test('cited help, unsupported answers, reviewed translation and microphone denia
   await expect(page.getByRole('heading', { name: /Help Rice · movement history/ })).toBeVisible();
 });
 
-test('P2 readiness stays blocked and links only recorded store history on phones', async ({
+test('stock planning shows merchant rules, preserves P2 gates and links recorded history', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await login(page);
   await request(page, '/products', { code: 'P2-READINESS', name: 'Readiness Rice', unit: 'kg' });
-  await page.getByRole('button', { name: 'More', exact: true }).click();
-  await page.getByRole('button', { name: 'Planning readiness', exact: true }).click();
-  await expect(
-    page.getByRole('heading', { name: 'Planning readiness', exact: true }),
-  ).toBeVisible();
-  await expect(page.getByText('Disabled · prerequisites unproven', { exact: true })).toHaveCount(3);
-  await page
-    .getByLabel('Recorded SKU to inspect', { exact: true })
-    .selectOption({ label: 'Readiness Rice (kg)' });
-  await page
-    .getByRole('button', { name: 'Inspect procurement prerequisites', exact: true })
-    .click();
-  await expect(
-    page.getByRole('heading', { name: 'Readiness check only', exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByText('No proposal created · No external action performed · Consent not verified', {
-      exact: true,
-    }),
-  ).toBeVisible();
-  await page.getByLabel('Readiness purpose', { exact: true }).selectOption('lender_checklist');
-  await page.getByRole('button', { name: 'Inspect financial prerequisites', exact: true }).click();
-  await expect(
-    page.getByText(
-      'No lender-authorised, purpose-bound consent can be verified. This check does not register consent or submit data.',
-      { exact: true },
+  // Developer diagnostics left the UI; their financial/consent gates must still hold.
+  const response = await page.request.get('/api/planning/readiness');
+  const readiness = await response.json();
+  expect(
+    readiness.capabilities.every(
+      (c) => c.status === 'disabled' && !c.available && !c.external_execution_enabled,
     ),
+  ).toBe(true);
+  for (const [capability, intent] of [
+    ['procurement', 'purchase_order_draft'],
+    ['financial_planning', 'lender_checklist'],
+    ['benchmarking', 'peer_comparison'],
+  ]) {
+    const gate = await request(page, '/planning/assess', { capability, intent });
+    expect(gate.assessment_only).toBe(true);
+    expect(gate.proposal_created).toBe(false);
+    expect(gate.external_action_performed).toBe(false);
+    expect(gate.consent_verified).toBe(false);
+    expect(gate.financial_decision).toBeNull();
+    expect(gate.peer_statistics).toBeNull();
+  }
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'Stock planning', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Stock planning', exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole('article')
+      .filter({ hasText: 'Readiness Rice · kg' })
+      .getByText('Not enough sales history for a forecast.', { exact: true }),
   ).toBeVisible();
-  await page.getByLabel('Comparison readiness', { exact: true }).selectOption('peer_comparison');
-  await page
-    .getByRole('button', { name: 'Inspect benchmarking prerequisites', exact: true })
-    .click();
-  await expect(page.getByText(/All peer results are suppressed/)).toBeVisible();
   for (const width of [320, 360, 390, 430]) {
     await page.setViewportSize({ width, height: 844 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
@@ -261,13 +255,22 @@ test('P2 readiness stays blocked and links only recorded store history on phones
   await expect(
     page.getByRole('heading', { name: /Readiness Rice · movement history/ }),
   ).toBeVisible();
-  // New readiness requests fail visibly; they are not silently queued as orders.
   await page.getByRole('button', { name: 'More', exact: true }).click();
-  await page.getByRole('button', { name: 'Planning readiness', exact: true }).click();
-  await expect(page.getByText('Disabled · prerequisites unproven', { exact: true })).toHaveCount(3);
-  await page.route('**/api/planning/readiness', (route) =>
-    route.fulfill({ status: 503, json: { detail: 'Readiness service temporarily unavailable.' } }),
+  await page.getByRole('button', { name: 'Stock planning', exact: true }).click();
+  await expect(
+    page
+      .getByRole('article')
+      .filter({ hasText: 'Readiness Rice · kg' })
+      .getByText('Not enough sales history for a forecast.', { exact: true }),
+  ).toBeVisible();
+  await page.route('**/api/intelligence/readiness', (route) =>
+    route.fulfill({
+      status: 503,
+      json: { detail: 'Stock information is temporarily unavailable.' },
+    }),
   );
-  await page.getByRole('button', { name: 'Refresh readiness', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('Readiness service temporarily unavailable.');
+  await page.getByRole('button', { name: 'Refresh products', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText(
+    'Stock information is temporarily unavailable.',
+  );
 });

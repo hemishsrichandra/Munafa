@@ -1,5 +1,7 @@
 # Cross-system handoff — post-playbook extensions
 
+**UI update:** read `docs/UI-POLISH.md` for the latest frontend. More separates Connections, Stock planning and Export purchases; developer P2 diagnostics/raw JSON/operation IDs are out of merchant views. Bills are entered in rupees, API/offline money stays integer paise. No migrations/providers/approval changes. Current verification is 246 backend, 23 browser and 18 frontend tests; old screen names/counts below are historical. Non-production offline diagnostics require `?debug=1`.
+
 **Latest continuation:** read `docs/FINAL-CHECKLIST-REVIEW.md` first. The final owner checklist review now has 246 backend tests (one added exact-money audit/evidence regression), 22 browser and 17 frontend tests passing. Three float-format strings in `backend/app.py` now use the existing Decimal `rupees()` formatter. The current development demo store has a synthetic reviewed ₹200 invoice, explicit 2 kg receipt, ₹40 open approved claim, ₹0 recovery and isolated settlement fixture. No messages sent; no existing records reset. The website seed lives only in local PostgreSQL and must be recreated safely on another machine. No new migrations/dependencies. Current provider/data/device gates remain unchanged.
 
 Updated 30 October 2026, Asia/Kolkata. Repository `hemishsrichandra/Munafa`, branch

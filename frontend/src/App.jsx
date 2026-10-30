@@ -33,18 +33,20 @@ import { InvoiceModal } from './components/InvoiceIntake';
 import CaseDetail from './components/CaseDetail';
 import { Suppliers, Insights } from './components/LedgerViews';
 import { Commerce } from './components/Commerce';
-import { Planning } from './components/Planning';
+import { Intelligence } from './components/Intelligence';
+import { Preparation } from './components/Preparation';
 import { Integrations } from './components/Integrations';
 import { Assistant, CachedHelp } from './components/Assistant';
 import { BusinessBrief, Payments } from './components/BusinessBrief';
 
 const navs = [
-  { id: 'purchases', label: 'Purchases & stock', Icon: ReceiptText },
   { id: 'overview', label: 'Overview', Icon: LayoutDashboard },
+  { id: 'purchases', label: 'Purchases & stock', Icon: ReceiptText },
   { id: 'cases', label: 'Credit cases', Icon: ReceiptText },
   { id: 'suppliers', label: 'Suppliers', Icon: Store },
   { id: 'insights', label: 'Insights', Icon: ChartNoAxesCombined },
-  { id: 'planning', label: 'Planning readiness', Icon: ShieldCheck },
+  { id: 'planning', label: 'Stock planning', Icon: Leaf },
+  { id: 'more', label: 'More', Icon: CircleHelp },
 ];
 
 function App() {
@@ -118,6 +120,7 @@ function App() {
     setSelected(null);
     setQuery('');
     setFilter('all');
+    window.scrollTo(0, 0);
   };
   async function followSource(route) {
     setSourceRoute(route);
@@ -217,7 +220,7 @@ function App() {
             <button onClick={() => setHelp(true)}>How Munafa works {icon(ArrowUpRight, 14)}</button>
           </div>
           <button className="support" onClick={() => setHelp(true)}>
-            {icon(CircleHelp)} Help & demo guide {icon(ArrowUpRight, 15)}
+            {icon(CircleHelp)} Help & support {icon(ArrowUpRight, 15)}
           </button>
           <div className="profile">
             <span className="avatar">{storeInitials}</span>
@@ -240,8 +243,9 @@ function App() {
                   {
                     assistant: 'Merchant help',
                     payments: 'Payments & reconciliation',
-                    planning: 'Planning readiness',
-                    connections: 'Connections & readiness',
+                    planning: 'Stock planning',
+                    exports: 'Export purchases',
+                    connections: 'Connections',
                     more: 'More',
                   }[view]}
             </strong>
@@ -253,10 +257,7 @@ function App() {
             )}
           </div>
           <div className="top-actions">
-            <span className="prototype-label">
-              <i />
-              Hackathon prototype
-            </span>
+            {session.store.demo && <span className="demo-tag">Demo store</span>}
             <button
               className="icon-button notifications"
               aria-label="Show overdue follow-ups"
@@ -277,8 +278,9 @@ function App() {
               Drafts &amp; sync
             </button>
             <span>
-              {local.operations.filter((o) => o.state !== 'synced').length} waiting / needs
-              attention
+              {local.operations.filter((o) => o.state !== 'synced').length > 0
+                ? `${local.operations.filter((o) => o.state !== 'synced').length} waiting to sync or review`
+                : 'All changes saved'}
               {local.status?.last_synced_at
                 ? ` · Last synced ${new Date(local.status.last_synced_at).toLocaleTimeString('en-IN')}`
                 : ''}
@@ -303,8 +305,12 @@ function App() {
               )}
               {view === 'connections' ? (
                 <Integrations />
+              ) : view === 'exports' ? (
+                <section className="panel partner-screen">
+                  <Preparation />
+                </section>
               ) : view === 'planning' ? (
-                <Planning follow={followSource} />
+                <Intelligence follow={followSource} />
               ) : view === 'assistant' ? (
                 <Assistant follow={followSource} />
               ) : view === 'payments' ? (
@@ -339,25 +345,23 @@ function App() {
                   <div className="page-heading">
                     <div>
                       <div className="eyebrow">
-                        {view === 'overview'
-                          ? 'A LITTLE CLARITY. A BETTER BUSINESS.'
-                          : 'YOUR SUPPLIER CREDIT WORKSPACE'}
+                        {view === 'overview' ? 'TODAY' : 'YOUR BUSINESS'}
                       </div>
                       <h1>
                         {
                           {
                             overview: 'Daily business brief',
                             more: 'Your workspace',
-                            cases: 'Every credit. One place.',
-                            suppliers: 'Know where things stand.',
-                            insights: 'A clearer picture of recovery.',
+                            cases: 'Supplier claims',
+                            suppliers: 'Suppliers',
+                            insights: 'Recovery report',
                           }[view]
                         }
                       </h1>
                       <p>
                         {
                           {
-                            overview: 'Your recorded business, with source-linked next steps.',
+                            overview: 'What needs your attention today.',
                             more: 'Reports, suppliers, language and account controls.',
                             cases: 'From a delivery gap to a documented resolution.',
                             suppliers: 'Supplier balances, open cases and the next conversation.',
@@ -435,7 +439,7 @@ function App() {
                             <h2>
                               Your credit cases <span>{cases.length}</span>
                             </h2>
-                            <p>A promise is a start. A verified credit is the finish.</p>
+                            <p>Track open claims and confirmed recovery.</p>
                           </div>
                           <button className="text-button" onClick={() => navigate('cases')}>
                             View all {icon(ArrowRight, 15)}
@@ -490,28 +494,19 @@ function App() {
                   {view === 'insights' && (
                     <Insights cases={cases} verified={verified} outstanding={outstanding} />
                   )}
-                  {view === 'overview' && (
-                    <div className="bottom-note">
-                      <span className="sarvam-symbol">✳</span>
-                      <p>
-                        <strong>Made for the way India does business.</strong> Optional AI drafts
-                        require merchant review. Provider and language evaluation is still pending.
-                      </p>
-                      <button className="text-button" onClick={() => setHelp(true)}>
-                        Explore the workflow {icon(ArrowUpRight, 14)}
-                      </button>
-                    </div>
-                  )}
                 </>
               )}
               {view === 'more' && (
                 <section className="panel more-panel">
-                  <h2>More from your workspace</h2>
+                  <h2>Manage your business</h2>
+                  <button className="button secondary full" onClick={() => navigate('exports')}>
+                    Export purchases
+                  </button>
                   <button className="button secondary full" onClick={() => navigate('connections')}>
-                    Connections & readiness
+                    Connections
                   </button>
                   <button className="button secondary full" onClick={() => navigate('planning')}>
-                    Planning readiness
+                    Stock planning
                   </button>
                   <button className="button secondary full" onClick={() => navigate('assistant')}>
                     Merchant help & language
@@ -535,21 +530,18 @@ function App() {
                     Interface language
                     <select value={locale} onChange={(e) => setLocale(e.target.value)}>
                       <option value="en">English</option>
-                      <option value="hi">हिन्दी · shell preview</option>
-                      <option value="kn">ಕನ್ನಡ · shell preview</option>
+                      <option value="hi">हिन्दी · navigation only</option>
+                      <option value="kn">ಕನ್ನಡ · navigation only</option>
                     </select>
                   </label>
                   {locale !== 'en' && (
                     <p className="locale-note">
-                      Navigation language preview. Merchant workflow content remains English; full
-                      Hindi/Kannada copy has not been reviewed.
+                      Only navigation labels change. Bills and other workflows remain in English.
                     </p>
                   )}
                   <p>
                     Role: {session.role}.{' '}
-                    {session.store.demo
-                      ? 'This store contains synthetic demonstration records.'
-                      : 'This is your authenticated store.'}
+                    {session.store.demo ? 'Sample records only.' : 'Your store account.'}
                   </p>
                   <button
                     className="button secondary full"
@@ -570,8 +562,9 @@ function App() {
               business partner beyond payments
             </span>
             <span>
-              {session.store.demo ? 'Synthetic demo store' : 'Authenticated merchant store'} · No
-              live Paytm connection
+              {session.store.demo
+                ? 'Synthetic demo store · Sample records only'
+                : session.store.name}
             </span>
           </footer>
         </main>
@@ -594,6 +587,7 @@ function App() {
                   'payments',
                   'planning',
                   'connections',
+                  'exports',
                 ].includes(view))
                 ? 'page'
                 : undefined
@@ -608,31 +602,31 @@ function App() {
       {adding && <InvoiceModal close={() => setAdding(false)} create={onCreate} config={config} />}
       {help && (
         <Modal
-          title="A clear path from gap to credit"
-          subtitle="Your two-minute Munafa demo guide"
+          title="How supplier claims work"
+          subtitle="From checking a bill to confirming recovery."
           close={() => setHelp(false)}
         >
           <div className="guide">
             {[
               [
                 '01',
-                'Add the A-104 sample invoice',
-                'A synthetic bill with biscuits, tea and an unclear soap unit.',
+                'Add your invoice',
+                'Upload a bill or enter its details. Check quantities, units and prices against the original.',
               ],
               [
                 '02',
                 'Confirm the delivery',
-                'Enter 10 biscuit packs, 6 tea packs and 24 soap pieces. Set soap to piece on both sides, confirm each unit, and verify delivery and pricing.',
+                'Enter what actually arrived, check each unit and confirm whether delivery is complete.',
               ],
               [
                 '03',
-                'Approve the ₹80 evidence',
+                'Review the shortage',
                 'Review the math. Download the evidence or open a supplier message. Confirm sharing only after sending.',
               ],
               [
                 '04',
                 'Follow through to resolution',
-                'Record a supplier promise and date. Load the synthetic next-bill credit, inspect it and confirm it was applied.',
+                'Track the supplier’s response. Confirm recovery only after a credit is applied or a refund arrives, with matching proof.',
               ],
             ].map(([n, t, p]) => (
               <div key={n}>
@@ -643,17 +637,9 @@ function App() {
                 </section>
               </div>
             ))}
-            <div className="info-box">
-              <Sparkles size={18} />
-              <p>
-                Sarvam AI: add your server-side key for invoice text/image extraction and
-                Hindi/Kannada translation. Without a key, the sample, manual entry and English
-                message work in full.
-              </p>
-            </div>
             <p className="muted">
-              This is a store-scoped hackathon prototype. It does not send messages automatically or
-              access Paytm data. Voice preview is off by default; text entry remains available.
+              You review every message before sharing. A supplier promise stays open until recovery
+              is confirmed.
             </p>
           </div>
         </Modal>

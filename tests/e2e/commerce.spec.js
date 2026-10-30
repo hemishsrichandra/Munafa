@@ -54,10 +54,10 @@ test('purchase review, fractional receiving, stock, expiry and linked recovery',
     .getByRole('combobox', { name: 'Reviewed SKU', exact: true })
     .selectOption({ label: `${name} (kg)` });
   await page.getByRole('combobox', { name: 'Unit', exact: true }).selectOption('kg');
-  await page.getByLabel('Billed quantity (decimal)', { exact: true }).fill('2.5');
-  await page.getByLabel('Printed unit price (paise)', { exact: true }).fill('8000');
-  await page.getByLabel('Effective claim unit price (paise)', { exact: true }).fill('8000');
-  await page.getByLabel('Invoice total (paise)', { exact: true }).fill('20000');
+  await page.getByLabel('Billed quantity', { exact: true }).fill('2.5');
+  await page.getByLabel('Unit price (₹)', { exact: true }).fill('80');
+  await page.getByLabel('Claim price per unit (₹)', { exact: true }).fill('80');
+  await page.getByLabel('Invoice total (₹)', { exact: true }).fill('200');
   await page.getByRole('button', { name: 'Save invoice draft', exact: true }).click();
   await page
     .getByRole('button', { name: 'Confirm reviewed invoice (no stock change)', exact: true })
