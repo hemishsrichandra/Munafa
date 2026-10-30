@@ -15,6 +15,7 @@ from .sync import router as sync_router
 from .commerce_api import router as commerce_router
 from .payments import router as payments_router
 from .brief import router as brief_router
+from .ai_api import router as ai_router
 from .db import engine
 from .security import guard, origins
 from sqlalchemy import text
@@ -110,6 +111,7 @@ def health():
     return {
         "ok": True,
         "sarvam_configured": ai.configured(),
+        "speech_preview": os.getenv("ENABLE_SPEECH_PREVIEW") == "1",
         "vision_model": os.getenv("SARVAM_VISION_MODEL", "gemma4"),
         "chat_model": os.getenv("SARVAM_CHAT_MODEL", "sarvam-105b"),
         "mode": "merchant workspace",
@@ -454,8 +456,16 @@ def draft(case_id: str, body: Draft):
         raise RuleError("Approve the evidence before preparing the supplier message.")
     original = message(c)
     translated = ai.translate(original, body.language)
+    from .providers import numeric_tokens
+
+    match = numeric_tokens(original) == numeric_tokens(translated)
     return {
         "text": translated,
+        "numeric_match": match,
+        "review_required": True,
+        "warning": None
+        if match
+        else "Numeric/reference mismatch: use the original or correct manually.",
         "original": original,
         "provider": "sarvam" if body.language != "en-IN" else "rules",
         "version": c["version"],
@@ -711,6 +721,7 @@ app.include_router(sync_router)
 app.include_router(commerce_router)
 app.include_router(payments_router)
 app.include_router(brief_router)
+app.include_router(ai_router)
 
 DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if DIST.exists():

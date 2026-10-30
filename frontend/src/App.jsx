@@ -33,6 +33,7 @@ import { InvoiceModal } from './components/InvoiceIntake';
 import CaseDetail from './components/CaseDetail';
 import { Suppliers, Insights } from './components/LedgerViews';
 import { Commerce } from './components/Commerce';
+import { Assistant, CachedHelp } from './components/Assistant';
 import { BusinessBrief, Payments } from './components/BusinessBrief';
 
 const navs = [
@@ -107,6 +108,19 @@ function App() {
     setQuery('');
     setFilter('all');
   };
+  async function followSource(route) {
+    setSourceRoute(route);
+    if (route.startsWith('/cases/')) {
+      try {
+        const c = await api(route);
+        navigate('cases');
+        open(c);
+      } catch (e) {
+        setError(e.message);
+      }
+    } else if (route.startsWith('/payments/')) navigate('payments');
+    else if (route.startsWith('/stock/')) navigate('purchases');
+  }
   const onUpdate = (c) => {
     setSelected(c);
     setCases((prev) => prev.map((old) => (old.id === c.id ? c : old)));
@@ -137,7 +151,13 @@ function App() {
             ? c.follow_up && c.follow_up < today() && c.status !== 'resolved'
             : c.status === filter),
     );
-  if (session.offlineAccess) return <OfflineWorkspace standalone />;
+  if (session.offlineAccess)
+    return (
+      <>
+        <OfflineWorkspace standalone />
+        <CachedHelp />
+      </>
+    );
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -202,7 +222,16 @@ function App() {
         <header className="topbar">
           <div className="breadcrumb">
             Workspace <ChevronRight size={14} />
-            <strong>{selected ? 'Credit cases' : navs.find((n) => n.id === view)?.label}</strong>
+            <strong>
+              {selected
+                ? 'Credit cases'
+                : navs.find((n) => n.id === view)?.label ||
+                  {
+                    assistant: 'Merchant help',
+                    payments: 'Payments & reconciliation',
+                    more: 'More',
+                  }[view]}
+            </strong>
             {selected && (
               <>
                 <ChevronRight size={14} />
@@ -259,7 +288,9 @@ function App() {
                   <button onClick={load}>Retry</button>
                 </div>
               )}
-              {view === 'payments' ? (
+              {view === 'assistant' ? (
+                <Assistant follow={followSource} />
+              ) : view === 'payments' ? (
                 <Payments
                   initialId={
                     sourceRoute.startsWith('/payments/')
@@ -309,8 +340,7 @@ function App() {
                       <p>
                         {
                           {
-                            overview:
-                              'Your supplier cases and next action, grounded in your ledger.',
+                            overview: 'Your recorded business, with source-linked next steps.',
                             more: 'Reports, suppliers, language and account controls.',
                             cases: 'From a delivery gap to a documented resolution.',
                             suppliers: 'Supplier balances, open cases and the next conversation.',
@@ -330,29 +360,13 @@ function App() {
                   </div>
                   {view === 'overview' && (
                     <>
-                      <BusinessBrief
-                        follow={async (route) => {
-                          setSourceRoute(route);
-                          if (route.startsWith('/cases/')) {
-                            try {
-                              const c = await api(route);
-                              navigate('cases');
-                              open(c);
-                            } catch (e) {
-                              setError(e.message);
-                            }
-                          } else if (route.startsWith('/payments/')) navigate('payments');
-                          else if (route.startsWith('/stock/')) {
-                            navigate('purchases');
-                            window.dispatchEvent(
-                              new CustomEvent('munafa-commerce-route', { detail: route }),
-                            );
-                          }
-                        }}
-                      />
+                      <BusinessBrief follow={followSource} />
                       <div className="section-caption">
                         <span>AT A GLANCE</span>
-                        <span className="muted">All-time ledger · includes synthetic examples</span>
+                        <span className="muted">
+                          All-time supplier ledger ·{' '}
+                          {session.store.demo ? 'synthetic demo' : 'your recorded store'}
+                        </span>
                       </div>
                     </>
                   )}
@@ -476,6 +490,9 @@ function App() {
               {view === 'more' && (
                 <section className="panel more-panel">
                   <h2>More from your workspace</h2>
+                  <button className="button secondary full" onClick={() => navigate('assistant')}>
+                    Merchant help & language
+                  </button>
                   <button className="button secondary full" onClick={() => navigate('payments')}>
                     Payments & reconciliation
                   </button>
@@ -545,7 +562,8 @@ function App() {
           <button
             key={id}
             aria-current={
-              view === id || (id === 'more' && ['suppliers', 'insights'].includes(view))
+              view === id ||
+              (id === 'more' && ['suppliers', 'insights', 'assistant', 'payments'].includes(view))
                 ? 'page'
                 : undefined
             }
@@ -603,8 +621,8 @@ function App() {
               </p>
             </div>
             <p className="muted">
-              This is a local, single-store hackathon prototype. It does not send messages
-              automatically or access Paytm data. Voice entry is an optional browser feature.
+              This is a store-scoped hackathon prototype. It does not send messages automatically or
+              access Paytm data. Voice preview is off by default; text entry remains available.
             </p>
           </div>
         </Modal>

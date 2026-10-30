@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request, UploadFile, File, HTTPException
 from fastapi.responses import Response
 from pydantic import Field
 from sqlalchemy import select
-from . import store, auth, actions, inventory, purchasing, purchase_extraction, models as m
+from . import store, auth, actions, inventory, purchasing, models as m
 from .commerce_models import (
     ProductInput,
     ConversionInput,
@@ -223,7 +223,9 @@ def edit_purchase(pid: str, body: DraftEdit):
 
 @router.post("/purchases/extract-text", status_code=201)
 def from_text(body: TextSource):
-    draft, prov = purchase_extraction.extract(text=body.text)
+    from .providers import SarvamDocument
+
+    draft, prov = SarvamDocument().extract(text=body.text)
     with store.connect("write") as db:
         return purchasing.create(
             db, draft, "text", ("pasted-invoice.txt", "text/plain", body.text.encode()), prov
@@ -236,7 +238,9 @@ async def from_document(file: UploadFile = File(...)):
     from starlette.concurrency import run_in_threadpool
 
     data, mime = await read_file(file, proof=True)
-    draft, prov = await run_in_threadpool(purchase_extraction.extract, data=data, mime=mime)
+    from .providers import SarvamDocument
+
+    draft, prov = await run_in_threadpool(SarvamDocument().extract, data=data, mime=mime)
     with store.connect("write") as db:
         return purchasing.create(
             db, draft, "document", (file.filename or "invoice", mime, data), prov

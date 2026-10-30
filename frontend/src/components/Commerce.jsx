@@ -640,6 +640,35 @@ export function Commerce({ openCase, initialRoute = '' }) {
                   {selected.draft.supplier} ·{' '}
                   {money(selected.accepted_total_paise ?? selected.draft.total_paise)}
                 </p>
+                {selected.revisions?.some(
+                  (r) => r.provenance?.provider || r.provenance?.warning,
+                ) && (
+                  <section className="info-box">
+                    <div>
+                      <strong>Extraction is an untrusted draft</strong>
+                      {selected.revisions
+                        .filter((r) => r.provenance?.provider || r.provenance?.warning)
+                        .map((r) => (
+                          <div key={r.revision}>
+                            <p>
+                              Version {r.revision} · {r.provenance.provider || 'manual fallback'} ·
+                              merchant review required
+                            </p>
+                            {r.provenance.warning && <p role="note">{r.provenance.warning}</p>}
+                            <small>
+                              {r.provenance.confidence == null
+                                ? 'Confidence not supplied'
+                                : 'Check provider confidence'}{' '}
+                              ·{' '}
+                              {r.provenance.coordinates == null
+                                ? 'Coordinates not supplied'
+                                : 'Provider coordinates retained'}
+                            </small>
+                          </div>
+                        ))}
+                    </div>
+                  </section>
+                )}
                 {selected.documents.map((d) => (
                   <div key={d.id}>
                     <DocumentPreview document={d} />

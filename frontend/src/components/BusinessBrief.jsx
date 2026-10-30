@@ -22,7 +22,7 @@ export function BusinessBrief({ follow }) {
     };
   }, []);
   return (
-    <section className="panel" aria-label="Evidence-backed daily brief">
+    <section className="panel partner-screen" aria-label="Evidence-backed daily brief">
       <h2>Your next recorded actions</h2>
       <p>{data?.payment_label || 'Checking connected data…'}</p>
       {error && (
@@ -114,7 +114,7 @@ export function Payments({ initialId = '' }) {
     }
   }
   return (
-    <section className="panel">
+    <section className="panel partner-screen">
       <h1>Payments & reconciliation</h1>
       <p>
         Live Paytm access is disabled. Recorded statement fields explain differences; bank receipt

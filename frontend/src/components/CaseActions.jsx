@@ -100,6 +100,7 @@ function ShareModal({ c, close, config, notify }) {
   useEffect(() => {
     generate('en-IN');
   }, []);
+  const [translationReviewed, setTranslationReviewed] = useState(false);
   const link = draft
     ? `https://wa.me/${c.invoice.supplier_phone.replace(/\D/g, '')}?text=${encodeURIComponent(draft.text)}`
     : '#';
@@ -116,6 +117,7 @@ function ShareModal({ c, close, config, notify }) {
             value={lang}
             onChange={(e) => {
               setLang(e.target.value);
+              setTranslationReviewed(false);
               generate(e.target.value);
             }}
             disabled={busy}
@@ -147,10 +149,10 @@ function ShareModal({ c, close, config, notify }) {
                       quantities and amounts against the English original.
                     </p>
                   </div>
-                  <details>
-                    <summary>Compare original English message</summary>
+                  <section>
+                    <h3>Original English message</h3>
                     <div className="message-preview">{draft.original}</div>
-                  </details>
+                  </section>
                 </>
               )}
               <div className="info-box">
@@ -160,9 +162,26 @@ function ShareModal({ c, close, config, notify }) {
                   sharing.
                 </p>
               </div>
+              {draft.provider === 'sarvam' && (
+                <>
+                  <label className="check-field">
+                    <input
+                      type="checkbox"
+                      checked={translationReviewed}
+                      onChange={(e) => setTranslationReviewed(e.target.checked)}
+                    />
+                    I reviewed the translation against the original, including amounts and
+                    identifiers.
+                  </label>
+                  {draft.warning && <p role="alert">{draft.warning}</p>}
+                </>
+              )}
               <div className="action-row">
                 <button
                   className="button secondary"
+                  disabled={
+                    draft.provider === 'sarvam' && (!translationReviewed || !draft.numeric_match)
+                  }
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(draft.text);
@@ -189,7 +208,19 @@ function ShareModal({ c, close, config, notify }) {
                 >
                   <Download size={16} /> Evidence PNG
                 </button>
-                <a className="button primary" href={link} target="_blank" rel="noreferrer">
+                <a
+                  className="button primary"
+                  aria-disabled={
+                    draft.provider === 'sarvam' && (!translationReviewed || !draft.numeric_match)
+                  }
+                  href={
+                    draft.provider === 'sarvam' && (!translationReviewed || !draft.numeric_match)
+                      ? undefined
+                      : link
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   <MessageCircle size={16} /> Open WhatsApp
                 </a>
               </div>

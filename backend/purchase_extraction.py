@@ -61,7 +61,7 @@ def pdf_text(data):
         }
 
 
-def extract(text=None, data=None, mime=None):
+def _extract_once(text=None, data=None, mime=None):
     prov = {
         "provider": None,
         "model": None,
@@ -122,6 +122,9 @@ def extract(text=None, data=None, mime=None):
         parsed = json.loads(raw)
         if not isinstance(parsed, dict) or parsed.get("error"):
             raise ValueError("Unreadable proposal")
+        from .extraction_schema import RawInvoice
+
+        parsed = RawInvoice.model_validate(parsed).model_dump()
         ls = []
         for entry in parsed.get("lines", []):
             # Receiving and authority/provenance fields from model text are deliberately ignored.
@@ -177,11 +180,18 @@ def extract(text=None, data=None, mime=None):
             "provider_reported_usage": reported,
             "cost": None,
         }
-    except (RuleError, ValueError, KeyError, IndexError, TypeError, AttributeError):
+    except (RuleError, ValueError, KeyError, IndexError, TypeError, AttributeError) as exc:
         return PurchaseDraft().model_dump(mode="json"), {
             **prov,
             "provider": "sarvam",
             "model": model,
             "latency_ms": int((time.monotonic() - started) * 1000),
+            "failure_kind": "provider_error" if isinstance(exc, RuleError) else "invalid",
             "warning": "Extraction was invalid or incomplete. No stock or purchase was accepted. Complete the manual draft against the preserved source.",
         }
+
+
+def extract(text=None, data=None, mime=None):
+    from .providers import guarded_extraction
+
+    return guarded_extraction(_extract_once, text=text, data=data, mime=mime)

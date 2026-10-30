@@ -650,3 +650,25 @@ Index(
     payment_events.c.mode,
     payment_events.c.transaction_id,
 )
+
+# Minimal provider telemetry: no raw prompt, document, transcript or response text.
+ai_runs = table(
+    "ai_runs",
+    identity(),
+    scoped(),
+    C("actor_id", String(64), ForeignKey("users.id"), nullable=False),
+    C("purpose", String(24), nullable=False),
+    C("input_digest", String(64), nullable=False),
+    C("provider", String(40), nullable=False),
+    C("model", String(80), nullable=False),
+    C("status", String(24), nullable=False),
+    C("latency_ms", Integer, nullable=False),
+    C("usage", JSONB, nullable=False),
+    C("cost_paise", BigInteger),
+    instant("at"),
+    owned_unique(),
+    Check("latency_ms >= 0 AND (cost_paise IS NULL OR cost_paise >= 0)", name="ai_run_cost_time"),
+    Check("purpose IN ('extraction','translation','speech','reasoning')", name="ai_run_purpose"),
+    Check("status IN ('valid','invalid','unavailable','provider_error')", name="ai_run_status"),
+)
+Index("ix_ai_runs_attempts", ai_runs.c.store_id, ai_runs.c.purpose, ai_runs.c.input_digest)

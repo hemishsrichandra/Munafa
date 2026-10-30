@@ -29,3 +29,7 @@ The owner must supply/approve the next batch before implementation. Preserve pen
 Actual Android device installation, camera/file/share/download behavior, production signing and deployment, live-provider contracts, merchant discovery and the final submission video/presentation remain separate. A passing headless test does not prove installed-device behavior or merchant impact.
 
 Before any real pilot: review deployment access, DB privileges/backups, retention, file scanning, privacy notices and support procedures. Validate with 3–5 consenting merchants before scaling. Measure verified recovery, correction-adjusted task time, useful completed actions, false alerts and repeat use. The original subscription amount remains a pricing hypothesis.
+
+### Current checkpoint — 30 October 2026
+
+Batches 6–7 prototype implementation is delivered after the pulled Batch 5 completion. Deterministic fixture-backed payment reconciliation, evidence-linked brief and curated-source help work without cloud keys. Extraction/translation remain optional reviewed proposals; speech is disabled by default pending validation. Empirical provider/merchant/device acceptance and live Paytm integration are external gates, not completed benchmarks. Read HANDOFF.md before the next batch; Batch 8 requires explicit authorisation and truthful prerequisite checks.

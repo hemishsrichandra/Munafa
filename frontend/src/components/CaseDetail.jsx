@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowUpRight,
   ArrowRight,
@@ -16,7 +16,8 @@ import {
   ExternalLink,
   Settings2,
 } from 'lucide-react';
-import { api, money, day, today, isNative, downloadPrivate } from '../api';
+import { api, money, day, today, downloadPrivate } from '../api';
+import { VoiceNote } from './Assistant';
 import { useSession } from '../session';
 import { badge, icon, Modal, ErrorBox, Busy } from './ui';
 import { InvoiceFields } from './InvoiceIntake';
@@ -32,13 +33,12 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
     [error, setError] = useState(''),
     [dialog, setDialog] = useState(null),
     [speech, setSpeech] = useState('');
-  const recognitionRef = useRef(null);
+  const [showVoice, setShowVoice] = useState(false);
   useEffect(() => {
     setInvoice(c.invoice);
     setComplete(c.delivery_complete);
     setPricing(c.pricing_confirmed);
   }, [c.version]);
-  useEffect(() => () => recognitionRef.current?.abort(), []);
   const dirty =
     JSON.stringify(invoice) !== JSON.stringify(c.invoice) ||
     complete !== c.delivery_complete ||
@@ -65,64 +65,6 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
       setError(e.message);
     } finally {
       setBusy(false);
-    }
-  }
-  function voiceCount() {
-    if (isNative()) {
-      setSpeech('Voice is not enabled in this Android shell. Enter the received quantity below.');
-      return;
-    }
-    const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!Speech) {
-      setSpeech('Voice isn’t supported in this browser. Use the received-quantity fields below.');
-      return;
-    }
-    recognitionRef.current?.abort();
-    const rec = new Speech();
-    recognitionRef.current = rec;
-    rec.lang = 'en-IN';
-    rec.interimResults = false;
-    rec.onstart = () =>
-      setSpeech('Listening… Say a count for the first item, for example “ten packs arrived”.');
-    rec.onresult = (e) => {
-      const text = e.results[0][0].transcript;
-      const words = {
-        zero: 0,
-        one: 1,
-        two: 2,
-        three: 3,
-        four: 4,
-        five: 5,
-        six: 6,
-        seven: 7,
-        eight: 8,
-        nine: 9,
-        ten: 10,
-        eleven: 11,
-        twelve: 12,
-      };
-      const matches =
-        text
-          .toLowerCase()
-          .match(
-            /\b(\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/g,
-          ) || [];
-      if (matches.length === 1) {
-        const count = words[matches[0]] ?? Number(matches[0]);
-        setInvoice((prev) => ({
-          ...prev,
-          lines: prev.lines.map((l, i) => (i === 0 ? { ...l, received: count } : l)),
-        }));
-        setSpeech(
-          `Heard “${text}”. Proposed count for the first item: ${count}. Check the count and confirm the unit below.`,
-        );
-      } else setSpeech(`Heard “${text}”. Please enter a single clear count in the fields below.`);
-    };
-    rec.onerror = (e) => setSpeech(`Voice input unavailable (${e.error}). Enter the count below.`);
-    try {
-      rec.start();
-    } catch {
-      setSpeech('Could not start voice input. Use the quantity fields below.');
     }
   }
   const stage =
@@ -194,14 +136,18 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
                   <h2>What actually arrived?</h2>
                   <p>Check the bill, count the goods, and confirm each unit.</p>
                 </div>
-                <button className="button subtle small" onClick={voiceCount}>
+                <button className="button subtle small" onClick={() => setShowVoice((v) => !v)}>
                   <Mic size={15} /> Try voice
                 </button>
               </div>
+              {showVoice && <VoiceNote enabled={config?.speech_preview} change={setSpeech} />}
               {speech && (
                 <div className="info-box">
                   <Mic size={16} />
-                  <p>{speech}</p>
+                  <p>
+                    Transcript draft: {speech}. Enter a checked physical quantity manually below; no
+                    quantity was changed.
+                  </p>
                 </div>
               )}
               {editing && (

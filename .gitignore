@@ -29,3 +29,6 @@ test-results/
 *.keystore
 android/local.properties
 artifacts/
+
+# Private provider responses / human evaluation sheets; only synthetic fixtures are public.
+evaluation/private/

@@ -45,9 +45,9 @@ Production refuses to enable development login. Production cookies require HTTPS
 
 ## Current product
 
-- Home: a business brief derived only from existing supplier cases, with real balances and an existing overdue-follow-up rule.
-- Purchases: mobile case cards, invoice intake, receiving review, approval, supplier message preparation, promises and documented recovery.
-- More: supplier balances, recovery report/export, workflow guide, limited language-shell preview and sign out.
+- Home: deterministic, source-linked daily brief over recorded supplier claims, merchant SKU thresholds, actual expiries and labelled reconciliation exceptions. Unavailable payment data is not zero activity.
+- Purchases & stock: reviewed purchase records, independent partial/final physical receiving, exact stock ledger, SKU thresholds/batches/expiry and linked original supplier recovery. Invoice acceptance alone never changes stock.
+- More: payments/reconciliation, cited merchant help and reviewed language drafts, supplier balances, recovery export, workflow guide and account controls.
 - Drafts & sync: IndexedDB manual invoices/receiving notes/attachments, durable dependency-ordered outbox and explicit server-accepted/conflict states.
 - Merchant-confirmed received quantities, units, delivery completeness and effective prices remain mandatory.
 - Integer-paise claim calculation; exact decimal quantities use NUMERIC(20,6), HALF_UP rounding to paise per line. The phone editor preserves fractional quantity strings up to six decimal places; prices are converted from decimal input to paise without floating-point rounding.
@@ -56,7 +56,7 @@ Production refuses to enable development login. Production cookies require HTTPS
 - Server-derived store scope, owner/staff/viewer permissions, CSRF-bound cookie sessions and transactionally idempotent writes.
 - Ledger export requires a server-approved export action. WhatsApp sending remains manual.
 
-No stock/sales/customer-credit module, forecasting, live reconciliation or general support RAG has been introduced.
+Payments use explicitly loaded synthetic fixtures in isolated demo stores; live Paytm is disabled. Source-grounded help uses curated versioned product/technical material, with scoped optional merchant facts. No customer-credit, forecast or live analytics module exists. Manual stock/sale entry requires actual source records and approval; payments never imply SKU sales.
 
 ## PWA behavior
 
@@ -64,7 +64,7 @@ Choose **Install app** for supported-browser prompting or platform-specific guid
 
 The service worker caches only the public shell and versioned assets. It does not cache `/api` responses, attachments, tokens or merchant records. Logout stops sync and clears private IndexedDB data after a warning, plus workspace memory and non-shell caches. Offline logout leaves server revocation pending until connectivity returns. Updates wait for explicit confirmation and warn about unsaved form input.
 
-**IndexedDB drafts and sync are now available through Drafts & sync.** Save a local draft, then explicitly queue it. Only manual invoice capture, unapproved receiving and original-bill attachment operations are eligible. Approvals, credits/refunds, exports and messages remain online-only. Direct actions outside this workspace are never silently queued. Hindi/Kannada selection currently previews navigation labels; workflow text remains English and is explicitly labelled as not fully reviewed.
+**IndexedDB drafts and sync are now available through Drafts & sync.** Save a local draft, then explicitly queue it. Purchase/receiving capture, attachment upload and eligible explicitly confirmed stock operations use the existing versioned outbox. Local values remain provisional until accepted; stale versions require review. Credits/refunds, exports and sending are not silently queued. Direct actions outside this workspace are never silently queued. Hindi/Kannada selection currently previews navigation labels; workflow text remains English and is explicitly labelled as not fully reviewed.
 
 ## Sarvam integration
 
@@ -76,7 +76,7 @@ SARVAM_CHAT_MODEL=sarvam-105b
 SARVAM_VISION_MODEL=gemma4
 ```
 
-Pasted-text extraction uses native Sarvam chat; image extraction uses Sarvam-hosted Gemma; Hindi/Kannada message translation uses Mayura. AI-proposed receiving counts are discarded. Provider endpoints and failure paths have mocked contract tests. **Live account access, credits, accuracy and latency remain unverified.** No API key is bundled in the PWA or Android assets.
+Pasted-text extraction uses native Sarvam chat; image extraction uses Sarvam-hosted Gemma; Hindi/Kannada message translation uses Mayura. AI-proposed receiving counts are discarded. Provider endpoints and failure paths have mocked contract tests. **Live account access, credits, accuracy and latency remain unverified.** Manual entry is the default. Two invalid structured outputs stop extraction for that source; original documents are preserved. Speech is an opt-in unvalidated note preview (`ENABLE_SPEECH_PREVIEW=0` by default), never automatic physical quantity entry. Translation is reviewed before copy/share; help cannot mutate business truth. No API key is bundled in the PWA or Android assets.
 
 ## Tests
 
@@ -124,3 +124,11 @@ For a new session, start with [resume context](docs/HANDOFF.md). See [progress](
 IndexedDB data is scoped by verified user/store/role. Cached receiving sources expire in 24 hours; accepted draft copies expire seven days after sync. Unsynced drafts are retained until explicit discard/sign-out; automatic retries pause after five attempts or 30 days. A timeout does not prove rejection: retries preserve the exact operation ID/body and PostgreSQL replays its receipt.
 
 Browser/WebView storage is **not encrypted by this app** and can be evicted or cleared. Keep original documents and deliberately back up important drafts. JSON draft backups do not contain attachment bytes. No device-level encryption, guaranteed persistence, background delivery or cross-device recovery of unsynced drafts is claimed. See [sync protocol and threat model](docs/SYNC-PROTOCOL.md).
+
+## Batches 6 and 7 / continuing on another system
+
+Read [HANDOFF.md](docs/HANDOFF.md), [Batch 6](docs/BATCH-6.md), [Batch 7](docs/BATCH-7.md), [Paytm integration gate](docs/PAYTM-INTEGRATION.md), [AI evaluation](docs/AI-EVALUATION.md) and [AI data handling](docs/AI-DATA-HANDLING.md). Apply migrations with `alembic upgrade head`; no automatic import/reset is performed. No API key is needed for manual purchase/stock/recovery, deterministic help or the synthetic payment demo.
+
+To demonstrate Batch 6, sign in to an isolated demo store, explicitly create a SKU with a merchant-defined threshold, then open More → Payments & reconciliation → Load isolated synthetic payment demo. Home then shows source-linked stock and reconciliation actions. Fixture amounts are deliberately inconsistent by ₹8.20 after documented fees/GST/refund components; review is required and no missing-money claim is made.
+
+For Batch 7, open More → Merchant help & language, ask about receiving/offline/recovery and optionally select your own case/SKU/brief source. Source citations and database facts are separate. Missing/stale/unsupported questions abstain. Optional cloud extraction and translation are explicit drafts; the offline product guide remains bundled. Real providers, speech accuracy and Android hardware still require external acceptance tests.

@@ -1,0 +1,3 @@
+// Public synthetic evaluation documents only. No merchant source uploads.
+const {chromium}=require('playwright');const fs=require('fs');const path=require('path');
+(async()=>{const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_EXECUTABLE_PATH}:{})});try{const page=await browser.newPage({viewport:{width:900,height:760},deviceScaleFactor:1});for(const file of fs.readdirSync('evaluation/corpus/images').filter(f=>f.endsWith('.svg'))){await page.goto('file://'+path.resolve('evaluation/corpus/images',file));await page.screenshot({path:path.resolve('evaluation/corpus/images',file.replace('.svg','.png'))});}}finally{await browser.close();}})().catch(e=>{console.error(e.message);process.exit(1);});

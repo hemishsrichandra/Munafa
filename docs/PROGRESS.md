@@ -42,3 +42,7 @@ The development UI/API can be started with `npm run dev`. Port 5173 is Vite; the
 5. Merchant research/evaluation, final presentation, submission video and production rollout remain outstanding. No business outcome improvements are claimed without measurement.
 
 For the next chat read **[HANDOFF.md](HANDOFF.md)** first, then [Batch 4](BATCH-4.md), [sync protocol](SYNC-PROTOCOL.md) and the actual source/tests. Earlier [Batch 2](BATCH-2.md) and [Batch 3](BATCH-3.md) reports preserve their historical validation context; current behavior is documented above.
+
+## 30 October 2026 — Batches 6 and 7
+
+Pulled Batch 5 completion `cba2166`. Batch 6 checkpoint `9408088` adds deterministic component reconciliation, isolated synthetic payment observations and source-linked daily brief. Batch 7 adds strict bounded extraction, persistent invalid-output budget, reviewed language/voice drafts, scoped cited help, synthetic corpus/evaluator and data-handling notes. Full verification: 101 backend + 18 browser + 14 IndexedDB tests; production/PWA and Android debug build/lint pass. Live Paytm, measured provider comparisons and real language/device/merchant studies remain explicit gates. See HANDOFF.md for cross-system setup, preserved invariants and remaining work. Batch 8 was not implemented.
