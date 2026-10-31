@@ -617,6 +617,12 @@ export function DailyRecords({ initialRoute = '' }) {
                   onClick={() => openSource(`/records/entries/${r.id}`)}
                 >
                   Open original {r.reference} · {money(r.remaining_paise)} remaining
+                  {r.is_overdue && (
+                    <span className="overdue-badge">
+                      Due on {r.due_on} ({r.days_overdue} {r.days_overdue === 1 ? 'day' : 'days'}{' '}
+                      late)
+                    </span>
+                  )}
                 </button>
               ))}
             </>
@@ -708,12 +714,24 @@ export function DailyRecords({ initialRoute = '' }) {
                       </span>
                     )}
                   </div>
+                  {p.has_overdue && (
+                    <p className="overdue-badge">
+                      {p.max_days_overdue} {p.max_days_overdue === 1 ? 'day' : 'days'} overdue ·{' '}
+                      {money(p.overdue_paise)} past due
+                    </p>
+                  )}
                   <p>
                     {p.recorded_sale_count} recorded sales · Last: {p.last_recorded_sale || 'None'}
                   </p>
                   <p>
                     Marketing consent: {p.marketing_consent ? 'Agreed' : 'Not agreed / withdrawn'}
                   </p>
+                  <button
+                    className="text-button"
+                    onClick={() => openSource(`/records/customers/${p.id}`)}
+                  >
+                    View account history
+                  </button>
                   <div
                     style={{
                       display: 'flex',
@@ -791,7 +809,7 @@ export function DailyRecords({ initialRoute = '' }) {
                       wordBreak: 'break-word',
                     }}
                   >
-                    {reminder.text_plain || reminder.text}
+                    {reminder.text}
                   </p>
                   {reminder.payment_link && (
                     <p style={{ fontSize: '0.85rem', color: '#555', wordBreak: 'break-all' }}>
@@ -1008,6 +1026,42 @@ export function DailyRecords({ initialRoute = '' }) {
                     value={entry.reference}
                     onChange={(v) => changeEntry('reference', v)}
                   />
+                  {entry.kind === 'collection' && entry.customer_id && (
+                    <div className="quick-amounts" role="group" aria-label="Payment quick amounts">
+                      {[10000, 20000, 50000].map((amount) => (
+                        <button
+                          type="button"
+                          key={amount}
+                          disabled={
+                            amount >
+                            (people.find((p) => p.id === entry.customer_id)?.outstanding_paise || 0)
+                          }
+                          onClick={() => changeEntry('amount_paise', amount)}
+                        >
+                          {money(amount)}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        disabled={
+                          !people.find((p) => p.id === entry.customer_id)?.outstanding_paise
+                        }
+                        onClick={() =>
+                          changeEntry(
+                            'amount_paise',
+                            people.find((p) => p.id === entry.customer_id).outstanding_paise,
+                          )
+                        }
+                      >
+                        Full balance:{' '}
+                        {money(people.find((p) => p.id === entry.customer_id)?.outstanding_paise)}
+                      </button>
+                      <small>
+                        Choose an amount, allocate it to the original dues and confirm before
+                        saving.
+                      </small>
+                    </div>
+                  )}
                   <MoneyInput
                     label="Recorded amount (₹)"
                     value={entry.amount_paise}

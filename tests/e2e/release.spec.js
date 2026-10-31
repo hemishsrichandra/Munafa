@@ -73,6 +73,7 @@ test('phone bill photo → reviewed purchase → receipt → shortage → promis
   await page.getByLabel('Billed quantity', { exact: true }).fill('2.5');
   await page.getByLabel('Unit price (₹)', { exact: true }).fill('80');
   await page.getByLabel('Claim price per unit (₹)', { exact: true }).fill('80');
+  await page.getByText('More bill details · Tax, discount and rounding', { exact: true }).click();
   await page.getByLabel('Tax (₹)', { exact: true }).fill('0');
   await page.getByLabel('Discount (₹)', { exact: true }).fill('0');
   await page.getByLabel('Invoice total (₹)', { exact: true }).fill('200');
@@ -105,6 +106,11 @@ test('phone bill photo → reviewed purchase → receipt → shortage → promis
     .toBe(4000);
   await page.getByRole('button', { name: 'Prepare supplier message', exact: true }).click();
   await expect(page.locator('.message-preview')).toContainText('INR 40.00');
+  await page
+    .getByRole('checkbox', {
+      name: 'I reviewed the message against the approved claim, including amounts and identifiers.',
+    })
+    .check();
   await expect(page.getByRole('link', { name: 'Open WhatsApp' })).toHaveAttribute(
     'href',
     /^https:\/\/wa.me\//,

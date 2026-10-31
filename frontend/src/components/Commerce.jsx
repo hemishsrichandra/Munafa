@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ExpiryRadar } from './ExpiryRadar';
 import { hasMissingItems } from '../merchant-display.mjs';
 import { Plus, FileText, Package, CalendarClock, ChevronRight } from 'lucide-react';
 import { api, money, today, downloadPrivate, proposeCommerceAction } from '../api';
@@ -252,6 +253,9 @@ export function Commerce({ openCase, initialRoute = '' }) {
     [purchases, setPurchases] = useState([]),
     [products, setProducts] = useState([]),
     [expiry, setExpiry] = useState([]),
+    [expiryAsOf, setExpiryAsOf] = useState(null),
+    [expiryStale, setExpiryStale] = useState(false),
+    [expiryLoaded, setExpiryLoaded] = useState(false),
     [reorders, setReorders] = useState([]),
     [selected, setSelected] = useState(null),
     [draft, setDraft] = useState(null),
@@ -273,6 +277,9 @@ export function Commerce({ openCase, initialRoute = '' }) {
         setPurchases(cached.purchases);
         setProducts(cached.products);
         setExpiry(cached.expiry);
+        setExpiryAsOf(cached.expiry_as_of || null);
+        setExpiryStale(true);
+        setExpiryLoaded(true);
         setNotice('Saved on your phone: stock may have changed. Reconnect before confirming.');
       }
       return;
@@ -286,6 +293,9 @@ export function Commerce({ openCase, initialRoute = '' }) {
     setPurchases(ps);
     setProducts(sk);
     setExpiry(ex.lots);
+    setExpiryAsOf(ex.as_of);
+    setExpiryStale(false);
+    setExpiryLoaded(true);
     setReorders(reorderData.suggestions || []);
     await db.transaction(['meta', 'cache'], async (s) => {
       if ((await db.requestValue(s.meta.get('context')))?.scope !== local.scope) return;
@@ -295,6 +305,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
         purchases: ps.map((p) => ({ ...p, revisions: [] })),
         products: sk,
         expiry: ex.lots,
+        expiry_as_of: ex.as_of,
         saved_at: Date.now(),
         expires_at: Date.now() + 86400000,
       });
@@ -304,6 +315,10 @@ export function Commerce({ openCase, initialRoute = '' }) {
     load().catch((e) => setError(e.message));
   }, []);
   useEffect(() => {
+    if (initialRoute === '/stock/expiry') {
+      setTab('expiry');
+      return;
+    }
     if (!initialRoute.startsWith('/stock/') || !products.length) return;
     const product = products.find((p) => p.id === initialRoute.split('/')[2]);
     if (product) {
@@ -599,6 +614,12 @@ export function Commerce({ openCase, initialRoute = '' }) {
                     change={(v) => update('date', v)}
                   />
                 </div>
+                <p className="workflow-step">
+                  <strong>Step 1 · Check the paper bill</strong>
+                  <br />
+                  Confirm billed quantities and prices. Count what arrived separately after
+                  confirming the bill.
+                </p>
                 {draft.lines.map((l, i) => (
                   <div className="panel" key={i}>
                     <h3>Item {i + 1}</h3>
@@ -657,23 +678,30 @@ export function Commerce({ openCase, initialRoute = '' }) {
                 <button type="button" onClick={() => update('lines', [...draft.lines, line()])}>
                   Add item
                 </button>
-                <div className="form-grid">
-                  {[
-                    ['subtotal_paise', 'Subtotal'],
-                    ['tax_paise', 'Tax'],
-                    ['discount_paise', 'Discount'],
-                    ['rounding_paise', 'Rounding'],
-                    ['total_paise', 'Invoice total'],
-                  ].map(([k, label]) => (
-                    <MoneyInput
-                      key={k}
-                      label={`${label} (₹)`}
-                      value={draft[k]}
-                      signed={k === 'rounding_paise'}
-                      change={(v) => update(k, v)}
-                    />
-                  ))}
-                </div>
+                <MoneyInput
+                  label="Invoice total (₹)"
+                  value={draft.total_paise}
+                  change={(v) => update('total_paise', v)}
+                />
+                <details className="bill-details">
+                  <summary>More bill details · Tax, discount and rounding</summary>
+                  <div className="form-grid">
+                    {[
+                      ['subtotal_paise', 'Subtotal'],
+                      ['tax_paise', 'Tax'],
+                      ['discount_paise', 'Discount'],
+                      ['rounding_paise', 'Rounding'],
+                    ].map(([k, label]) => (
+                      <MoneyInput
+                        key={k}
+                        label={`${label} (₹)`}
+                        value={draft[k]}
+                        signed={k === 'rounding_paise'}
+                        change={(v) => update(k, v)}
+                      />
+                    ))}
+                  </div>
+                </details>
                 <button className="button primary" disabled={actionsDisabled}>
                   Save invoice draft
                 </button>
@@ -825,6 +853,9 @@ export function Commerce({ openCase, initialRoute = '' }) {
                 }}
               >
                 <h2>Count Delivered Items · सामान की गिनती</h2>
+                <p className="workflow-step">
+                  Step 2 · Count what actually arrived. The bill does not confirm delivery.
+                </p>
                 <p>
                   Enter quantities in this delivery only. Damaged units do not enter usable stock.
                 </p>
@@ -1303,20 +1334,20 @@ export function Commerce({ openCase, initialRoute = '' }) {
             )}
           </div>
         )}
-        {tab === 'expiry' && (
-          <div className="panel">
-            <h2>Expired & expiring within 30 days</h2>
-            {!expiry.length && <p className="commerce-empty">No recorded lots in this window.</p>}
-            {expiry.map((l) => (
-              <p key={l.id}>
-                {l.product_name} · {l.quantity} {l.unit} · {l.expiry_date} ·{' '}
-                <span className={`badge ${l.expired ? 'partial' : 'review'}`}>
-                  {l.expired ? 'Expired · तारीख निकल गई' : 'Expiring soon · तारीख पास है'}
-                </span>
-              </p>
-            ))}
-          </div>
-        )}
+        {tab === 'expiry' &&
+          (expiryLoaded ? (
+            <ExpiryRadar lots={expiry} asOf={expiryAsOf} stale={expiryStale || !navigator.onLine} />
+          ) : (
+            <p role="status">
+              {error ||
+                (!navigator.onLine
+                  ? 'Reconnect to load recorded batches.'
+                  : 'Loading recorded batches…')}{' '}
+              <button onClick={() => load().catch((e) => setError(e.message))}>
+                Refresh expiry
+              </button>
+            </p>
+          ))}
       </fieldset>
     </section>
   );

@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { api, money } from '../api';
+import { ExpiryAttention } from './ExpiryRadar';
+import { ReviewedMessage } from './ReviewedMessage';
 import { useSession } from '../session';
 export function BusinessBrief({ follow }) {
+  const session = useSession();
+  const [reminderBusy, setReminderBusy] = useState(false);
   const [data, setData] = useState(null),
     [error, setError] = useState(''),
     [briefReminder, setBriefReminder] = useState(null);
@@ -84,56 +88,20 @@ export function BusinessBrief({ follow }) {
               next step.
             </p>
           )}
+          <ExpiryAttention follow={follow} />
           <div className="commerce-list">
             {briefReminder && (
-              <div
-                className="info-box"
-                style={{
-                  borderLeft: '4px solid #25d366',
-                  padding: '0.75rem',
-                  marginBottom: '1rem',
-                  background: '#f0fdf4',
-                }}
-              >
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                >
-                  <strong>💬 WhatsApp Reminder Draft Prepared</strong>
-                  <button className="text-button" onClick={() => setBriefReminder(null)}>
-                    Dismiss
-                  </button>
-                </div>
-                <p style={{ margin: '0.4rem 0', fontSize: '0.85rem' }}>
-                  Prepared for <strong>{briefReminder.customer_name}</strong> (
-                  {money(briefReminder.amount_paise)} pending).
-                </p>
-                <p
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: '0.8rem',
-                    background: '#fff',
-                    padding: '0.5rem',
-                    borderRadius: '4px',
-                  }}
-                >
-                  {briefReminder.text_plain || briefReminder.text}
-                </p>
-                {briefReminder.customer_phone ? (
-                  <a
-                    className="button primary small"
-                    href={`https://wa.me/${briefReminder.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(briefReminder.text)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ textDecoration: 'none', display: 'inline-block', marginTop: '0.4rem' }}
-                  >
-                    📲 Open in WhatsApp
-                  </a>
-                ) : (
-                  <small className="muted">
-                    No phone recorded for customer. Add phone in Daily Records.
-                  </small>
-                )}
-              </div>
+              <ReviewedMessage
+                title={`Payment reminder · ${briefReminder.customer_name}`}
+                text={briefReminder.text}
+                original={briefReminder.text_plain}
+                url={
+                  briefReminder.customer_phone
+                    ? `https://wa.me/${briefReminder.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(briefReminder.text)}`
+                    : null
+                }
+                close={() => setBriefReminder(null)}
+              />
             )}
             {data.items.map((item) =>
               item.type === 'customer_credit_collection' ? (
@@ -154,8 +122,8 @@ export function BusinessBrief({ follow }) {
                       marginBottom: '0.3rem',
                     }}
                   >
-                    <small style={{ color: '#c5221f', fontWeight: 'bold' }}>
-                      🔴 PRIORITY 1 ACTION
+                    <small>
+                      {item.mode === 'demo' ? 'SYNTHETIC DEMO · ' : ''}Overdue customer payments
                     </small>
                     <span className="badge badge-warn">Overdue Khata</span>
                   </div>
@@ -163,6 +131,12 @@ export function BusinessBrief({ follow }) {
                     Customer Credit Collection
                   </h3>
                   <p style={{ fontSize: '0.95rem', margin: '0.5rem 0' }}>{item.reason}</p>
+                  <small>
+                    {item.data_freshness.stale
+                      ? 'Older records · check for updates'
+                      : 'Ready to review'}{' '}
+                    · Updated {new Date(item.data_freshness.source_updated_at).toLocaleString()}
+                  </small>
                   <div
                     style={{
                       display: 'flex',
@@ -171,28 +145,29 @@ export function BusinessBrief({ follow }) {
                       marginTop: '0.75rem',
                     }}
                   >
-                    {item.top_customer && (
+                    {item.top_customer && session.permissions.includes('messaging') && (
                       <button
                         className="button primary"
+                        disabled={reminderBusy || !navigator.onLine}
                         onClick={async () => {
+                          setReminderBusy(true);
+                          setError('');
                           try {
                             const res = await api(
                               `/records/customers/${item.top_customer.customer_id}/reminder`,
                               { method: 'POST' },
                             );
                             setBriefReminder(res);
-                            if (res.customer_phone) {
-                              window.open(
-                                `https://wa.me/${res.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(res.text)}`,
-                                '_blank',
-                              );
-                            }
                           } catch (e) {
                             setError(e.message);
+                          } finally {
+                            setReminderBusy(false);
                           }
                         }}
                       >
-                        📲 Send {item.top_customer.customer_name} Reminder
+                        {reminderBusy
+                          ? 'Preparing…'
+                          : `Review reminder for ${item.top_customer.customer_name}`}
                       </button>
                     )}
                     <button className="button secondary" onClick={() => follow(item.route)}>
@@ -218,6 +193,12 @@ export function BusinessBrief({ follow }) {
                     <details>
                       <summary>Why this needs review</summary>
                       <p>{item.reason}</p>
+                      <small>
+                        {item.data_freshness.stale
+                          ? 'Older records · check for updates'
+                          : 'Ready to review'}{' '}
+                        · Updated {new Date(item.data_freshness.source_updated_at).toLocaleString()}
+                      </small>
                     </details>
                   )}
                   <small>

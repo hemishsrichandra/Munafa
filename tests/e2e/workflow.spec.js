@@ -59,10 +59,36 @@ test('merchant completes the A-104 workflow and navigates the ledger', async ({ 
   await expect(page.locator('.message-preview')).toContainText(
     'Total reviewed shortage: INR 80.00',
   );
+  await page
+    .getByRole('checkbox', {
+      name: 'I reviewed the message against the approved claim, including amounts and identifiers.',
+    })
+    .check();
   await expect(page.getByRole('link', { name: 'Open WhatsApp' })).toHaveAttribute(
     'href',
     /^https:\/\/wa.me\//,
   );
+  await page
+    .getByRole('group', { name: 'Message language' })
+    .getByRole('button', { name: 'हिन्दी', exact: true })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Original English message' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open WhatsApp' })).not.toHaveAttribute('href', /./);
+  await page
+    .getByRole('checkbox', {
+      name: 'I reviewed the message against the approved claim, including amounts and identifiers.',
+    })
+    .check();
+  await expect(page.getByRole('link', { name: 'Open WhatsApp' })).toHaveAttribute(
+    'href',
+    /^https:\/\/wa.me\//,
+  );
+  await page
+    .getByRole('group', { name: 'Message language' })
+    .getByRole('button', { name: 'ಕನ್ನಡ', exact: true })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Original English message' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open WhatsApp' })).not.toHaveAttribute('href', /./);
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await page
     .getByRole('checkbox', { name: 'I have sent the approved evidence to the supplier.' })
@@ -152,6 +178,27 @@ test('mobile overview, case detail and manual intake are usable without overflow
   await expect(page.locator('.message-preview')).toContainText(
     'Total reviewed shortage: INR 12.75',
   );
+  await page
+    .getByRole('group', { name: 'Message language' })
+    .getByRole('button', { name: 'हिन्दी', exact: true })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Original English message' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open WhatsApp' })).not.toHaveAttribute('href', /./);
+  await page
+    .getByRole('checkbox', {
+      name: 'I reviewed the message against the approved claim, including amounts and identifiers.',
+    })
+    .check();
+  await expect(page.getByRole('link', { name: 'Open WhatsApp' })).toHaveAttribute(
+    'href',
+    /^https:\/\/wa.me\//,
+  );
+  await page
+    .getByRole('group', { name: 'Message language' })
+    .getByRole('button', { name: 'ಕನ್ನಡ', exact: true })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Original English message' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open WhatsApp' })).not.toHaveAttribute('href', /./);
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await page
     .getByRole('checkbox', { name: 'I have sent the approved evidence to the supplier.' })

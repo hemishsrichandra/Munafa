@@ -33,6 +33,7 @@ test('merchant screens hide build details and rupee fields send exact integer pa
   await page.getByLabel('Unit price (₹)', { exact: true }).fill('80.05');
   await page.getByLabel('Claim price per unit (₹)', { exact: true }).fill('80.05');
   await page.getByLabel('Invoice total (₹)', { exact: true }).fill('200.13');
+  await page.getByText('More bill details · Tax, discount and rounding', { exact: true }).click();
   await page.getByLabel('Rounding (₹)', { exact: true }).fill('-0.01');
   await page.getByLabel('Invoice total (₹)', { exact: true }).fill('200.12');
   const saved = page.waitForResponse(

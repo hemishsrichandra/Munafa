@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { api, money, day, today, downloadPrivate, paiseFromInput } from '../api';
 import { icon, Modal, ErrorBox, Busy } from './ui';
+import { safeWhatsAppUrl } from './ReviewedMessage';
 import { saveEvidence } from '../evidence';
 
 function Evidence({ c }) {
@@ -85,41 +86,36 @@ function ShareModal({ c, close, config, notify }) {
     [draft, setDraft] = useState(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
+  const request = useRef(0);
+  const [translationReviewed, setTranslationReviewed] = useState(false);
   async function generate(language) {
+    const id = ++request.current;
+    setLang(language);
+    setDraft(null);
+    setTranslationReviewed(false);
     setBusy(true);
     setError('');
     try {
       const res = await api(`/cases/${c.id}/message`, { method: 'POST', body: { language } });
-      setDraft(res);
-    } catch (e) {
-      setError(e.message);
-      // Ensure we keep or load a working draft so the screen is never left empty
-      if (!draft) {
-        try {
-          const fallback = await api(`/cases/${c.id}/message`, {
-            method: 'POST',
-            body: { language: 'en-IN' },
-          });
-          setDraft(fallback);
-        } catch {
-          // ignore fallback error
-        }
+      if (id === request.current) {
+        setDraft(res);
+        setLang(res.language || language);
       }
-      setLang('en-IN');
+    } catch (e) {
+      if (id === request.current) setError(e.message);
     } finally {
-      setBusy(false);
+      if (id === request.current) setBusy(false);
     }
   }
   useEffect(() => {
     generate('en-IN');
-  }, []);
-  const [translationReviewed, setTranslationReviewed] = useState(false);
-  const cleanPhone = (c?.invoice?.supplier_phone || '').replace(/\D/g, '');
-  const link = draft
-    ? cleanPhone
-      ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(draft.text)}`
-      : `https://wa.me/?text=${encodeURIComponent(draft.text)}`
-    : '#';
+    return () => {
+      request.current++;
+    };
+  }, [c.id, c.version]);
+  const link = safeWhatsAppUrl(draft?.whatsapp_url);
+  const blocked =
+    !translationReviewed || draft?.numeric_match === false || draft?.version !== c.version || !link;
   return (
     <Modal
       title="A message the supplier can act on."
@@ -127,27 +123,40 @@ function ShareModal({ c, close, config, notify }) {
       close={close}
     >
       <div className="modal-body">
-        <label className="field">
-          Message language
-          <select
-            value={lang}
-            onChange={(e) => {
-              setLang(e.target.value);
-              setTranslationReviewed(false);
-              generate(e.target.value);
-            }}
-            disabled={busy}
-          >
-            <option value="en-IN">English · deterministic draft</option>
-            <option value="hi-IN">
-              हिन्दी · {config?.sarvam_configured ? 'Sarvam AI' : 'Hindi draft'}
-            </option>
-            <option value="kn-IN">
-              ಕನ್ನಡ · {config?.sarvam_configured ? 'Sarvam AI' : 'Kannada draft'}
-            </option>
-          </select>
-        </label>
+        <section className="claim-summary" aria-label="Approved claim amount">
+          <small>Approved claim</small>
+          <strong>{money(draft?.claim_amount_paise ?? c.approved_amount_paise)}</strong>
+          {c.calculation.lines
+            .filter((l) => l.amount_paise > 0)
+            .map((l, i) => (
+              <p key={i}>
+                {l.shortage_quantity} missing · {money(l.amount_paise)}
+              </p>
+            ))}
+        </section>
+        <div className="language-pills" role="group" aria-label="Message language">
+          {[
+            ['en-IN', 'English'],
+            ['hi-IN', 'हिन्दी'],
+            ['kn-IN', 'ಕನ್ನಡ'],
+          ].map(([code, label]) => (
+            <button
+              type="button"
+              key={code}
+              aria-pressed={lang === code}
+              disabled={busy}
+              onClick={() => generate(code)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <ErrorBox text={error} />
+        {error && (
+          <button className="button secondary" disabled={busy} onClick={() => generate(lang)}>
+            Retry message
+          </button>
+        )}
         {busy ? (
           <div className="loading">
             <LoaderCircle className="spin" size={20} /> Preparing message…
@@ -156,13 +165,13 @@ function ShareModal({ c, close, config, notify }) {
           draft && (
             <>
               <div className="message-preview">{draft.text}</div>
-              {draft.provider === 'sarvam' && (
+              {lang !== 'en-IN' && (
                 <>
                   <div className="info-box warm">
                     <Sparkles size={16} />
                     <p>
-                      Sarvam translation is an AI draft. Check the supplier, invoice reference,
-                      quantities and amounts against the English original.
+                      Check this translated draft: supplier, invoice reference, quantities and
+                      amounts against the English original.
                     </p>
                   </div>
                   <section>
@@ -178,7 +187,7 @@ function ShareModal({ c, close, config, notify }) {
                   sharing.
                 </p>
               </div>
-              {draft.provider === 'sarvam' && (
+              {draft && (
                 <>
                   <label className="check-field">
                     <input
@@ -186,7 +195,7 @@ function ShareModal({ c, close, config, notify }) {
                       checked={translationReviewed}
                       onChange={(e) => setTranslationReviewed(e.target.checked)}
                     />
-                    I reviewed the translation against the original, including amounts and
+                    I reviewed the message against the approved claim, including amounts and
                     identifiers.
                   </label>
                   {draft.warning && <p role="alert">{draft.warning}</p>}
@@ -195,9 +204,7 @@ function ShareModal({ c, close, config, notify }) {
               <div className="action-row">
                 <button
                   className="button secondary"
-                  disabled={
-                    draft.provider === 'sarvam' && (!translationReviewed || !draft.numeric_match)
-                  }
+                  disabled={blocked}
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(draft.text);
@@ -225,17 +232,12 @@ function ShareModal({ c, close, config, notify }) {
                   <Download size={16} /> Evidence PNG
                 </button>
                 <a
+                  role="link"
                   className="button primary"
-                  aria-disabled={
-                    draft.provider === 'sarvam' && (!translationReviewed || !draft.numeric_match)
-                  }
-                  href={
-                    draft.provider === 'sarvam' && (!translationReviewed || !draft.numeric_match)
-                      ? undefined
-                      : link
-                  }
+                  aria-disabled={blocked}
+                  href={blocked ? undefined : link}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                 >
                   <MessageCircle size={16} /> Open WhatsApp
                 </a>

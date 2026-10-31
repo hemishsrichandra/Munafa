@@ -156,3 +156,7 @@ Start with [FIVE-IMPROVEMENTS-VALIDATION.md](FIVE-IMPROVEMENTS-VALIDATION.md) an
 ## Owner stop checkpoint
 
 Work stopped on request. Start at the top of [IMPROVEMENTS-HANDOFF.md](IMPROVEMENTS-HANDOFF.md): latest combined product eb003ee, 353 backend tests passed, 19 offline tests passed; combined browser result not confirmed at stop (33 passed on prior isolated implementation). APK build/lint passed; real device/pilot, live OCR and configured off-host backups remain unavailable. Preserve parallel committed features and unrelated local starter deletions. No new work until owner resumes.
+
+## Merchant frontend gap integration — 31 October 2026
+
+See [FRONTEND-CONNECTIONS.md](FRONTEND-CONNECTIONS.md). Overdue badges/history/payment chips, expiry cards/Today route, reviewed WhatsApp handoffs, supplier language buttons and progressive bill fields are connected to actual backend contracts. Existing uncommitted backend work was preserved and validated with the UI; unrelated starter deletions remain excluded. Final evidence: 357 full backend tests plus 10 final affected tests, 36 browser journeys, 20 offline unit tests; build/accessibility/format checks passed. No paid provider calls or production records created. Backup/provider/device/pilot external gates remain as documented.

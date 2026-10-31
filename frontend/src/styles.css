@@ -4922,3 +4922,93 @@ summary:focus-visible {
   color: #a51d19;
   background: #fce8e6;
 }
+
+/* Merchant review and expiry: phone-sized actions, text as well as colour. */
+.overdue-badge {
+  display: inline-block;
+  color: #842d19;
+  background: #fff0e8;
+  border: 1px solid #c77d62;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-weight: 650;
+  white-space: normal;
+}
+.quick-amounts,
+.language-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.quick-amounts {
+  grid-column: 1 / -1;
+}
+.quick-amounts small {
+  flex-basis: 100%;
+}
+.quick-amounts button,
+.language-pills button {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--border, #c2cabe);
+  border-radius: 12px;
+  background: #fff;
+  color: #243b2a;
+}
+.language-pills button[aria-pressed='true'] {
+  background: #2c5039;
+  color: #fff;
+}
+.expiry-card {
+  border: 1px solid #6e8298;
+  border-left-width: 4px;
+  border-radius: 12px;
+  padding: 16px;
+  overflow-wrap: anywhere;
+}
+.expiry-critical {
+  border-color: #a94329;
+  background: #fff7f2;
+}
+.expiry-warning {
+  border-color: #956115;
+  background: #fffbef;
+}
+.expiry-expired {
+  border-color: #56605a;
+  background: #f0f2f0;
+}
+.expiry-radar h2,
+.expiry-card h3 {
+  margin-top: 0;
+}
+.expiry-radar small {
+  display: block;
+  margin-bottom: 12px;
+}
+.bill-details {
+  margin: 16px 0;
+}
+.bill-details summary {
+  padding: 12px 0;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 650;
+}
+.claim-summary {
+  margin-bottom: 16px;
+}
+.claim-summary strong {
+  display: block;
+  font-size: clamp(28px, 6vw, 40px);
+}
+.workflow-step {
+  padding: 12px;
+  background: #f0f5ec;
+  border-radius: 10px;
+}
+
+.sample-intake > p {
+  color: #53624f;
+}
