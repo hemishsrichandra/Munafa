@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select, func
 from fastapi import APIRouter
 from . import auth, store, models as m, inventory, payments, records
-from .domain import local_today, present
+from .domain import local_today, present, rupees
 
 router = APIRouter(prefix="/api")
 
@@ -204,11 +204,11 @@ def build(db):
             overdue_by_customer.values(), key=lambda x: x["total_paise"], reverse=True
         )
         top_summaries = [
-            f"{c['customer_name']} owes {c['total_paise'] // 100} INR ({c['max_days_overdue']} days overdue)"
+            f"{c['customer_name']} owes {rupees(c['total_paise']).removesuffix('.00')} INR ({c['max_days_overdue']} days overdue)"
             for c in sorted_custs[:2]
         ]
         num_cust = len(overdue_by_customer)
-        total_str = f"{total_overdue // 100} INR"
+        total_str = f"{rupees(total_overdue).removesuffix('.00')} INR"
         desc = (
             f"{num_cust} customer{'s have' if num_cust != 1 else ' has'} overdue payments totaling {total_str}. "
             + "; ".join(top_summaries)

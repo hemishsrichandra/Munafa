@@ -424,3 +424,57 @@ def test_smart_low_stock_reorder_and_whatsapp_po(client):
     assert Decimal(match["recommended_reorder_qty"]) >= 10
     assert "Britannia Good Day 100g" in match["po_message"]
     assert "https://wa.me/" in match["whatsapp_url"]
+
+
+def test_expiry_liquidation_radar(client):
+    from datetime import timedelta
+
+    sku = ok(
+        client.post(
+            "/api/products",
+            json={
+                "code": uuid.uuid4().hex,
+                "name": "Amul Fresh Paneer 200g",
+                "unit": "pack",
+                "expiry_tracking": True,
+            },
+        ),
+        201,
+    )
+    exp = (date.today() + timedelta(days=5)).isoformat()
+    body = {
+        "action_type": "inventory_movement",
+        "entity_id": sku["id"],
+        "expected_version": 0,
+        "payload": {
+            "product_id": sku["id"],
+            "expected_stock_version": 0,
+            "kind": "count",
+            "quantity": "12",
+            "unit": "pack",
+            "reference": "INIT-EXP-LOT",
+            "occurred_on": date.today().isoformat(),
+            "expiry_date": exp,
+            "batch_reference": "LOT-EXP-101",
+            "reason": "Initial stock with expiry",
+        },
+    }
+    a = ok(client.post("/api/commerce/proposals", json=body), 201)
+    appr = ok(
+        client.post(
+            f"/api/actions/{a['id']}/approve",
+            json={"version": 1, "payload_digest": a["payload_digest"]},
+        )
+    )
+    ok(client.post(f"/api/actions/{a['id']}/execute", json={"version": appr["version"]}))
+
+    radar = ok(client.get("/api/inventory/expiry"))
+    assert radar["total_lots"] >= 1
+    match = next(lot for lot in radar["lots"] if lot["product_id"] == sku["id"])
+    assert match["product_name"] == "Amul Fresh Paneer 200g"
+    assert match["days_until_expiry"] == 5
+    assert match["urgency"] == "critical"
+    assert match["suggested_discount_percent"] == 50
+    assert "clearance" in match["suggested_action"].lower()
+    assert "whatsapp_liquidation_draft" in match
+    assert "Amul Fresh Paneer 200g" in match["whatsapp_liquidation_draft"]

@@ -435,3 +435,39 @@ def test_galla_hisab_expected_calculation_and_verification(client):
     assert res_exact["status"] == "balanced"
     assert res_exact["difference_paise"] == 0
     assert "Exact match" in res_exact["badge"]
+
+
+def test_customer_overdue_days_tracking(client):
+    from datetime import date, timedelta
+
+    p = customer(client)
+    ten_days_ago = (date.today() - timedelta(days=10)).isoformat()
+    past_due = (date.today() - timedelta(days=7)).isoformat()
+    # Credit sale recorded 10 days ago with due date 7 days ago
+    ok(
+        entry(
+            client,
+            "credit_sale",
+            50000,
+            customer_id=p["id"],
+            occurred_on=ten_days_ago,
+            due_on=past_due,
+        ),
+        201,
+    )
+
+    summary = ok(client.get("/api/records/summary"))
+    cust = next(c for c in summary["customers"] if c["id"] == p["id"])
+    assert cust["outstanding_paise"] == 50000
+    assert cust["overdue_paise"] == 50000
+    assert cust["has_overdue"] is True
+    assert cust["max_days_overdue"] >= 7
+    assert cust["overdue_debts_count"] == 1
+    assert cust["oldest_due_on"] == past_due
+
+    source = ok(client.get(f"/api/records/customers/{p['id']}"))
+    assert source["overdue_paise"] == 50000
+    assert source["has_overdue"] is True
+    assert source["max_days_overdue"] >= 7
+    assert source["obligations"][0]["is_overdue"] is True
+    assert source["obligations"][0]["days_overdue"] >= 7

@@ -358,21 +358,39 @@ def build_summary(db, history=None):
             select(m.business_customers).where(store.scope(m.business_customers))
         ).mappings()
     ]
-    debts = [
-        {**r, "remaining_paise": outstanding(rows, r)}
-        for r in rows
-        if r["kind"] in ("opening_due", "credit_sale", "payable")
-    ]
+    t = today()
+    debts = []
+    for r in rows:
+        if r["kind"] in ("opening_due", "credit_sale", "payable"):
+            rem = outstanding(rows, r)
+            is_overdue = rem > 0 and bool(r["due_on"] and r["due_on"] < t)
+            days_overdue = (t - r["due_on"]).days if is_overdue else 0
+            debts.append(
+                {
+                    **r,
+                    "remaining_paise": rem,
+                    "is_overdue": is_overdue,
+                    "days_overdue": days_overdue,
+                }
+            )
     for p in people:
         sales = [
             r
             for r in rows
             if r["customer_id"] == p["id"] and r["kind"] in ("credit_sale", "cash_sale")
         ]
+        cust_debts = [d for d in debts if d["customer_id"] == p["id"]]
+        overdue_debts = [d for d in cust_debts if d.get("is_overdue")]
+        overdue_paise = sum(d["remaining_paise"] for d in overdue_debts)
+        max_days = max((d["days_overdue"] for d in overdue_debts), default=0)
+        oldest_due = min((d["due_on"] for d in overdue_debts), default=None)
         p.update(
-            outstanding_paise=sum(
-                d["remaining_paise"] for d in debts if d["customer_id"] == p["id"]
-            ),
+            outstanding_paise=sum(d["remaining_paise"] for d in cust_debts),
+            overdue_paise=overdue_paise,
+            max_days_overdue=max_days,
+            has_overdue=max_days > 0,
+            oldest_due_on=oldest_due,
+            overdue_debts_count=len(overdue_debts),
             recorded_sale_count=len(sales),
             last_recorded_sale=max((r["occurred_on"] for r in sales), default=None),
             segment="repeat_recorded"
@@ -492,15 +510,32 @@ def customer_source(eid: str):
     with store.connect() as db:
         person = get(db, m.business_customers, eid)
         rows = active_entries(db)
-        debts = [
-            {**r, "remaining_paise": outstanding(rows, r)}
-            for r in rows
-            if r["customer_id"] == eid and r["kind"] in ("opening_due", "credit_sale")
-        ]
+        t = today()
+        debts = []
+        for r in rows:
+            if r["customer_id"] == eid and r["kind"] in ("opening_due", "credit_sale"):
+                rem = outstanding(rows, r)
+                is_overdue = rem > 0 and bool(r["due_on"] and r["due_on"] < t)
+                days_overdue = (t - r["due_on"]).days if is_overdue else 0
+                debts.append(
+                    {
+                        **r,
+                        "remaining_paise": rem,
+                        "is_overdue": is_overdue,
+                        "days_overdue": days_overdue,
+                    }
+                )
+        overdue_debts = [d for d in debts if d["is_overdue"]]
+        max_days = max((d["days_overdue"] for d in overdue_debts), default=0)
         return {
             **person,
             "obligations": debts,
             "outstanding_paise": sum(r["remaining_paise"] for r in debts),
+            "overdue_paise": sum(d["remaining_paise"] for d in overdue_debts),
+            "max_days_overdue": max_days,
+            "has_overdue": max_days > 0,
+            "oldest_due_on": min((d["due_on"] for d in overdue_debts), default=None),
+            "overdue_debts_count": len(overdue_debts),
             "source": "merchant_reviewed_manual",
         }
 

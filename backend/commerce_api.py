@@ -1,7 +1,7 @@
 """Authenticated purchase/catalog/receiving routes; approval execution stays server-side."""
 
 from datetime import timedelta, date
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from fastapi import APIRouter, Request, UploadFile, File, HTTPException
 from fastapi.responses import Response
 from pydantic import Field
@@ -138,24 +138,138 @@ def add_conversion(pid: str, body: ConversionInput):
 def expiry():
     with store.connect() as db:
         today = local_today()
+        store_name = auth.current().store_name
         result = []
         for p in inventory.products(db):
+            last_line = (
+                db.execute(
+                    select(
+                        m.purchase_lines.c.effective_price_paise,
+                        m.purchase_lines.c.unit_price_paise,
+                    )
+                    .join(
+                        m.purchases,
+                        (m.purchase_lines.c.purchase_id == m.purchases.c.id)
+                        & (m.purchase_lines.c.store_id == m.purchases.c.store_id),
+                    )
+                    .where(
+                        store.scope(m.purchase_lines),
+                        store.scope(m.purchases),
+                        m.purchase_lines.c.product_id == p["id"],
+                        m.purchases.c.status == "accepted",
+                    )
+                    .order_by(m.purchases.c.created_at.desc())
+                    .limit(1)
+                )
+                .mappings()
+                .first()
+            )
+
+            unit_cost = (
+                last_line["effective_price_paise"] or last_line["unit_price_paise"]
+                if last_line
+                else None
+            )
+
             for lot in inventory.lots(db, p["id"]):
                 if (
                     lot["expiry_date"] is not None
                     and date.fromisoformat(lot["expiry_date"]) <= today + timedelta(days=30)
                     and Decimal(lot["quantity"]) > 0
                 ):
+                    exp_date = date.fromisoformat(lot["expiry_date"])
+                    days_until = (exp_date - today).days
+                    is_expired = days_until < 0
+
+                    if is_expired:
+                        urgency = "expired"
+                        action = "Remove from shelf immediately / Request supplier return/credit"
+                        discount_pct = 0
+                    elif days_until <= 7:
+                        urgency = "critical"
+                        action = "Immediate clearance: 40-50% off flash discount"
+                        discount_pct = 50
+                    elif days_until <= 15:
+                        urgency = "warning"
+                        action = "Promote near counter / 20-30% off combo deal"
+                        discount_pct = 25
+                    else:
+                        urgency = "moderate"
+                        action = "Feature in customer broadcast / first-out display"
+                        discount_pct = 10
+
+                    qty = Decimal(lot["quantity"])
+                    loss_risk_paise = (
+                        int(
+                            (qty * Decimal(unit_cost)).quantize(
+                                Decimal("1"), rounding=ROUND_HALF_UP
+                            )
+                        )
+                        if unit_cost is not None
+                        else None
+                    )
+                    clearance_price_paise = (
+                        int(
+                            (
+                                Decimal(unit_cost) * Decimal(100 - discount_pct) / Decimal(100)
+                            ).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+                        )
+                        if unit_cost is not None and discount_pct > 0
+                        else None
+                    )
+
+                    clearance_rupees_str = (
+                        f"₹{clearance_price_paise // 100}.{clearance_price_paise % 100:02d}"
+                        if clearance_price_paise is not None
+                        else "special discount"
+                    )
+                    draft_msg = (
+                        f"Offer from {store_name}: Batch of {p['name']} available at a {discount_pct}% clearance discount "
+                        f"({clearance_rupees_str} per {p['unit']})! Limited stock of {lot['quantity']} {p['unit']} left. "
+                        f"Valid until {lot['expiry_date']}."
+                        if not is_expired
+                        else f"Alert for {store_name}: Batch {lot.get('batch_reference') or 'unreferenced'} of {p['name']} "
+                        f"expired on {lot['expiry_date']}. Remove from sale."
+                    )
+
                     result.append(
                         {
                             "product_id": p["id"],
                             "product_name": p["name"],
                             "unit": p["unit"],
                             **lot,
-                            "expired": date.fromisoformat(lot["expiry_date"]) < today,
+                            "expired": is_expired,
+                            "days_until_expiry": days_until,
+                            "urgency": urgency,
+                            "unit_cost_paise": unit_cost,
+                            "loss_risk_paise": loss_risk_paise,
+                            "suggested_action": action,
+                            "suggested_discount_percent": discount_pct,
+                            "suggested_clearance_price_paise": clearance_price_paise,
+                            "whatsapp_liquidation_draft": draft_msg,
                         }
                     )
-        return {"as_of": today.isoformat(), "window_days": 30, "lots": result}
+
+        result.sort(key=lambda x: (0 if x["expired"] else 1, x["days_until_expiry"]))
+        total_loss = sum(
+            lot_item["loss_risk_paise"] for lot_item in result if lot_item["loss_risk_paise"]
+        )
+        expired_count = sum(1 for lot_item in result if lot_item["expired"])
+        expiring_count = sum(1 for lot_item in result if not lot_item["expired"])
+        critical_count = sum(
+            1 for lot_item in result if lot_item["urgency"] in ("expired", "critical")
+        )
+
+        return {
+            "as_of": today.isoformat(),
+            "window_days": 30,
+            "total_lots": len(result),
+            "total_expired_count": expired_count,
+            "total_expiring_soon_count": expiring_count,
+            "critical_lots_count": critical_count,
+            "total_loss_risk_paise": total_loss,
+            "lots": result,
+        }
 
 
 @router.get("/inventory/reorder-suggestions")

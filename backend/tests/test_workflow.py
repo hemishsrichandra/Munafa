@@ -413,6 +413,28 @@ def test_sarvam_translation_and_failure_preserve_state(client, monkeypatch):
     assert client.get(f"/api/cases/{c['id']}").json()["status"] == "sent"
 
 
+def test_supplier_claim_draft_multilingual_and_whatsapp_url(client, monkeypatch):
+    c = shared(client)
+    monkeypatch.delenv("SARVAM_API_KEY", raising=False)
+    # Test Hindi alias 'hi' with rules fallback (deterministic Indic draft)
+    r = client.post(f"/api/cases/{c['id']}/message", json={"language": "hi"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["language"] == "hi-IN"
+    assert "नमस्ते" in data["text"]
+    assert "whatsapp_url" in data
+    assert "https://wa.me/" in data["whatsapp_url"]
+    assert data["claim_amount_paise"] == 8000
+
+    # Test Kannada alias 'kn'
+    r2 = client.post(f"/api/cases/{c['id']}/message", json={"language": "kn"})
+    assert r2.status_code == 200
+    data2 = r2.json()
+    assert data2["language"] == "kn-IN"
+    assert "ನಮಸ್ಕಾರ" in data2["text"]
+    assert "whatsapp_url" in data2
+
+
 def test_same_proof_cannot_count_twice_under_another_reference(client):
     c = shared(client)
     payload = resolution(client, c, amount_paise=3000)

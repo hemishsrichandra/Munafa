@@ -550,7 +550,7 @@ def message(c, lang="en-IN"):
 
 
 class Draft(StrictModel):
-    language: Literal["en-IN", "hi-IN", "kn-IN"] = "en-IN"
+    language: Literal["en-IN", "hi-IN", "kn-IN", "en", "hi", "kn"] = "en-IN"
 
 
 @app.post("/api/cases/{case_id}/message")
@@ -563,7 +563,15 @@ def draft(case_id: str, body: Draft):
     provider = "rules"
     translated = None
 
-    if body.language != "en-IN":
+    target_lang = (
+        "hi-IN"
+        if body.language in ("hi", "hi-IN")
+        else "kn-IN"
+        if body.language in ("kn", "kn-IN")
+        else "en-IN"
+    )
+
+    if target_lang != "en-IN":
         # Check if Cloud AI is permitted for this session/account
         principal = auth.current()
         from . import usage as provider_usage
@@ -575,14 +583,26 @@ def draft(case_id: str, body: Draft):
         ) and ai.configured()
 
         if can_use_cloud:
-            translated = ai.translate(original, body.language)
+            translated = ai.translate(original, target_lang)
             provider = "sarvam"
         else:
             # Deterministic Indic draft: safe, instant, zero cost, works in demo and offline
-            translated = message(c, body.language)
+            translated = message(c, target_lang)
             provider = "rules"
     else:
         translated = original
+
+    import urllib.parse
+    import re
+
+    raw_phone = c["invoice"].get("supplier_phone") or ""
+    clean_phone = re.sub(r"\D", "", raw_phone)
+    encoded_text = urllib.parse.quote(translated)
+    whatsapp_url = (
+        f"https://wa.me/{clean_phone}?text={encoded_text}"
+        if clean_phone
+        else f"https://wa.me/?text={encoded_text}"
+    )
 
     from .providers import numeric_tokens
 
@@ -597,7 +617,10 @@ def draft(case_id: str, body: Draft):
         "original": original,
         "provider": provider,
         "version": c["version"],
-        "language": body.language,
+        "language": target_lang,
+        "supplier_phone": raw_phone,
+        "whatsapp_url": whatsapp_url,
+        "claim_amount_paise": c.get("approved_amount_paise"),
     }
 
 
