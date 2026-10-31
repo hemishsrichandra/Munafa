@@ -52,7 +52,9 @@ function Suppliers({ cases, open }) {
             ))}
           </section>
         ))}
-        {!groups.length && <p className="muted">Add an invoice to start your supplier ledger.</p>}
+        {!groups.length && (
+          <p className="muted">Add an invoice to start your supplier account book.</p>
+        )}
       </div>
     </>
   );
@@ -77,7 +79,11 @@ function Insights({ cases, verified, outstanding }) {
             className="button secondary small"
             disabled={exporting || !session.permissions.includes('export')}
             onClick={async () => {
-              if (!window.confirm('Approve export of the current store’s private supplier ledger?'))
+              if (
+                !window.confirm(
+                  'Approve export of the current store’s private supplier account book?',
+                )
+              )
                 return;
               setExporting(true);
               setExportError('');

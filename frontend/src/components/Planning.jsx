@@ -3,7 +3,7 @@ import { api } from '../api';
 import { useSession } from '../session';
 
 const labels = {
-  catalog_records: 'SKU records',
+  catalog_records: 'Item records',
   supplier_records: 'Supplier records',
   accepted_purchases: 'Accepted purchases',
   accepted_physical_receipts: 'Accepted physical receipts',
@@ -106,7 +106,7 @@ export function Planning({ follow }) {
       )}
       {!online && (
         <p role="status">
-          Offline · this snapshot may be stale. Reconnect to check current prerequisites; no
+          Offline · these saved details may be old. Reconnect to check current prerequisites; no
           planning action is queued.
         </p>
       )}
@@ -126,7 +126,7 @@ export function Planning({ follow }) {
             <h2>Recorded foundations</h2>
             <p>
               Record counts are not proof of completeness or data quality. Accepted invoices are not
-              proof of unpaid debt; payment totals are not SKU sales.
+              proof of unpaid debt; payments do not tell us which items sold.
             </p>
             <dl>
               {Object.entries(data.record_counts).map(([key, value]) => (
@@ -162,13 +162,13 @@ export function Planning({ follow }) {
                 </details>
                 {cap.id === 'procurement' && (
                   <label className="field">
-                    Recorded SKU to inspect
+                    Choose a saved item
                     <select
-                      aria-label="Recorded SKU to inspect"
+                      aria-label="Choose a saved item"
                       value={selected}
                       onChange={(e) => setSelected(e.target.value)}
                     >
-                      <option value="">No SKU selected</option>
+                      <option value="">No item selected</option>
                       {data.source_samples.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.label} ({s.unit})
@@ -256,13 +256,13 @@ export function Planning({ follow }) {
             </p>
             {!data.source_samples.length && (
               <p>
-                No SKU records yet. Add and physically receive products in Purchases &amp; stock to
+                No Item records yet. Add and physically receive products in Purchases &amp; stock to
                 start a recorded timeline.
               </p>
             )}
             {data.source_samples_truncated && (
               <p>
-                Showing up to {data.source_sample_limit} SKU examples. Open Purchases &amp; stock
+                Showing up to {data.source_sample_limit} item examples. Open Purchases &amp; stock
                 for your full catalogue.
               </p>
             )}

@@ -9,7 +9,7 @@ test('extension preparation and data gates remain truthful on phones and offline
   await page.getByLabel('Username', { exact: true }).fill('extension-owner');
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Today · आज' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
   await page.getByRole('button', { name: 'Connections', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Connections' })).toBeVisible();

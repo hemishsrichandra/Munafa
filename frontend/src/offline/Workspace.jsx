@@ -119,7 +119,7 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
           };
         } else if (draft.kind === 'inventory_movement') {
           const latest = (await api('/products')).find((p) => p.id === draft.entity_id);
-          if (!latest) throw new Error('SKU is no longer available in this store.');
+          if (!latest) throw new Error('This item is no longer available in your shop.');
           copy = {
             ...copy,
             expected_version: latest.stock_version,
@@ -177,9 +177,9 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
         list: {when(local.cache?.saved_at)} (expires after 24 hours).
       </p>
       <p className="info-box">
-        Local drafts are provisional. No stock, credit, settlement or supplier message is accepted
-        or sent here. Cloud OCR, translation, Paytm queries and AI require connectivity; enter the
-        bill manually below.
+        Entries saved on this phone still need checking. No stock, money or supplier message is
+        confirmed or sent here. Cloud OCR, translation, Paytm queries and AI require connectivity;
+        enter the bill manually below.
       </p>
       <ErrorBox text={error || local.error || session.offlineUnavailable} />
       {notice && (
@@ -649,7 +649,7 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
         <details className="sync-debug">
           <summary>Sync diagnostics (development only)</summary>
           <p>
-            Outbox: {local.operations.length}. Failed:{' '}
+            Waiting to send: {local.operations.length}. Failed:{' '}
             {
               local.operations.filter((o) => ['conflict', 'needs_attention'].includes(o.state))
                 .length

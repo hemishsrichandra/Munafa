@@ -42,7 +42,7 @@ export function DailyRecordsSummary({ openRecords }) {
   return (
     <section className="panel partner-screen daily-records" aria-label="Recorded business snapshot">
       <div className="brief-heading">
-        <h2>Recorded business snapshot</h2>
+        <h2>Your shop today · आज का हिसाब</h2>
         <button className="button secondary" onClick={() => openRecords('/records/customers')}>
           Open daily records
         </button>
@@ -79,7 +79,7 @@ export function DailyRecordsSummary({ openRecords }) {
               label="Money to Collect · ग्राहक उधार"
               value={money(summary.customer_dues_paise)}
               Icon={Store}
-              foot="Outstanding customer obligations · View sources"
+              foot="Customer money still pending · See entries"
               onClick={() => openRecords(summary.source_routes.dues)}
             />
             <Metric

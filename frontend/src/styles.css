@@ -4883,3 +4883,42 @@ summary:focus-visible {
   font-size: 12px;
   user-select: text;
 }
+
+/* Measured contrast repairs for pale text on the merchant's light surfaces. */
+.app-shell
+  :is(
+    .eyebrow,
+    .page-heading p,
+    summary,
+    .panel-heading p,
+    .text-button,
+    .empty h3,
+    .empty p,
+    footer span,
+    .info-box,
+    .check-field,
+    .modal-header p,
+    .paper-sub,
+    .sample-line span,
+    .sample-hint,
+    .modal-footer span
+  ) {
+  color: #40533f;
+}
+.app-shell .tabs button:not(.chosen),
+.app-shell .intake-tabs button:not(.active) {
+  color: #40533f;
+}
+.app-shell .intake-tabs button {
+  min-height: 48px;
+  font-size: 15px;
+}
+.app-shell summary {
+  min-height: 48px;
+  padding-block: 12px;
+  cursor: pointer;
+}
+.app-shell .daily-records article .badge-warn {
+  color: #a51d19;
+  background: #fce8e6;
+}

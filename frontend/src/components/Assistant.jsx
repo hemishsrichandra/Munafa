@@ -272,7 +272,7 @@ export function Assistant({ follow }) {
             <option value="none">Product/support sources only</option>
             <option value="brief_read">My recorded brief</option>
             <option value="case_read">A supplier case</option>
-            <option value="stock_read">A stock SKU</option>
+            <option value="stock_read">A shop item</option>
             <option value="draft_followup">Draft follow-up for an approved case</option>
           </select>
         </label>

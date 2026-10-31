@@ -318,7 +318,7 @@ const labels = {
   expense: 'Expense paid',
   opening_cash: 'Opening cash balance',
   payable: 'Money to Pay · सप्लायर को देना है',
-  payable_payment: 'Payment of recorded payable',
+  payable_payment: 'Paid a supplier bill',
 };
 const freshEntry = () => ({
   kind: 'credit_sale',
@@ -596,7 +596,7 @@ export function DailyRecords({ initialRoute = '' }) {
                   className="button secondary"
                   onClick={() => openSource(`/records/entries/${source.record.target_id}`)}
                 >
-                  Open original obligation
+                  Open original udhaar or bill
                 </button>
               )}
               {source.record.reversal_of && (
@@ -1035,7 +1035,7 @@ export function DailyRecords({ initialRoute = '' }) {
                         value={entry.target_id}
                         onChange={(e) => changeEntry('target_id', e.target.value)}
                       >
-                        <option value="">Choose open obligation</option>
+                        <option value="">Choose the udhaar or bill being paid</option>
                         {targetDebts.map((d) => (
                           <option key={d.id} value={d.id}>
                             {d.reference} · {money(d.remaining_paise)} remaining
@@ -1336,12 +1336,12 @@ export function DailyRecords({ initialRoute = '' }) {
                 </select>
               </Field>
               <p>
-                Customer obligations due in this window: {money(incoming)}. Payables due:{' '}
+                Customer money due in these days: {money(incoming)}. Supplier money due:{' '}
                 {money(outgoing)}.
               </p>
               {data?.cash.opening_recorded && (
                 <p>
-                  Scenario if all these dues are collected and payables paid:{' '}
+                  If customers pay these dues and you pay these bills:{' '}
                   <strong>{money(data.cash.recorded_balance_paise + incoming - outgoing)}</strong>.
                   Collections are not guaranteed.
                 </p>
@@ -1362,7 +1362,7 @@ export function DailyRecords({ initialRoute = '' }) {
                 </p>
               ))}
               <p>
-                Missing purchases, unrecorded cash, other bank accounts and obligations are not
+                Missing purchases, unrecorded cash, other bank accounts and unpaid bills are not
                 inferred. Paytm connection, loan eligibility and automatic forecasts remain
                 unavailable.
               </p>

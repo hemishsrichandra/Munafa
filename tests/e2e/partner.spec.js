@@ -4,7 +4,7 @@ async function login(page) {
   await page.getByLabel('Username', { exact: true }).fill('partner-owner');
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Today · आज' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
 }
 async function request(page, path, body) {
   return page.evaluate(

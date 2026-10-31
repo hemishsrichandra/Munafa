@@ -274,7 +274,7 @@ export function Payments({ initialId = '' }) {
   }
   return (
     <section className="panel partner-screen">
-      <h1>Payments & reconciliation</h1>
+      <h1>Check Paytm payments · पेमेंट की जांच</h1>
       <p>
         Review recorded settlements and any differences. Paytm is not connected; bank receipt is not
         verified.

@@ -1,5 +1,15 @@
 # Copy this context into Antigravity
 
+## Latest stop checkpoint — user explicitly stopped further features
+
+User asked to wrap up because their weekly allowance is running low. Stop feature implementation. Preserve this tested checkpoint; no half-enabled feature is pending.
+
+Final continuation added simpler secondary-screen/offline wording, final-delivery missing-item badges using exact BigInt decimal comparison for display, expiry pills, measured contrast repairs, and a dev-only @axe-core/playwright accessibility suite. No backend/model/outbox engine changes. A late four-line wording experiment in Planning.jsx was returned to the version used by the final browser build before commit.
+
+**Final complete browser run: 35 passed, no failures** in `tmp/ui-complete-all.log` (14 isolated spec groups in one runner invocation). This supersedes earlier 34-test and split-run checkpoints. **20 offline/money/display unit tests passed.** Production build passed. Automated axe WCAG A/AA scans report **zero violations on four main destinations and bill dialog**; ignored local `artifacts/test-evidence/merchant-accessibility.json` contains `[]`. This is bounded automated coverage, not a formal whole-app accessibility certification or physical phone test. Production dependency audit: zero vulnerabilities. npm reports 4 moderate development-tool advisories; no forced dependency upgrade was applied.
+
+Existing backend validation messages and gated advanced planning tools still contain some technical terminology. No hardware, full translation, certification or new native APK result is claimed. Those limits must remain explicit; do not restart broad work unless the user asks. The current frontend build is served at http://127.0.0.1:8002/; verify health when resuming. The final delivery message gives the push commit. Keep cookies.txt, .env and unrelated output/tmp/research files out of Git.
+
 ## Continuation update: broader regression migration
 
 Final results: all 34 distinct browser journeys passed across isolated runs, including migrated purchase/receiving, financial records, supplier partial/full recovery, offline replay, onboarding, help and account recovery checks. The dedicated merchant-ui journey passed again on the final language-selector build. Production build and homepage HTTP 200 passed. Refer to docs/MERCHANT-UI.md; do not treat the previous-checkpoint limitations below as the latest regression status. Physical-device and formal accessibility certification remain unperformed. Backend rules were not changed to obtain passing tests.

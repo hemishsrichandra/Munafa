@@ -5,8 +5,8 @@ export function RecordDraftFields({ payload, change }) {
   return (
     <>
       <p>
-        Manual financial draft. Source IDs refer to the customer and obligation you selected. Server
-        validation and allocation checks still apply; saving locally does not change money or stock.
+        Money entry saved on this phone. The linked numbers identify your customer and chosen bill.
+        Online checks still apply; saving on this phone does not change money or stock.
       </p>
       <p>Record type: {payload.kind}</p>
       <div className="form-grid">
@@ -35,7 +35,7 @@ export function RecordDraftFields({ payload, change }) {
           checked={payload.merchant_confirmed}
           onChange={(e) => change({ ...payload, merchant_confirmed: e.target.checked })}
         />
-        I checked this entry and allocation before queuing.
+        I checked this entry and the bill it pays before sending.
       </label>
     </>
   );

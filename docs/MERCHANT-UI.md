@@ -1,5 +1,9 @@
 # Merchant UI redesign
 
+## Final tested stop checkpoint
+
+The final complete browser run passed **35/35** journeys with no failures, including the added accessibility scan. **20** offline/exact-money/display tests passed. Automated WCAG A/AA scans found zero violations across the four main destinations and bill dialog after contrast repairs. Missing-item badges require final delivery and exact saved decimal counts; expiry warnings have explicit text and semantic pills. Secondary-screen and phone-saved entry wording was simplified. No backend models, calculations or outbox engine were changed. Production dependency audit reports zero vulnerabilities; 4 moderate development-tool advisories remain. User explicitly requested no further feature implementation; continuation context is in ANTIGRAVITY-UI-CONTEXT.md. Earlier checkpoints below are historical.
+
 ## Regression completion
 
 Legacy browser specs have now been migrated to the four-tab navigation and new labels. All **34 distinct browser journeys passed across isolated spec runs**: auth 2, commerce 3, extension 1, header 1, merchant UI 1, offline 6, onboarding 2, partner 3, polish 1, records 3, recovery 1, release 2, workflow 8. Initial failures exposed stale selectors; corrected specs were rerun with their money, stock, source-link, partial/full recovery and account-isolation assertions retained. This is not a claim of one uninterrupted green run. After these checks a small presentation fix restored language-selector labels on all four tabs; the dedicated merchant-UI journey includes switching Hindi/English and is rerun for that fix.

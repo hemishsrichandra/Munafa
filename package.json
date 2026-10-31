@@ -20,6 +20,7 @@
     "frontend"
   ],
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@capacitor/cli": "^7.6.10",
     "@playwright/test": "1.56.1",
     "concurrently": "9.1.2",

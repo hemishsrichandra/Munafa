@@ -11,7 +11,7 @@ test('merchant screens hide build details and rupee fields send exact integer pa
   await page.getByLabel('Username', { exact: true }).fill('polish-owner');
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Today · आज' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
   await expect(page.getByText('All changes saved', { exact: true })).toBeVisible();
   await expect(
     page.getByText(/Hackathon prototype|API_KEY|IndexedDB|evaluation|PILOT NOT RUN/),

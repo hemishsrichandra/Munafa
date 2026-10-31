@@ -21,7 +21,7 @@ test('merchant completes the A-104 workflow and navigates the ledger', async ({ 
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Today · आज' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Your next delivery starts here' })).toBeVisible();
   await page.screenshot({ path: 'test-results/overview-desktop.png', fullPage: true });
   await page.getByRole('button', { name: 'Add New Bill · बिल जोड़ें', exact: true }).click();
@@ -110,7 +110,7 @@ test('mobile overview, case detail and manual intake are usable without overflow
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Today · आज' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );

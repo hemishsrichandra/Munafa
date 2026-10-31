@@ -365,7 +365,7 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        View approved snapshot <ExternalLink size={11} />
+                        View confirmed shortage <ExternalLink size={11} />
                       </a>
                     )}
                     <time>

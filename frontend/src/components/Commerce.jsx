@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { hasMissingItems } from '../merchant-display.mjs';
 import { Plus, FileText, Package, CalendarClock, ChevronRight } from 'lucide-react';
 import { api, money, today, downloadPrivate, proposeCommerceAction } from '../api';
 import { MoneyInput } from './MoneyInput';
@@ -272,7 +273,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
         setPurchases(cached.purchases);
         setProducts(cached.products);
         setExpiry(cached.expiry);
-        setNotice('Device snapshot: stock may have changed. Acceptance requires a connection.');
+        setNotice('Saved on your phone: stock may have changed. Reconnect before confirming.');
       }
       return;
     }
@@ -409,7 +410,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
       <div className="commerce-summary" aria-label="Purchase and stock summary">
         <div>
           <span>
-            <FileText size={17} /> Purchase register
+            <FileText size={17} /> Saved bills
           </span>
           <strong>{purchases.length}</strong>
           <small>
@@ -454,7 +455,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
           <>
             {!draft && !selected && (
               <div className="panel">
-                <h2>Purchase register</h2>
+                <h2>Saved bills</h2>
                 {!purchases.length && (
                   <p className="commerce-empty">No purchases yet. Add a bill to begin.</p>
                 )}
@@ -480,6 +481,9 @@ export function Commerce({ openCase, initialRoute = '' }) {
                       <span className={`commerce-status ${p.status}`}>
                         {p.status === 'accepted' ? 'Confirmed' : 'Draft'}
                       </span>
+                      {hasMissingItems(p) && (
+                        <span className="badge partial">Missing items · सामान कम आया</span>
+                      )}
                     </span>
                     <ChevronRight size={17} aria-hidden="true" />
                   </button>
@@ -495,7 +499,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
                   setReceiving(null);
                 }}
               >
-                Back to purchase register
+                Back to saved bills
               </button>
             )}
             {draft && (
@@ -1306,7 +1310,9 @@ export function Commerce({ openCase, initialRoute = '' }) {
             {expiry.map((l) => (
               <p key={l.id}>
                 {l.product_name} · {l.quantity} {l.unit} · {l.expiry_date} ·{' '}
-                {l.expired ? 'EXPIRED' : 'Expiring soon'}
+                <span className={`badge ${l.expired ? 'partial' : 'review'}`}>
+                  {l.expired ? 'Expired · तारीख निकल गई' : 'Expiring soon · तारीख पास है'}
+                </span>
               </p>
             ))}
           </div>
