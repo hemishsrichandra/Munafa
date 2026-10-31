@@ -89,6 +89,11 @@ test('merchant completes the A-104 workflow and navigates the ledger', async ({ 
   await expect(page.getByRole('row', { name: 'Open invoice A-104' })).toContainText('Resolved');
   await page.getByRole('button', { name: 'Suppliers', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Shree Ganesh Distributors' })).toBeVisible();
+  const performance = page.getByRole('region', { name: 'Supplier performance summaries' });
+  await performance.getByText(/Shree Ganesh Distributors · 0 unresolved/).click();
+  await expect(performance.getByText(/Time to full recovery:/)).toBeVisible();
+  await performance.getByRole('button', { name: 'Open invoice and evidence A-104' }).click();
+  await expect(page.getByRole('heading', { name: 'Every rupee, accounted for.' })).toBeVisible();
   await page.getByRole('button', { name: 'Insights', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Reviewed value, tracked to resolution' }),

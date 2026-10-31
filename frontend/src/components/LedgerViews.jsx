@@ -3,6 +3,7 @@ import { ChartNoAxesCombined, ChevronRight, Download } from 'lucide-react';
 import { money, exportLedger, downloadPrivate } from '../api';
 import { useSession } from '../session';
 import { badge } from './ui';
+import { SupplierPerformance } from './SupplierPerformance';
 
 function Suppliers({ cases, open }) {
   const groups = Object.values(
@@ -16,41 +17,44 @@ function Suppliers({ cases, open }) {
     }, {}),
   );
   return (
-    <div className="supplier-grid">
-      {groups.map((s) => (
-        <section className="panel supplier-card" key={s.name}>
-          <span className="supplier-logo">
-            {s.name
-              .split(' ')
-              .slice(0, 2)
-              .map((v) => v[0])
-              .join('')}
-          </span>
-          <h2>{s.name}</h2>
-          <p>
-            {s.cases.length} invoice{s.cases.length !== 1 ? 's' : ''} tracked
-          </p>
-          <div className="supplier-totals">
-            <div>
-              <span>To resolve</span>
-              <strong>{money(s.owed)}</strong>
+    <>
+      <SupplierPerformance cases={cases} open={open} />
+      <div className="supplier-grid">
+        {groups.map((s) => (
+          <section className="panel supplier-card" key={s.name}>
+            <span className="supplier-logo">
+              {s.name
+                .split(' ')
+                .slice(0, 2)
+                .map((v) => v[0])
+                .join('')}
+            </span>
+            <h2>{s.name}</h2>
+            <p>
+              {s.cases.length} invoice{s.cases.length !== 1 ? 's' : ''} tracked
+            </p>
+            <div className="supplier-totals">
+              <div>
+                <span>To resolve</span>
+                <strong>{money(s.owed)}</strong>
+              </div>
+              <div>
+                <span>Verified</span>
+                <strong className="green-text">{money(s.recovered)}</strong>
+              </div>
             </div>
-            <div>
-              <span>Verified</span>
-              <strong className="green-text">{money(s.recovered)}</strong>
-            </div>
-          </div>
-          {s.cases.map((c) => (
-            <button className="supplier-case" key={c.id} onClick={() => open(c)}>
-              <span>{c.invoice.reference}</span>
-              {badge(c.status)}
-              <ChevronRight size={15} />
-            </button>
-          ))}
-        </section>
-      ))}
-      {!groups.length && <p className="muted">Add an invoice to start your supplier ledger.</p>}
-    </div>
+            {s.cases.map((c) => (
+              <button className="supplier-case" key={c.id} onClick={() => open(c)}>
+                <span>{c.invoice.reference}</span>
+                {badge(c.status)}
+                <ChevronRight size={15} />
+              </button>
+            ))}
+          </section>
+        ))}
+        {!groups.length && <p className="muted">Add an invoice to start your supplier ledger.</p>}
+      </div>
+    </>
   );
 }
 function Insights({ cases, verified, outstanding }) {

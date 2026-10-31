@@ -23,6 +23,7 @@ from .integrations import router as integrations_router
 from .preparation import router as preparation_router
 from .intelligence import router as intelligence_router
 from .records import router as records_router
+from .supplier_performance import router as supplier_performance_router
 from .db import engine
 from .security import guard, origins
 from sqlalchemy import text
@@ -813,6 +814,7 @@ app.include_router(integrations_router)
 app.include_router(preparation_router)
 app.include_router(intelligence_router)
 app.include_router(records_router)
+app.include_router(supplier_performance_router)
 
 DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if (DIST / "assets").is_dir() and (DIST / "index.html").is_file():
