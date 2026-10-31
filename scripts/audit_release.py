@@ -89,7 +89,14 @@ def main():
         {
             "method": method.upper(),
             "path": path,
-            "authenticated": path not in ("/api/health", "/api/auth/login", "/api/auth/dev-login"),
+            "authenticated": path
+            not in (
+                "/api/health",
+                "/api/auth/login",
+                "/api/auth/dev-login",
+                "/api/auth/signup",
+                "/api/auth/demo",
+            ),
         }
         for path, methods in app.openapi()["paths"].items()
         for method in methods

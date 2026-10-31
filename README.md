@@ -37,6 +37,10 @@ npm start
 
 Open [the built application](http://127.0.0.1:8000). Restart the backend after the first build so it registers static assets.
 
+### Public signup and demo
+
+On the deployed sign-in screen, **Create account** opens a private merchant store and **Try a demo** opens a separate synthetic sample workspace per visitor. Both work in production without enabling development login. They default on; set ENABLE_PUBLIC_SIGNUP=0 or ENABLE_PUBLIC_DEMO=0 to disable. Public demo creation has a database-enforced total cap of 500 by default. Demo sessions expire in 12 hours, but records are not automatically deleted. Use sample information only. Signup requires a 12+ character password; email verification and password recovery are not yet implemented. Read [authentication setup, Render settings and retention limits](docs/AUTH-DEPLOYMENT.md).
+
 ### Explicit development demo
 
 Only for development: set APP_ENV=development, ALLOW_DEV_LOGIN=1, and a private DEV_LOGIN_CODE with at least 16 characters. Run `.venv/bin/python -m backend.manage seed-demo`, then use **Development demo access** on the login screen and enter that code. This creates a separate demo store and a synthetic A-104 case if empty. It does not reset anything. All input in that store remains synthetic.

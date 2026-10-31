@@ -17,7 +17,13 @@ services:
       - key: APP_ORIGINS
         sync: false
       - key: ALLOW_DEV_LOGIN
-        value: "0"
+        value: '0'
+      - key: ENABLE_PUBLIC_SIGNUP
+        value: '1'
+      - key: ENABLE_PUBLIC_DEMO
+        value: '1'
+      - key: PUBLIC_DEMO_MAX_STORES
+        value: '500'
       - key: SARVAM_API_KEY
         sync: false
       - key: SARVAM_CHAT_MODEL
@@ -31,4 +37,3 @@ databases:
     user: munafa_user
     plan: free
     region: singapore
-

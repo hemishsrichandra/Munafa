@@ -6,6 +6,12 @@ const Session = createContext(null);
 export const useSession = () => useContext(Session);
 export function SessionGate({ children }) {
   const [demoAllowed, setDemoAllowed] = useState(false);
+  const [signupAllowed, setSignupAllowed] = useState(false);
+  const [publicDemoAllowed, setPublicDemoAllowed] = useState(false);
+  const [configError, setConfigError] = useState('');
+  const [creatingAccount, setCreatingAccount] = useState(false);
+  const [storeName, setStoreName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [session, setSession] = useState(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState('');
@@ -21,6 +27,11 @@ export function SessionGate({ children }) {
       verified = { ...verified, offlineUnavailable: local.storageMessage(e) };
     }
     clearNativeCredentials(verified);
+    setPassword('');
+    setConfirmPassword('');
+    setCode('');
+    setCreatingAccount(false);
+    setDemo(false);
     setSession({ ...verified, offlineAccess: false });
   }
   function clearNativeCredentials(verified) {
@@ -74,15 +85,43 @@ export function SessionGate({ children }) {
     };
     window.addEventListener('online', refresh);
     window.addEventListener('offline', refresh);
-    api('/health')
-      .then((cfg) => setDemoAllowed(cfg.development_login === true))
-      .catch(() => {});
+    loadOptions();
     restore();
     return () => {
       window.removeEventListener('online', refresh);
       window.removeEventListener('offline', refresh);
     };
   }, []);
+  async function loadOptions() {
+    try {
+      const cfg = await api('/health');
+      setDemoAllowed(cfg.development_login === true);
+      setSignupAllowed(cfg.public_signup === true);
+      setPublicDemoAllowed(cfg.public_demo === true);
+      setConfigError('');
+    } catch {
+      setConfigError('Account options could not load. Check your connection and retry.');
+    }
+  }
+  function changeMode(signup = false, development = false) {
+    setCreatingAccount(signup);
+    setDemo(development);
+    setPassword('');
+    setConfirmPassword('');
+    setCode('');
+    setError('');
+  }
+  async function startDemo() {
+    setLoading(true);
+    setError('');
+    try {
+      await acceptSession(await api('/auth/demo', { method: 'POST', body: {} }));
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
   async function authProblem(status) {
     window.dispatchEvent(new Event('munafa-stop-sync'));
     if (status === 403) {
@@ -145,7 +184,14 @@ export function SessionGate({ children }) {
         <section className="panel login-card">
           <div className="eyebrow">MUNAFA · KIRANA WORKSPACE</div>
           <h1>Paytm Business Partner</h1>
-          <p>A clear picture of your supplier credits. No live Paytm connection.</p>
+          <p>
+            {creatingAccount
+              ? 'Create your private store workspace.'
+              : 'Your purchases, stock and supplier credits in one place.'}
+          </p>
+          <h2>
+            {creatingAccount ? 'Create account' : demo ? 'Development access' : 'Welcome back'}
+          </h2>
           {offline && (
             <div className="offline-banner" role="status">
               Reconnect to sign in. Previously verified workspaces can save local drafts offline for
@@ -155,14 +201,25 @@ export function SessionGate({ children }) {
           <form
             onSubmit={async (e) => {
               e.preventDefault();
+              if (creatingAccount && password !== confirmPassword) {
+                setError('Passwords do not match. Please check both entries.');
+                return;
+              }
               setLoading(true);
               setError('');
               try {
                 await acceptSession(
-                  await api(demo ? '/auth/dev-login' : '/auth/login', {
-                    method: 'POST',
-                    body: demo ? { code } : { username, password },
-                  }),
+                  await api(
+                    creatingAccount ? '/auth/signup' : demo ? '/auth/dev-login' : '/auth/login',
+                    {
+                      method: 'POST',
+                      body: creatingAccount
+                        ? { username, password, store_name: storeName }
+                        : demo
+                          ? { code }
+                          : { username, password },
+                    },
+                  ),
                 );
               } catch (e) {
                 setError(e.message);
@@ -185,6 +242,18 @@ export function SessionGate({ children }) {
               </label>
             ) : (
               <>
+                {creatingAccount && (
+                  <label className="field">
+                    Store name
+                    <input
+                      required
+                      maxLength={120}
+                      value={storeName}
+                      onChange={(e) => setStoreName(e.target.value)}
+                      autoComplete="organization"
+                    />
+                  </label>
+                )}
                 <label className="field">
                   Username
                   <input
@@ -192,8 +261,20 @@ export function SessionGate({ children }) {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     autoComplete="username"
+                    aria-describedby={creatingAccount ? 'signup-username-help' : undefined}
+                    minLength={creatingAccount ? 3 : undefined}
+                    maxLength={creatingAccount ? 60 : 120}
+                    pattern={creatingAccount ? '[a-zA-Z0-9][a-zA-Z0-9._\\-]{2,59}' : undefined}
+                    autoCapitalize="none"
+                    spellCheck={false}
                   />
                 </label>
+                {creatingAccount && (
+                  <p className="tiny-help" id="signup-username-help">
+                    3–60 letters, numbers, dots, underscores or hyphens. Your username is saved in
+                    lowercase.
+                  </p>
+                )}
                 <label className="field">
                   Password
                   <input
@@ -201,9 +282,31 @@ export function SessionGate({ children }) {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
+                    autoComplete={creatingAccount ? 'new-password' : 'current-password'}
+                    minLength={creatingAccount ? 12 : undefined}
+                    maxLength={200}
                   />
                 </label>
+                {creatingAccount && (
+                  <>
+                    <p className="tiny-help">
+                      Use at least 12 characters. Keep your password safe; password recovery is not
+                      available yet.
+                    </p>
+                    <label className="field">
+                      Confirm password
+                      <input
+                        required
+                        type="password"
+                        minLength={12}
+                        maxLength={200}
+                        autoComplete="new-password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                      />
+                    </label>
+                  </>
+                )}
               </>
             )}
             {error && (
@@ -212,22 +315,67 @@ export function SessionGate({ children }) {
               </p>
             )}
             <button className="button primary full" disabled={offline}>
-              Sign in
+              {creatingAccount ? 'Create account' : 'Sign in'}
             </button>
-            {demoAllowed && (
-              <button
-                type="button"
-                className="button secondary full"
-                onClick={() => {
-                  setDemo(!demo);
-                  setError('');
-                }}
-              >
-                {demo ? 'Use merchant account' : 'Try a demo'}
+            {creatingAccount || demo ? (
+              <button type="button" className="button secondary full" onClick={() => changeMode()}>
+                Back to sign in
               </button>
+            ) : (
+              <>
+                {signupAllowed && (
+                  <button
+                    type="button"
+                    className="button secondary full"
+                    onClick={() => changeMode(true)}
+                  >
+                    Create account
+                  </button>
+                )}
+                {publicDemoAllowed && (
+                  <>
+                    <button
+                      type="button"
+                      className="button secondary full"
+                      disabled={offline}
+                      onClick={startDemo}
+                    >
+                      Try a demo
+                    </button>
+                    <p className="tiny-help">
+                      Explore a private demo with synthetic sample records. Use sample information
+                      only. Signing out ends access; create an account for your own business.
+                    </p>
+                  </>
+                )}
+                {demoAllowed && (
+                  <button
+                    type="button"
+                    className="button secondary full"
+                    onClick={() => changeMode(false, true)}
+                  >
+                    Development demo access
+                  </button>
+                )}
+              </>
             )}
           </form>
-          <p className="tiny-help">Ask your store administrator if you need help signing in.</p>
+          {configError && (
+            <div role="alert">
+              <p>{configError}</p>
+              <button
+                type="button"
+                className="button secondary"
+                disabled={offline}
+                onClick={loadOptions}
+              >
+                Retry account options
+              </button>
+            </div>
+          )}
+          <p className="tiny-help">
+            No live Paytm connection. Ask your store administrator if you need help signing in.
+          </p>
         </section>
       </main>
     );

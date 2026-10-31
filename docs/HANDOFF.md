@@ -1,3 +1,7 @@
+# Latest handoff — public signup and isolated demo
+
+See [AUTH-DEPLOYMENT.md](AUTH-DEPLOYMENT.md) for the 31 October 2026 authentication release, Render flags, tests and next steps. New public signup creates a private non-demo store; Try a demo creates a separate synthetic store per visitor. Existing development login stays blocked in production. No migration or extra API key. Previous automatic default-owner provisioning has been removed; if Render already created `owner`, rotate its password using the documented `set-password` CLI. Existing account data/credentials have not been reset. This change incorporates origin/main through a00979f and leaves unrelated local starter-folder deletions out of the commit.
+
 # Cross-system handoff — merchant UI polish
 
 **Purchase/stock visual refresh:** the current local changes unify Commerce with the existing ledger design: scoped summary cards, selected tab styling, structured purchase rows, stock cards, consistent form/action spacing and phone layouts. No ledger, acceptance or settlement logic changed. A synthetic image matching the user's demo resolution fields is in ignored `output/demo/demo-credit-note-ait-201.png`; its prompt is alongside it. Do not use it as real financial evidence or commit generated output by default.

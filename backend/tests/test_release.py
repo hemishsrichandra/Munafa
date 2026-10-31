@@ -20,7 +20,13 @@ from backend.tests.test_trust import other_client
 from backend.tests.test_commerce import purchase, receiving, receive, accept, ok
 from backend.tests.test_workflow import shared, resolution
 
-PUBLIC = {"/api/health", "/api/auth/login", "/api/auth/dev-login"}
+PUBLIC = {
+    "/api/health",
+    "/api/auth/login",
+    "/api/auth/dev-login",
+    "/api/auth/signup",
+    "/api/auth/demo",
+}
 
 
 def test_audit_and_evidence_money_never_uses_binary_float():

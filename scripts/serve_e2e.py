@@ -27,6 +27,9 @@ os.environ.update(
     DATABASE_SCHEMA=schema,
     APP_ENV="test",
     ALLOW_DEV_LOGIN="1",
+    ENABLE_PUBLIC_SIGNUP="1",
+    ENABLE_PUBLIC_DEMO="1",
+    PUBLIC_DEMO_MAX_STORES="500",
     DEV_LOGIN_CODE="e2e-isolated-demo-access",
     SARVAM_API_KEY=" ",  # Windows preserves this sentinel; dotenv cannot load the real key.
     APP_ORIGINS="http://127.0.0.1:8001,http://localhost:8001",

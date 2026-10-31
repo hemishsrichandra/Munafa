@@ -3,12 +3,14 @@
 import hashlib
 import hmac
 import os
+import re
 import secrets
 import uuid
 from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import select, insert, delete
+from sqlalchemy import select, insert, delete, text, func, update
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from .db import engine
 from . import models as m
@@ -76,22 +78,112 @@ def provision(
     username, password, store_name="Kirana store", demo=False, role="owner", store_id=None
 ):
     """Explicit CLI/test provisioning, not a public registration endpoint."""
+    with engine().begin() as db:
+        return provision_in(db, username, password_hash(password), store_name, demo, role, store_id)
+
+
+def provision_in(db, username, hashed, store_name, demo=False, role="owner", store_id=None):
+    """Identity, membership and session creation can share one atomic transaction."""
     uid = uuid.uuid4().hex
     sid = store_id or uuid.uuid4().hex
-    with engine().begin() as db:
-        if store_id is None:
-            mid = uuid.uuid4().hex
-            db.execute(insert(m.merchants).values(id=mid, name=store_name))
-            db.execute(
-                insert(m.stores).values(
-                    id=sid, merchant_id=mid, name=store_name, timezone="Asia/Kolkata", demo=demo
-                )
-            )
+    if store_id is None:
+        mid = uuid.uuid4().hex
+        db.execute(insert(m.merchants).values(id=mid, name=store_name))
         db.execute(
-            insert(m.users).values(id=uid, username=username, password_hash=password_hash(password))
+            insert(m.stores).values(
+                id=sid, merchant_id=mid, name=store_name, timezone="Asia/Kolkata", demo=demo
+            )
         )
-        db.execute(insert(m.memberships).values(user_id=uid, store_id=sid, role=role))
+    db.execute(insert(m.users).values(id=uid, username=username, password_hash=hashed))
+    db.execute(insert(m.memberships).values(user_id=uid, store_id=sid, role=role))
     return uid, sid
+
+
+def public_signup_enabled():
+    return os.getenv("ENABLE_PUBLIC_SIGNUP", "1") == "1"
+
+
+def public_demo_enabled():
+    return os.getenv("ENABLE_PUBLIC_DEMO", "1") == "1"
+
+
+def signup(username, password, store_name):
+    if not public_signup_enabled():
+        raise HTTPException(404, "Account creation is unavailable. Contact your administrator.")
+    username = username.strip().lower()
+    store_name = store_name.strip()
+    if (
+        not re.fullmatch(r"[a-z0-9][a-z0-9._-]{2,59}", username)
+        or username.startswith("demo-")
+        or username == "munafa-demo"
+    ):
+        raise HTTPException(
+            422,
+            "Use 3–60 letters, numbers, dots, underscores or hyphens for your username. Demo names are reserved.",
+        )
+    if not 12 <= len(password) <= 200 or not password.strip():
+        raise HTTPException(422, "Use a password with 12–200 characters.")
+    if not 1 <= len(store_name) <= 120 or re.search(r"[\x00-\x1f\x7f]", store_name):
+        raise HTTPException(422, "Enter a store name with 1–120 characters.")
+    hashed = password_hash(password)
+    try:
+        with engine().begin() as db:
+            # Serialize public registrations; also respect case variants of legacy CLI accounts.
+            db.execute(text("SELECT pg_advisory_xact_lock(7042196001)"))
+            if db.execute(
+                select(m.users.c.id).where(func.lower(m.users.c.username) == username)
+            ).first():
+                raise HTTPException(409, "That username is unavailable. Choose another or sign in.")
+            uid, sid = provision_in(db, username, hashed, store_name)
+            return session_for(db, uid, sid)
+    except IntegrityError:
+        raise HTTPException(
+            409, "That username is unavailable. Choose another or sign in."
+        ) from None
+
+
+def public_demo():
+    """New private synthetic tenant per visitor; never a shared production credential."""
+    if not public_demo_enabled():
+        raise HTTPException(404, "The demo is unavailable. You can create a merchant account.")
+    try:
+        limit = int(os.getenv("PUBLIC_DEMO_MAX_STORES", "500"))
+        if not 1 <= limit <= 10000:
+            raise ValueError
+    except ValueError:
+        raise HTTPException(503, "The demo is temporarily unavailable.") from None
+    hashed = password_hash(secrets.token_urlsafe(48))
+    with engine().begin() as db:
+        # Database-wide cap works across workers/restarts, unlike the per-process IP limiter.
+        db.execute(text("SELECT pg_advisory_xact_lock(7042196002)"))
+        count = db.execute(
+            select(func.count())
+            .select_from(m.users)
+            .join(m.memberships, m.memberships.c.user_id == m.users.c.id)
+            .join(m.stores, m.stores.c.id == m.memberships.c.store_id)
+            .where(m.users.c.username.startswith("demo-"), m.stores.c.demo.is_(True))
+        ).scalar_one()
+        if count >= limit:
+            raise HTTPException(
+                429,
+                "Demo capacity reached. Create an account or try again after the administrator makes space available.",
+            )
+        uid, sid = provision_in(
+            db, "demo-" + uuid.uuid4().hex, hashed, "Your demo kirana · synthetic", demo=True
+        )
+        result = session_for(db, uid, sid)
+        # Seed the existing invoice through its existing domain rules, in this same transaction.
+        from . import store
+        from .samples import demo_seed
+
+        principal_token = principal.set(result[0])
+        connection_token = store.request_connection.set(db)
+        try:
+            demo_seed()
+        finally:
+            store.request_connection.reset(connection_token)
+            principal.reset(principal_token)
+        return result
 
 
 def membership(db, uid, sid=None):
@@ -141,12 +233,41 @@ def authenticate(token, csrf=None):
 
 def login(username, password):
     with engine().begin() as db:
-        row = db.execute(select(m.users).where(m.users.c.username == username)).mappings().first()
+        row = (
+            db.execute(select(m.users).where(m.users.c.username == username).with_for_update())
+            .mappings()
+            .first()
+        )
+        if row is None:
+            row = (
+                db.execute(
+                    select(m.users)
+                    .where(m.users.c.username == username.strip().lower())
+                    .with_for_update()
+                )
+                .mappings()
+                .first()
+            )
         # Equal-cost password work for unknown usernames.
         stored = row["password_hash"] if row else "0" * 32 + ":" + "0" * 128
         if not password_valid(password, stored) or row is None:
             raise HTTPException(401, "Invalid username or password.")
         return session_for(db, row["id"])
+
+
+def change_password(username, password):
+    """Administrator-only CLI operation; never exposed as an unauthenticated endpoint."""
+    if not 12 <= len(password) <= 200 or not password.strip():
+        raise ValueError("Use a password with 12–200 characters.")
+    hashed = password_hash(password)
+    with engine().begin() as db:
+        row = db.execute(
+            select(m.users.c.id).where(m.users.c.username == username).with_for_update()
+        ).first()
+        if not row:
+            raise ValueError("Account not found. No password was changed.")
+        db.execute(update(m.users).where(m.users.c.id == row.id).values(password_hash=hashed))
+        db.execute(delete(m.sessions).where(m.sessions.c.user_id == row.id))
 
 
 def demo_login(code):
