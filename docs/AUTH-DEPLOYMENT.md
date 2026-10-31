@@ -75,3 +75,36 @@ Final merged base: a00979f (all six newer GitHub/Render commits incorporated bef
 An initial new signup browser test exposed helper text being included in the Username accessible name. The helper now uses aria-describedby outside the label; the test passed without weakening its exact-label assertion. Earlier runs on the pre-Render-merge base are superseded by the results above.
 
 Local evidence: ignored `artifacts/test-evidence/signup-phone.png` and `public-demo-phone.png`. No actual Android device, new APK or local Docker-image build was run for this web-auth change. No live provider calls were needed. Remote deployment must be verified by its public health flags after the push; no existing remote merchant account/password was accessed during local testing.
+
+### If Render Shell is unavailable
+
+The blueprint uses a free web-service plan. Render documents that free web services do not provide Dashboard Shell or SSH: [supported shell service types](https://render.com/docs/ssh). On that plan, run the password-change CLI from a trusted local checkout instead, privately configuring DATABASE_URL to the Render database's **External Database URL**, not its internal-only hostname and not the local development database. Keep DATABASE_SCHEMA consistent with the deployment (`public` in this blueprint). Render-style postgres:// URLs are normalized to the supported psycopg driver by backend/db.py.
+
+For a one-time local change without saving credentials in command history or modifying .env, use the following from the project root in an interactive terminal with backend dependencies installed. First verify in the Render dashboard that the external URL belongs to this app's database. Both the URL and password are read at hidden prompts; nothing is sent to this chat:
+
+```sh
+.venv/bin/python - <<'PY'
+import getpass
+import os
+
+os.environ["DATABASE_URL"] = getpass.getpass("This app's Render External Database URL: ")
+os.environ["DATABASE_SCHEMA"] = "public"
+from backend.auth import change_password
+
+password = getpass.getpass("New unique password (12–200 characters): ")
+if password != getpass.getpass("Confirm new password: "):
+    raise SystemExit("Passwords differ. No change made.")
+change_password("owner", password)
+print("Password changed and server sessions revoked; store records preserved.")
+PY
+```
+
+This is an explicit administrative password change, not a reset of merchant records or a public password-recovery service. It requires network access permitted by the Render database's external access controls. It was not executed against the deployed database by the coding agent. New signup/demo access itself needs neither Shell nor this command.
+
+## GitHub and live deployment verification
+
+- Application commit **4248fc9**, `Add merchant signup and isolated production demo authentication`, pushed to origin/main. Render automatically redeployed it; no Render dashboard credentials or environment values were changed by the agent.
+- Read-only checks against `https://munafa-paytm-partner.onrender.com` on 31 October 2026: root HTTP 200, new JavaScript bundle contains signup/demo routes, health reports public_signup:true, public_demo:true, development_login:false; anonymous `/api/auth/me` returns 401. The deployed UI bundle is the rebuilt version, not just a backend flag change.
+- With explicit owner approval, exactly one live synthetic demo creation POST was executed on 31 October 2026, with no automatic creation retry: HTTP 201; authenticated session and case list/detail HTTP 200; one synthetic invoice in review with every received quantity unconfirmed; production session cookie Secure, HttpOnly and SameSite=Strict. CSRF-authenticated logout returned 200 and the subsequent session check returned 401. The one approved synthetic demo store/invoice remains in PostgreSQL, as disclosed before approval. No existing merchant account, password or business record was accessed or changed. Session tokens/CSRF/IDs were not printed or committed. Public merchant signup was tested locally against PostgreSQL and in browser journeys, but no live merchant-signup account was created by the agent.
+- Remaining owner action: rotate the old auto-provisioned `owner` password if that identity exists, using the secure CLI instructions above. On a free Render web plan use a trusted local checkout with the external PostgreSQL URL; Shell is unavailable. No additional key is needed for signup/demo. Accept the PWA update/reload to refresh older installed UI.
+- Follow-up choices before a broader rollout: password recovery/verified email or invitation policy; retention/deletion for abandoned demos; monitoring/edge rate limits and AI-spend budget. None is silently represented as implemented.
