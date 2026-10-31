@@ -13,20 +13,20 @@ test('four merchant destinations and quick actions work across phone and desktop
   await expect(nav.getByRole('button')).toHaveCount(4);
   for (const width of [320, 390, 844, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    await nav.getByRole('button', { name: 'Today · आज', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: /Customer Udhaar/ }).click();
+    await nav.getByRole('button', { name: 'Today', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: /Customer credit/ }).click();
     await expect(page.getByRole('combobox', { name: 'Record type', exact: true })).toHaveValue(
       'credit_sale',
     );
-    await nav.getByRole('button', { name: 'Today · आज', exact: true }).click();
-    await page.getByRole('button', { name: /Settle Galla/ }).click();
+    await nav.getByRole('button', { name: 'Today', exact: true }).click();
+    await page.getByRole('button', { name: /Count cash/ }).click();
     await expect(page.getByRole('region', { name: 'Galla Hisab', exact: true })).toBeVisible();
     await nav.getByRole('button', { name: 'Deliveries & Stock', exact: true }).click();
     await expect(page.getByRole('list', { name: 'Two steps for every delivery' })).toBeVisible();
     await nav.getByRole('button', { name: 'Customer Khata', exact: true }).click();
     await expect(
-      page.getByRole('heading', { name: 'Money to Collect · उधार लेना है', exact: true }),
+      page.getByRole('heading', { name: 'Money to collect', exact: true }),
     ).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
@@ -36,15 +36,15 @@ test('four merchant destinations and quick actions work across phone and desktop
       expect(rect.height).toBeGreaterThanOrEqual(48);
     }
   }
-  await nav.getByRole('button', { name: 'More · अन्य', exact: true }).click();
-  await page.getByLabel('Interface language').selectOption('hi');
+  await nav.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('combobox', { name: /Interface language|ऐप की भाषा/ }).selectOption('hi');
   await expect(nav.getByRole('button', { name: 'आज', exact: true })).toBeVisible();
   await expect(nav.getByRole('button', { name: 'ग्राहक उधार', exact: true })).toBeVisible();
-  await page.getByLabel('Interface language').selectOption('en');
-  await nav.getByRole('button', { name: 'Today · आज', exact: true }).click();
+  await page.getByRole('combobox', { name: /Interface language|ऐप की भाषा/ }).selectOption('en');
+  await nav.getByRole('button', { name: 'Today', exact: true }).click();
   await page.screenshot({ path: 'artifacts/test-evidence/merchant-today.png', fullPage: true });
   await page
-    .getByRole('button', { name: /New Bill/ })
+    .getByRole('button', { name: /New bill|Add new bill/ })
     .first()
     .click();
   await expect(page.getByRole('dialog')).toBeVisible();

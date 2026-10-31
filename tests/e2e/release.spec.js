@@ -5,7 +5,7 @@ async function login(page, name) {
   await page.getByLabel('Username', { exact: true }).fill(name);
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
 }
 async function get(page, path) {
   return page.evaluate(async (p) => {
@@ -39,14 +39,14 @@ test('phone bill photo → reviewed purchase → receipt → shortage → promis
   });
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.getByRole('button', { name: 'Deliveries & Stock', exact: true }).click();
-  await page.getByRole('button', { name: 'stock', exact: true }).click();
+  await page.getByRole('button', { name: 'Stock', exact: true }).click();
   await page.getByRole('button', { name: 'New Item', exact: true }).click();
   await page.getByLabel('code', { exact: true }).fill('RELEASE-RICE');
   await page.getByLabel('name', { exact: true }).fill('Rice');
   await page.getByRole('combobox', { name: 'Unit', exact: true }).selectOption('kg');
   await page.getByRole('button', { name: 'Save Item', exact: true }).click();
-  await page.getByRole('button', { name: 'purchases', exact: true }).click();
-  await page.getByRole('button', { name: 'Add New Bill · बिल जोड़ें', exact: true }).click();
+  await page.getByRole('button', { name: 'Bills', exact: true }).click();
+  await page.getByRole('button', { name: 'Add new bill', exact: true }).click();
   await page
     .getByLabel('Bill photo or PDF', { exact: true })
     .setInputFiles('evaluation/corpus/images/fractional.png');
@@ -82,9 +82,7 @@ test('phone bill photo → reviewed purchase → receipt → shortage → promis
     .getByRole('button', { name: 'Save checked bill · stock stays the same', exact: true })
     .click();
   expect((await get(page, '/products'))[0].stock_quantity).toBe('0');
-  await page
-    .getByRole('button', { name: 'Count Delivered Items · सामान की गिनती', exact: true })
-    .click();
+  await page.getByRole('button', { name: 'Count delivered items', exact: true }).click();
   await page.getByLabel('Actual quantity', { exact: true }).fill('2');
   await page.getByLabel('Damaged quantity', { exact: true }).fill('0');
   await page.getByText('I checked the units.', { exact: true }).click();
@@ -132,9 +130,7 @@ test('phone bill photo → reviewed purchase → receipt → shortage → promis
     [0, 'partial'],
     [1, 'resolved'],
   ]) {
-    await page
-      .getByRole('button', { name: 'Record Money Received · पैसा वापस मिला', exact: true })
-      .click();
+    await page.getByRole('button', { name: 'Record money received', exact: true }).click();
     await page.getByLabel('Money actually received or reduced from a bill (₹)').fill('20');
     await page.getByRole('button', { name: 'Load synthetic next-bill credit' }).click();
     const href = await page
@@ -194,7 +190,7 @@ test('throttled startup, keyboard dialog, offline warm launch and production she
   await page.getByRole('button', { name: 'Install app', exact: true }).click();
   await expect(page.locator('.install-guide')).toBeVisible();
   await page.getByRole('button', { name: 'Install app', exact: true }).click();
-  await page.getByRole('button', { name: 'Add New Bill · बिल जोड़ें', exact: true }).click();
+  await page.getByRole('button', { name: 'Add new bill', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByRole('button', { name: 'Enter manually', exact: true }).click();
   await page.getByRole('dialog').focus();
@@ -240,7 +236,7 @@ test('throttled startup, keyboard dialog, offline warm launch and production she
   ).toBe(true);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Saved on Phone', exact: true }).click();
+  await page.getByRole('button', { name: 'Offline drafts', exact: true }).click();
   await expect(page.getByText('Sync diagnostics (development only)', { exact: true })).toHaveCount(
     0,
   );
@@ -253,7 +249,7 @@ test('throttled startup, keyboard dialog, offline warm launch and production she
   await context.setOffline(true);
   const offlineStart = Date.now();
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Drafts & sync', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Offline drafts', exact: true })).toBeVisible();
   const offlineLaunch = Date.now() - offlineStart;
   for (const viewport of [
     { width: 360, height: 800 },

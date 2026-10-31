@@ -111,3 +111,7 @@ A native WebView and a browser installation use their own origin storage; no cro
 The same scoped immutable outbox now supports `purchase_create`, dependent `purchase_document_upload`, `purchase_receiving_capture` and explicitly reviewed `inventory_movement`. A document upload waits for the purchase receipt and binds its returned entity/version. The declared checksum must match the original attachment. A purchase with an expected missing document cannot be accepted.
 
 Purchase and receiving sync create drafts only. Receiving acceptance remains online and adds undamaged goods. A queued stock movement requires explicit merchant confirmation, server approval permission and the exact reviewed stock version; only the accepted server event changes confirmed stock. Offline quantities stay decimal strings and monetary values integer paise. Stock version zero is valid. Conflicts retain the original operation; reviewing the latest source creates a new editable copy for an explicit new submission.
+
+## Optional original manual text (31 October 2026)
+
+The v1 purchase_create payload may include source_text, 1–18,000 characters, alongside draft and optional document metadata. It is untrusted original bill text, preserved as a private text source attachment; it does not trigger OCR, approve a purchase, or change receiving/stock. Old payloads remain valid. Normal operation IDs, tenant context, request digest, dependencies and expected-version rules still apply.

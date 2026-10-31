@@ -24,17 +24,17 @@ test('phone signup, logout and existing account sign-in', async ({ page }) => {
   fs.mkdirSync('artifacts/test-evidence', { recursive: true });
   await page.screenshot({ path: 'artifacts/test-evidence/signup-phone.png', fullPage: true });
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   expect((await (await page.request.get('/api/auth/me')).json()).store.demo).toBe(false);
   expect(await (await page.request.get('/api/cases')).json()).toEqual([]);
   page.on('dialog', (d) => d.accept());
-  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
   await page.getByLabel('Username', { exact: true }).fill(username.toUpperCase());
   await page.getByLabel('Password', { exact: true }).fill('synthetic-onboarding-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -46,7 +46,7 @@ test('public demo needs no access code and remains private between visitors', as
   await page.goto('/');
   await expect(page.getByText('Explore a private demo', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: 'Try a demo', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   const a = await (await page.request.get('/api/auth/me')).json();
   const cases = await (await page.request.get('/api/cases')).json();
   expect(a.store.demo).toBe(true);
@@ -57,7 +57,7 @@ test('public demo needs no access code and remains private between visitors', as
     const other = await second.newPage();
     await other.goto('/');
     await other.getByRole('button', { name: 'Try a demo', exact: true }).click();
-    await expect(other.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
+    await expect(other.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
     const b = await (await other.request.get('/api/auth/me')).json();
     expect(b.store.id).not.toBe(a.store.id);
     expect((await other.request.get(`/api/cases/${cases[0].id}`)).status()).toBe(404);

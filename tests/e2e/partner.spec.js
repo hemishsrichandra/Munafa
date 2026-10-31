@@ -4,7 +4,7 @@ async function login(page) {
   await page.getByLabel('Username', { exact: true }).fill('partner-owner');
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
 }
 async function request(page, path, body) {
   return page.evaluate(
@@ -42,7 +42,7 @@ test('evidence brief and synthetic settlement reconciliation are usable on phone
     unit: 'kg',
     reorder_threshold: '2',
   });
-  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: 'Check Paytm payments', exact: true }).click();
   await page.getByRole('button', { name: 'Load sample settlements', exact: true }).click();
   await expect(
@@ -55,7 +55,7 @@ test('evidence brief and synthetic settlement reconciliation are usable on phone
       true,
     );
   }
-  await page.getByRole('button', { name: 'Today · आज', exact: true }).click();
+  await page.getByRole('button', { name: 'Today', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Check stock: Brief Rice', exact: true }),
   ).toBeVisible();
@@ -106,7 +106,7 @@ test('cited help, unsupported answers, reviewed translation and microphone denia
       },
     });
   });
-  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: 'Merchant help & language', exact: true }).click();
   await page
     .getByLabel('Your question', { exact: true })
@@ -230,7 +230,7 @@ test('stock planning shows merchant rules, preserves P2 gates and links recorded
     expect(gate.financial_decision).toBeNull();
     expect(gate.peer_statistics).toBeNull();
   }
-  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: 'Stock planning', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Stock planning', exact: true })).toBeVisible();
   await expect(
@@ -255,7 +255,7 @@ test('stock planning shows merchant rules, preserves P2 gates and links recorded
   await expect(
     page.getByRole('heading', { name: /Readiness Rice · movement history/ }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: 'Stock planning', exact: true }).click();
   await expect(
     page

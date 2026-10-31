@@ -9,7 +9,7 @@ test('install, guidance and offline bars reserve space above the complete app he
   await page.getByLabel('Username', { exact: true }).fill('polish-owner');
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   const assertHeaderFits = async () => {
     await page.evaluate(() => window.scrollTo(0, 0));
     const boxes = await page.evaluate(() => {

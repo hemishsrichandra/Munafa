@@ -28,7 +28,9 @@ export async function api(path, options = {}) {
       signal: controller.signal,
       credentials: 'include',
       headers: {
-        ...(body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+        ...(body instanceof FormData
+          ? {}
+          : { 'Content-Type': body instanceof Blob ? body.type : 'application/json' }),
         ...(method === 'GET'
           ? {}
           : { 'X-CSRF-Token': decodeURIComponent(csrf), 'Idempotency-Key': crypto.randomUUID() }),
@@ -37,7 +39,7 @@ export async function api(path, options = {}) {
         ...rest.headers,
       },
       ...(body !== undefined
-        ? { body: body instanceof FormData ? body : JSON.stringify(body) }
+        ? { body: body instanceof FormData || body instanceof Blob ? body : JSON.stringify(body) }
         : {}),
     });
     let result;

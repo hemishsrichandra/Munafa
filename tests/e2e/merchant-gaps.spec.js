@@ -9,7 +9,7 @@ test('source-backed overdue, payment chips and expiry radar are accessible on a 
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
   await page.getByRole('button', { name: 'Try a demo', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   const me = await (await page.request.get('/api/auth/me')).json();
   const brief = await (await page.request.get('/api/brief')).json();
   const date = brief.business_date;
@@ -136,7 +136,7 @@ test('source-backed overdue, payment chips and expiry radar are accessible on a 
   await expect(page.getByRole('button', { name: /Open original GAP-DUE/ })).toContainText(
     '7 days late',
   );
-  await page.getByRole('button', { name: 'Received Payment (+) · पैसा मिला', exact: true }).click();
+  await page.getByRole('button', { name: 'Received payment (+)', exact: true }).click();
   await page.getByRole('button', { name: 'Full balance: ₹650.05', exact: true }).click();
   await expect(page.getByLabel('Recorded amount (₹)', { exact: true })).toHaveValue('650.05');
   await expect(page.getByRole('checkbox', { name: /I checked this entry/ })).not.toBeChecked();

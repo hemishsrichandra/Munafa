@@ -4,12 +4,10 @@ async function login(page, name) {
   await page.getByLabel('Username', { exact: true }).fill(name);
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: 'Daily records', exact: true }).click();
-  await expect(
-    page.getByRole('heading', { name: 'Money to Collect · उधार लेना है', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Money to collect', exact: true })).toBeVisible();
 }
 async function record(page, kind, ref, amount, customer = false) {
   await page.getByRole('button', { name: 'Sales & spending', exact: true }).click();
@@ -48,7 +46,7 @@ test('manual customer, allocation, cash, tasks and consented marketing work with
   await record(page, 'credit_sale', 'SALE-1', '10.01', true);
   await page.getByRole('button', { name: 'Save checked entry', exact: true }).click();
   await expect(page.getByText(/Reviewed record saved/)).toBeVisible();
-  await page.getByRole('button', { name: 'Customer Khata · ग्राहक उधार', exact: true }).click();
+  await page.getByRole('button', { name: 'Customers', exact: true }).click();
   await expect(page.getByText('₹10.01 pending', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Prepare payment reminder', exact: true }).click();
   await expect(page.getByText(/INR 10.01 pending/)).toBeVisible();
@@ -63,12 +61,12 @@ test('manual customer, allocation, cash, tasks and consented marketing work with
     .click();
   await page.getByRole('button', { name: 'Save checked entry', exact: true }).click();
   await expect(page.getByText(/Reviewed record saved/)).toBeVisible();
-  await page.getByRole('button', { name: 'Customer Khata · ग्राहक उधार', exact: true }).click();
+  await page.getByRole('button', { name: 'Customers', exact: true }).click();
   await expect(page.getByText('₹8 pending', { exact: true })).toBeVisible();
   await record(page, 'opening_cash', 'OPEN-1', '100.00');
   await page.getByRole('button', { name: 'Save checked entry', exact: true }).click();
   await expect(page.getByText(/Reviewed record saved/)).toBeVisible();
-  await page.getByRole('button', { name: 'Galla Hisab · गल्ला हिसाब', exact: true }).click();
+  await page.getByRole('button', { name: 'Galla Hisab', exact: true }).click();
   await expect(page.getByRole('paragraph').filter({ hasText: 'Recorded cash:' })).toHaveText(
     'Recorded cash: ₹102.01',
   );
@@ -81,7 +79,7 @@ test('manual customer, allocation, cash, tasks and consented marketing work with
     .click();
   await page.getByRole('button', { name: 'Save checked entry', exact: true }).click();
   await expect(page.getByText(/Reviewed record saved/)).toBeVisible();
-  await page.getByRole('button', { name: 'Galla Hisab · गल्ला हिसाब', exact: true }).click();
+  await page.getByRole('button', { name: 'Galla Hisab', exact: true }).click();
   await expect(page.getByRole('paragraph').filter({ hasText: 'Recorded cash:' })).toHaveText(
     'Recorded cash: ₹102.01',
   );
@@ -118,7 +116,7 @@ test('manual customer, allocation, cash, tasks and consented marketing work with
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Today · आज', exact: true }).click();
+  await page.getByRole('button', { name: 'Today', exact: true }).click();
   const snapshot = page.getByRole('region', { name: 'Recorded business snapshot' });
   await expect(snapshot.getByText('₹10.01', { exact: true })).toBeVisible();
   await expect(snapshot.getByText('₹8', { exact: true })).toBeVisible();
@@ -133,9 +131,7 @@ test('manual customer, allocation, cash, tasks and consented marketing work with
   }
   await snapshot.screenshot({ path: 'artifacts/test-evidence/home-business-snapshot.png' });
   await snapshot.getByRole('button', { name: 'Open daily records' }).click();
-  await expect(
-    page.getByRole('heading', { name: 'Money to Collect · उधार लेना है', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Money to collect', exact: true })).toBeVisible();
 });
 
 test('home snapshot retains unknown cash and recovers from unavailable records', async ({
@@ -151,7 +147,7 @@ test('home snapshot retains unknown cash and recovers from unavailable records',
       body: JSON.stringify({ detail: 'Records temporarily unavailable' }),
     }),
   );
-  await page.getByRole('button', { name: 'Today · आज', exact: true }).click();
+  await page.getByRole('button', { name: 'Today', exact: true }).click();
   const snapshot = page.getByRole('region', { name: 'Recorded business snapshot' });
   await expect(
     snapshot.getByText('Records temporarily unavailable', { exact: true }),
@@ -178,7 +174,7 @@ test('manual cash draft survives offline reload and reaches ledger once after qu
   await page.getByRole('button', { name: 'Save record on device', exact: true }).click();
   await expect(page.getByText(/Saved on this device. Review and queue/)).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Drafts & sync', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Offline drafts', exact: true })).toBeVisible();
   await expect(page.getByText('business_entry: OFF-MANUAL', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Queue for sync', exact: true }).click();
   await context.setOffline(false);

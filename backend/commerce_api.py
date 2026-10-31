@@ -2,7 +2,7 @@
 
 from datetime import timedelta, date
 from decimal import Decimal, ROUND_HALF_UP
-from fastapi import APIRouter, Request, UploadFile, File, HTTPException
+from fastapi import APIRouter, Request, UploadFile, File, Form, HTTPException
 from fastapi.responses import Response
 from pydantic import Field
 from sqlalchemy import select
@@ -31,6 +31,7 @@ class ProductEdit(StrictModel):
 
 class TextSource(StrictModel):
     text: str = Field(min_length=1, max_length=18000)
+    manual_draft: PurchaseDraft | None = None
 
 
 class Proposal(StrictModel):
@@ -444,7 +445,11 @@ def edit_purchase(pid: str, body: DraftEdit):
 def from_text(body: TextSource):
     from .providers import SarvamDocument
 
-    draft, prov = SarvamDocument().extract(text=body.text)
+    if body.manual_draft is not None:
+        draft = body.manual_draft.model_dump(mode="json")
+        prov = {"provider": None, "source": "merchant_manual_text", "review_required": True}
+    else:
+        draft, prov = SarvamDocument().extract(text=body.text)
     with store.connect("write") as db:
         return purchasing.create(
             db, draft, "text", ("pasted-invoice.txt", "text/plain", body.text.encode()), prov
@@ -452,14 +457,27 @@ def from_text(body: TextSource):
 
 
 @router.post("/purchases/document", status_code=201)
-async def from_document(file: UploadFile = File(...)):
+async def from_document(
+    file: UploadFile = File(...), manual_draft: str | None = Form(None, max_length=64000)
+):
     from .app import read_file
     from starlette.concurrency import run_in_threadpool
 
     data, mime = await read_file(file, proof=True)
     from .providers import SarvamDocument
 
-    draft, prov = await run_in_threadpool(SarvamDocument().extract, data=data, mime=mime)
+    if manual_draft is not None:
+        from pydantic import ValidationError
+
+        try:
+            draft = PurchaseDraft.model_validate_json(manual_draft).model_dump(mode="json")
+        except ValidationError:
+            raise HTTPException(
+                422, "Manual bill fields are invalid. Review the draft; nothing was saved."
+            ) from None
+        prov = {"provider": None, "source": "merchant_manual_document", "review_required": True}
+    else:
+        draft, prov = await run_in_threadpool(SarvamDocument().extract, data=data, mime=mime)
     with store.connect("write") as db:
         return purchasing.create(
             db, draft, "document", (file.filename or "invoice", mime, data), prov
@@ -538,6 +556,7 @@ class ExpectedDocument(StrictModel):
 
 class OfflinePurchase(StrictModel):
     draft: PurchaseDraft
+    source_text: str | None = Field(default=None, min_length=1, max_length=18000)
     document: ExpectedDocument | None = None
 
 
@@ -566,6 +585,9 @@ def apply_sync(db, body):
             db,
             payload.draft.model_dump(mode="json"),
             "offline_manual",
+            document=("pasted-invoice.txt", "text/plain", payload.source_text.encode())
+            if payload.source_text
+            else None,
             provenance={
                 "source": "offline_manual",
                 "expected_document": payload.document.model_dump() if payload.document else None,

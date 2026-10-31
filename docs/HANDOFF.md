@@ -1,5 +1,7 @@
 # Latest — header, CI date repair and project assessment
 
+Latest continuation: [language, offline drafts and bill robustness](LANGUAGE-AND-BILL-ROBUSTNESS.md). English/Hindi-preview controls, guarded editing and preserved manual sources supersede older bilingual-label descriptions.
+
 Header fix **09d013d** is live on Render. The review now incorporates concurrent manual-record changes through **db165c5** (migration head **19b0c9cc7712**), rather than the older header-only snapshot. [CI-DATE-FIX.md](CI-DATE-FIX.md) fixes the supplied GitHub promise-date failures using authenticated store dates and explicit UTC/India-midnight regression clocks; production rules and tenant assertions are unchanged. Full UTC backend run: **302 passed**; frontend/offline: **19 passed**; complete browser suite: **29 passed**. Final browser evidence is in [PROJECT-REVIEW-2026-10-31.md](PROJECT-REVIEW-2026-10-31.md). Assessment: **7.5/10 hackathon prototype, 4.5/10 broad production readiness**, reflecting the new manual dues/expense/task/draft-marketing workflows. Next priorities: guided seeded-demo next step, record-backed dues/tasks in the brief, account/backup/retention controls, representative OCR and real-device/pilot evidence. No suggested feature was built in the review. Unrelated local starter deletions remain untouched.
 
 # Latest handoff — public signup and isolated demo
@@ -160,3 +162,7 @@ Work stopped on request. Start at the top of [IMPROVEMENTS-HANDOFF.md](IMPROVEME
 ## Merchant frontend gap integration — 31 October 2026
 
 See [FRONTEND-CONNECTIONS.md](FRONTEND-CONNECTIONS.md). Overdue badges/history/payment chips, expiry cards/Today route, reviewed WhatsApp handoffs, supplier language buttons and progressive bill fields are connected to actual backend contracts. Existing uncommitted backend work was preserved and validated with the UI; unrelated starter deletions remain excluded. Final evidence: 357 full backend tests plus 10 final affected tests, 36 browser journeys, 20 offline unit tests; build/accessibility/format checks passed. No paid provider calls or production records created. Backup/provider/device/pilot external gates remain as documented.
+
+## Device drafts / language / bill safety continuation
+
+See [LANGUAGE-AND-BILL-ROBUSTNESS.md](LANGUAGE-AND-BILL-ROBUSTNESS.md). Saved on Phone is renamed Offline drafts, with truthful local/queued status and navigation recovery. A persisted English/Hindi-preview picker replaces mixed labels. New bill guards unsaved work and active requests; manual photo/text capture preserves originals without AI and supports exact retry replay. No migration/new dependency/provider spend. Preserve unrelated starter deletions; physical Android/full Hindi review and prior external gates remain unverified. Final test/push results are recorded in that report.

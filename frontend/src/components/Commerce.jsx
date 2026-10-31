@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../language';
+import { Modal } from './ui';
 import { ExpiryRadar } from './ExpiryRadar';
 import { hasMissingItems } from '../merchant-display.mjs';
 import { Plus, FileText, Package, CalendarClock, ChevronRight } from 'lucide-react';
@@ -138,9 +140,10 @@ export function CommerceDraftFields({ kind, payload, change }) {
   );
 }
 function Field({ label, children }) {
+  const { t } = useLanguage();
   return (
     <label className="field">
-      {label}
+      {t(label)}
       {children}
     </label>
   );
@@ -248,6 +251,12 @@ function ConversionForm({ product, onSave }) {
   );
 }
 export function Commerce({ openCase, initialRoute = '' }) {
+  const { t } = useLanguage();
+  const [leaveIntent, setLeaveIntent] = useState(null);
+  const [openingCase, setOpeningCase] = useState(false);
+  const uploadAttempt = useRef(null);
+  const [deviceSaved, setDeviceSaved] = useState(null);
+  const editorTop = useRef(null);
   const local = useOffline();
   const [tab, setTab] = useState('purchases'),
     [purchases, setPurchases] = useState([]),
@@ -347,6 +356,10 @@ export function Commerce({ openCase, initialRoute = '' }) {
     if (!v) throw new Error('No saved purchase. Connect to refresh it.');
     setSelected(v);
     setDraft(v.status === 'draft' ? v.draft : null);
+    setFile(null);
+    setText('');
+    uploadAttempt.current = null;
+    setDeviceSaved(null);
     setReceiving(null);
     setEditReceipt(null);
   }
@@ -382,43 +395,103 @@ export function Commerce({ openCase, initialRoute = '' }) {
           },
     );
   }
+  const savedOnDevice =
+    deviceSaved?.signature === JSON.stringify(draft) &&
+    deviceSaved?.file === file &&
+    deviceSaved?.text === text;
+  const dirty =
+    !!receiving ||
+    (!savedOnDevice &&
+      (!!file ||
+        !!text.trim() ||
+        (!!draft && JSON.stringify(draft) !== JSON.stringify(selected?.draft || fresh()))));
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('munafa-unsaved-purchase', { detail: { dirty, busy } }));
+    const warn = (event) => {
+      if (dirty) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => {
+      window.removeEventListener('beforeunload', warn);
+      window.dispatchEvent(
+        new CustomEvent('munafa-unsaved-purchase', { detail: { dirty: false } }),
+      );
+    };
+  }, [dirty, busy]);
+  function resetEditor(startNew) {
+    setTab('purchases');
+    setFile(null);
+    setText('');
+    setError('');
+    setNotice('');
+    setSelected(null);
+    setDraft(startNew ? fresh() : null);
+    setDraftId(crypto.randomUUID());
+    setReceiving(null);
+    setEditReceipt(null);
+    setMovements(null);
+    setMovement(null);
+    setSku(null);
+    uploadAttempt.current = null;
+    setLeaveIntent(null);
+    setDeviceSaved(null);
+    setTimeout(() => editorTop.current?.scrollIntoView({ block: 'start', behavior: 'instant' }), 0);
+  }
+  function requestEditor(startNew) {
+    if (busy) return;
+    if (dirty) {
+      setLeaveIntent(startNew ? 'new' : 'list');
+      return;
+    }
+    resetEditor(startNew);
+  }
+  async function saveManualDocument() {
+    const signature = JSON.stringify(draft);
+    if (
+      !uploadAttempt.current ||
+      uploadAttempt.current.file !== file ||
+      uploadAttempt.current.signature !== signature
+    ) {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('manual_draft', signature);
+      // Encode once so retries preserve the multipart boundary and request digest.
+      const request = new Request(location.href, { method: 'POST', body: form });
+      const contentType = request.headers.get('content-type');
+      const body = await request.blob();
+      uploadAttempt.current = { body, contentType, signature, file, key: crypto.randomUUID() };
+    }
+    const a = uploadAttempt.current;
+    return api('/purchases/document', {
+      method: 'POST',
+      body: a.body,
+      headers: { 'Idempotency-Key': a.key, 'Content-Type': a.contentType },
+    });
+  }
+  const tabLabel = (key) => t({ purchases: 'Bills', stock: 'Stock', expiry: 'Expiry radar' }[key]);
   const actionsDisabled = busy || !navigator.onLine;
   return (
     <section className="commerce-workspace">
       <div className="page-heading">
         <div>
           <span className="eyebrow">YOUR SUPPLY DESK</span>
-          <h1>
-            Deliveries &amp; Stock <small>सामान और स्टॉक</small>
-          </h1>
+          <h1>{t('Deliveries & Stock')}</h1>
           <p>Review the bill first. Count the physical delivery separately.</p>
         </div>
-        <button
-          className="button primary"
-          onClick={() => {
-            setTab('purchases');
-            setFile(null);
-            setText('');
-            setError('');
-            setNotice('');
-            setSelected(null);
-            setDraft(fresh());
-            setDraftId(crypto.randomUUID());
-            setReceiving(null);
-          }}
-        >
-          <Plus size={17} aria-hidden="true" /> Add New Bill · बिल जोड़ें
+        <button className="button primary" disabled={busy} onClick={() => requestEditor(true)}>
+          <Plus size={17} aria-hidden="true" /> {t('Add new bill')}
         </button>
       </div>
       <ol className="delivery-steps" aria-label="Two steps for every delivery">
         <li>
-          <strong>1 · What the bill says</strong>
-          <span>बिल में क्या लिखा है</span>
+          <strong>1 · {t('What the bill says')}</strong>
           <small>Check items, prices and quantities. Saving a bill does not add stock.</small>
         </li>
         <li>
-          <strong>2 · Count Delivered Items</strong>
-          <span>सामान की गिनती</span>
+          <strong>2 · {t('Count delivered items')}</strong>
           <small>Count what arrived. Only confirmed usable items go into stock.</small>
         </li>
       </ol>
@@ -455,7 +528,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
             aria-pressed={tab === t}
             onClick={() => setTab(t)}
           >
-            {t}
+            {tabLabel(t)}
           </button>
         ))}
       </div>
@@ -470,7 +543,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
           <>
             {!draft && !selected && (
               <div className="panel">
-                <h2>Saved bills</h2>
+                <h2>{t('Saved bills')}</h2>
                 {!purchases.length && (
                   <p className="commerce-empty">No purchases yet. Add a bill to begin.</p>
                 )}
@@ -497,7 +570,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
                         {p.status === 'accepted' ? 'Confirmed' : 'Draft'}
                       </span>
                       {hasMissingItems(p) && (
-                        <span className="badge partial">Missing items · सामान कम आया</span>
+                        <span className="badge partial">{t('Missing items')}</span>
                       )}
                     </span>
                     <ChevronRight size={17} aria-hidden="true" />
@@ -506,15 +579,8 @@ export function Commerce({ openCase, initialRoute = '' }) {
               </div>
             )}
             {(draft || selected) && (
-              <button
-                className="text-button"
-                onClick={() => {
-                  setSelected(null);
-                  setDraft(null);
-                  setReceiving(null);
-                }}
-              >
-                Back to saved bills
+              <button className="text-button" onClick={() => requestEditor(false)}>
+                {t('Back to saved bills')}
               </button>
             )}
             {draft && (
@@ -528,13 +594,27 @@ export function Commerce({ openCase, initialRoute = '' }) {
                           method: 'PATCH',
                           body: { version: selected.version, draft },
                         })
-                      : await api('/purchases/manual', { method: 'POST', body: draft });
+                      : file
+                        ? await saveManualDocument()
+                        : text.trim()
+                          ? await api('/purchases/extract-text', {
+                              method: 'POST',
+                              body: { text, manual_draft: draft },
+                              headers: { 'Idempotency-Key': draftId },
+                            })
+                          : await api('/purchases/manual', {
+                              method: 'POST',
+                              body: draft,
+                              headers: { 'Idempotency-Key': draftId },
+                            });
                     await refreshPurchase(p.id);
                     setNotice('Draft saved. Review validation before acceptance.');
                   });
                 }}
               >
-                <h2>Review invoice</h2>
+                <h2 ref={editorTop} tabIndex={-1}>
+                  {t('Review invoice')}
+                </h2>
                 <p>
                   Every proposed field needs merchant review. Received quantities are entered later.
                 </p>
@@ -563,7 +643,11 @@ export function Commerce({ openCase, initialRoute = '' }) {
                       Read document
                     </button>
                     <Field label="Paste bill text">
-                      <textarea value={text} onChange={(e) => setText(e.target.value)} />
+                      <textarea
+                        maxLength={18000}
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                      />
                     </Field>
                     <button
                       type="button"
@@ -703,7 +787,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
                   </div>
                 </details>
                 <button className="button primary" disabled={actionsDisabled}>
-                  Save invoice draft
+                  {t('Save invoice draft')}
                 </button>
                 {!selected && (
                   <button
@@ -713,15 +797,22 @@ export function Commerce({ openCase, initialRoute = '' }) {
                       run(async () => {
                         await db.saveDraft(
                           local.scope,
-                          { id: draftId, kind: 'purchase', payload: { draft } },
+                          {
+                            id: draftId,
+                            kind: 'purchase',
+                            payload: { draft, ...(text.trim() ? { source_text: text } : {}) },
+                          },
                           file,
                         );
                         await local.refresh();
-                        setNotice('Saved on this device. Queue from Drafts & sync.');
+                        setDeviceSaved({ signature: JSON.stringify(draft), file, text });
+                        setNotice(
+                          'Saved on this device. Open Offline drafts to review and queue it.',
+                        );
                       })
                     }
                   >
-                    Save purchase on device
+                    {t('Save purchase on device')}
                   </button>
                 )}
               </form>
@@ -757,11 +848,18 @@ export function Commerce({ openCase, initialRoute = '' }) {
                 ))}
                 {selected.checks.issues.map((s, i) => (
                   <p key={i} role="note">
-                    {s}
+                    {s.replace('reviewed SKU mapping', 'reviewed stock item')}
                   </p>
                 ))}
                 {selected.checks.warnings.map((s, i) => (
-                  <p key={i}>{s}</p>
+                  <p key={i}>
+                    {s
+                      .replace(
+                        'extraction confidence not supplied; merchant review required',
+                        'check this item against the original bill',
+                      )
+                      .replace('reviewed SKU mapping', 'reviewed stock item')}
+                  </p>
                 ))}
                 {selected.status === 'draft' && (
                   <button
@@ -796,7 +894,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
                     ))}
                     {!selected.delivery_complete && (
                       <button className="button primary" onClick={() => startReceiving()}>
-                        Count Delivered Items · सामान की गिनती
+                        {t('Count delivered items')}
                       </button>
                     )}
                     {selected.receiving_drafts.map((r) => (
@@ -819,11 +917,20 @@ export function Commerce({ openCase, initialRoute = '' }) {
                     ))}
                     <button
                       className="button secondary"
-                      onClick={() =>
-                        run(async () => openCase(await api(`/cases/${selected.case_id}`)))
-                      }
+                      disabled={busy || openingCase}
+                      onClick={async () => {
+                        setOpeningCase(true);
+                        setError('');
+                        try {
+                          openCase(await api(`/cases/${selected.case_id}`));
+                        } catch (e) {
+                          setError(e.message);
+                        } finally {
+                          setOpeningCase(false);
+                        }
+                      }}
                     >
-                      Open supplier recovery case
+                      {openingCase ? 'Opening recovery case…' : 'Open supplier recovery case'}
                     </button>
                   </>
                 )}
@@ -852,7 +959,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
                   });
                 }}
               >
-                <h2>Count Delivered Items · सामान की गिनती</h2>
+                <h2>{t('Count delivered items')}</h2>
                 <p className="workflow-step">
                   Step 2 · Count what actually arrived. The bill does not confirm delivery.
                 </p>
@@ -1142,11 +1249,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
                 </div>
                 <p className="commerce-stock-balance">
                   {p.stock_quantity} {p.unit} · Saved stock count{' '}
-                  {p.below_threshold ? (
-                    <span className="badge review">Low Stock Alert · सामान कम है</span>
-                  ) : (
-                    ''
-                  )}
+                  {p.below_threshold ? <span className="badge review">{t('Low stock')}</span> : ''}
                 </p>
                 <button
                   onClick={() =>
@@ -1349,6 +1452,31 @@ export function Commerce({ openCase, initialRoute = '' }) {
             </p>
           ))}
       </fieldset>
+      {leaveIntent && (
+        <Modal
+          title="Keep your current work?"
+          subtitle="These edits have not been saved. Starting another bill or leaving this editor will discard them."
+          close={() => setLeaveIntent(null)}
+        >
+          <div className="modal-body">
+            <button className="button primary full" onClick={() => setLeaveIntent(null)}>
+              {t('Continue current bill')}
+            </button>
+            <button
+              className="button secondary full"
+              onClick={() => resetEditor(leaveIntent === 'new')}
+            >
+              {leaveIntent === 'new'
+                ? t('Discard and start new bill')
+                : 'Discard edits and view saved bills'}
+            </button>
+            <p>
+              To keep a copy first, continue editing and choose Save purchase on device or Save
+              invoice draft.
+            </p>
+          </div>
+        </Modal>
+      )}
     </section>
   );
 }

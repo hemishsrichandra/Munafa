@@ -23,6 +23,7 @@ import {
   LoaderCircle,
   CircleCheck,
 } from 'lucide-react';
+import { LanguageProvider, LanguagePicker, useLanguage } from './language';
 import { api, money, today } from './api';
 import { useSession } from './session';
 import { useOffline } from './offline/provider';
@@ -52,7 +53,8 @@ const navs = [
   { id: 'more', label: 'More', Icon: CircleHelp },
 ];
 
-function App() {
+function MerchantApp() {
+  const { locale, t, error: languageError } = useLanguage();
   const session = useSession();
   const storeInitials =
     session.store.name
@@ -63,24 +65,47 @@ function App() {
       .join('')
       .toUpperCase() || 'M';
   const local = useOffline();
+  const purchaseDirty = useRef(false);
+  const purchaseBusy = useRef(false);
+  const deviceDirty = useRef(false);
+  useEffect(() => {
+    const update = (e) => {
+      purchaseDirty.current = !!e.detail?.dirty;
+      purchaseBusy.current = !!e.detail?.busy;
+    };
+    const device = (e) => {
+      deviceDirty.current = !!e.detail?.dirty;
+    };
+    window.addEventListener('munafa-unsaved-purchase', update);
+    window.addEventListener('munafa-unsaved-device-draft', device);
+    return () => {
+      window.removeEventListener('munafa-unsaved-purchase', update);
+      window.removeEventListener('munafa-unsaved-device-draft', device);
+    };
+  }, []);
+  const canLeavePurchase = () => {
+    if (purchaseBusy.current) {
+      setToast('Saving this bill. Please wait for confirmation.');
+      return false;
+    }
+    return (
+      (!purchaseDirty.current && !deviceDirty.current) ||
+      window.confirm(
+        'There are unsaved bill or device-draft edits. Leave without saving them? Choose Cancel to keep editing and save first.',
+      )
+    );
+  };
+  const showDeviceWorkspace = () => {
+    if (canLeavePurchase()) setDeviceWorkspace(true);
+  };
   const [deviceWorkspace, setDeviceWorkspace] = useState(false);
   const openIntake = () => (navigator.onLine ? setAdding(true) : setDeviceWorkspace(true));
-  const [locale, setLocale] = useState('en');
   const shellLabels = {
-    en: {
-      home: 'Today · आज',
-      purchases: 'Deliveries & Stock',
-      records: 'Customer Khata',
-      more: 'More · अन्य',
-    },
-    hi: { home: 'आज', purchases: 'सामान और स्टॉक', records: 'ग्राहक उधार', more: 'अन्य' },
-    kn: {
-      home: 'ಇಂದು',
-      purchases: 'ಸರಕು ಮತ್ತು ದಾಸ್ತಾನು',
-      records: 'ಗ್ರಾಹಕರ ಖಾತೆ',
-      more: 'ಇನ್ನಷ್ಟು',
-    },
-  }[locale];
+    home: t('Today'),
+    purchases: t('Deliveries & Stock'),
+    records: t('Customer Khata'),
+    more: t('More'),
+  };
   const [sourceRoute, setSourceRoute] = useState('');
   const [view, setView] = useState('overview'),
     [cases, setCases] = useState([]),
@@ -132,7 +157,10 @@ function App() {
     setSelected(c);
     window.scrollTo(0, 0);
   };
-  const navigate = (v) => {
+  const navigate = (v, preserveRoute = false) => {
+    if (!preserveRoute && v !== view && !canLeavePurchase()) return;
+    if (!preserveRoute) setSourceRoute('');
+    setDeviceWorkspace(false);
     setView(v);
     setSelected(null);
     setQuery('');
@@ -140,18 +168,19 @@ function App() {
     window.scrollTo(0, 0);
   };
   async function followSource(route) {
+    if (!canLeavePurchase()) return;
     setSourceRoute(route);
     if (route.startsWith('/cases/')) {
       try {
         const c = await api(route);
-        navigate('cases');
+        navigate('cases', true);
         open(c);
       } catch (e) {
         setError(e.message);
       }
-    } else if (route.startsWith('/payments/')) navigate('payments');
-    else if (route.startsWith('/stock/')) navigate('purchases');
-    else if (route.startsWith('/records/')) navigate('records');
+    } else if (route.startsWith('/payments/')) navigate('payments', true);
+    else if (route.startsWith('/stock/')) navigate('purchases', true);
+    else if (route.startsWith('/records/')) navigate('records', true);
   }
   const onUpdate = (c) => {
     setSelected(c);
@@ -228,7 +257,7 @@ function App() {
           {navs.map(({ id, label, Icon }) => (
             <button key={id} className={view === id ? 'active' : ''} onClick={() => navigate(id)}>
               {icon(Icon)}
-              <span>{label}</span>
+              <span>{t(label)}</span>
               {id === 'cases' && <em>{pending.length}</em>}
             </button>
           ))}
@@ -260,11 +289,17 @@ function App() {
       <div className="main-shell">
         <header className="topbar">
           <div className="breadcrumb">
-            Workspace <ChevronRight size={14} />
+            <span className="breadcrumb-root">Workspace</span> <ChevronRight size={14} />
             <strong>
               {selected
                 ? 'Missing Items & Refunds'
-                : navs.find((n) => n.id === view)?.label ||
+                : {
+                    overview: shellLabels.home,
+                    purchases: shellLabels.purchases,
+                    records: shellLabels.records,
+                    more: shellLabels.more,
+                  }[view] ||
+                  t(navs.find((n) => n.id === view)?.label) ||
                   {
                     assistant: 'Merchant help',
                     payments: 'Check Paytm payments',
@@ -283,6 +318,7 @@ function App() {
             )}
           </div>
           <div className="top-actions">
+            <LanguagePicker />
             {session.store.demo && <span className="demo-tag">Demo store</span>}
             <button
               className="icon-button notifications"
@@ -300,17 +336,22 @@ function App() {
         </header>
         <main>
           <div className="device-sync-summary">
-            <button className="button secondary" onClick={() => setDeviceWorkspace(true)}>
-              Saved on Phone
+            <button className="button secondary" onClick={showDeviceWorkspace}>
+              {t('Offline drafts')}
             </button>
-            <span>
-              {local.operations.filter((o) => o.state !== 'synced').length > 0
-                ? `${local.operations.filter((o) => o.state !== 'synced').length} waiting to sync or review`
-                : 'All changes saved'}
+            <span role="status">
+              {!local.ready
+                ? 'Checking device drafts…'
+                : local.error
+                  ? 'Device storage needs attention'
+                  : local.drafts.filter((d) => d.state !== 'synced').length
+                    ? `${local.drafts.filter((d) => d.state !== 'synced').length} device drafts · ${local.operations.filter((o) => o.state !== 'synced').length} queued or needing review`
+                    : t('No offline drafts')}
               {local.status?.last_synced_at
                 ? ` · Last synced ${new Date(local.status.last_synced_at).toLocaleTimeString('en-IN')}`
                 : ''}
             </span>
+            <small>Only entries explicitly saved on this device appear here.</small>
           </div>
           {deviceWorkspace ? (
             <OfflineWorkspace
@@ -378,8 +419,8 @@ function App() {
                       <h1>
                         {
                           {
-                            overview: 'Today · आज',
-                            more: 'Your shop · आपकी दुकान',
+                            overview: t('Today'),
+                            more: t('Your shop'),
                             cases: 'Missing Items & Refunds',
                             suppliers: 'Suppliers',
                             insights: 'Money returned',
@@ -409,7 +450,7 @@ function App() {
                       }
                     >
                       {icon(Plus)}{' '}
-                      {sampleToContinue ? 'Continue sample invoice' : 'Add New Bill · बिल जोड़ें'}
+                      {sampleToContinue ? 'Continue sample invoice' : t('Add new bill')}
                     </button>
                   </div>
                   {view === 'overview' && (
@@ -423,20 +464,20 @@ function App() {
                           onClick={openIntake}
                           disabled={!session.permissions.includes('write')}
                         >
-                          + New Bill <small>सामान आया</small>
+                          + {t('New bill')}
                         </button>
                         <button
                           className="button secondary"
                           onClick={() => followSource('/records/new-credit')}
                           disabled={!session.permissions.includes('write')}
                         >
-                          + Customer Udhaar <small>उधार दिया</small>
+                          + {t('Customer credit')}
                         </button>
                         <button
                           className="button secondary"
                           onClick={() => followSource('/records/galla')}
                         >
-                          Settle Galla <small>गल्ला मिलाओ</small>
+                          {t('Count cash')}
                         </button>
                       </section>
                       <BusinessBrief follow={followSource} />
@@ -556,80 +597,63 @@ function App() {
               )}
               {view === 'more' && (
                 <section className="panel more-panel">
-                  <h2>Supplier money · सप्लायर का हिसाब</h2>
+                  <h2>{t('Supplier money')}</h2>
                   <button className="button secondary full" onClick={() => navigate('cases')}>
-                    Missing Items &amp; Refunds · कम सामान का पैसा
+                    {t('Missing Items & Refunds')}
                   </button>
                   <button className="button secondary full" onClick={() => navigate('suppliers')}>
-                    Supplier details · सप्लायर
+                    {t('Supplier details')}
                   </button>
                   <button className="button secondary full" onClick={() => navigate('insights')}>
-                    Money returned · वापस मिला पैसा
+                    {t('Money returned')}
                   </button>
-                  <h2>Cash &amp; payments · गल्ला और पेमेंट</h2>
+                  <h2>{t('Cash & payments')}</h2>
                   <button
                     className="button secondary full"
                     onClick={() => followSource('/records/galla')}
                   >
-                    Galla Hisab (गल्ला हिसाब) / Cash Drawer
+                    {t('Cash drawer')}
                   </button>
                   <button className="button secondary full" onClick={() => navigate('records')}>
-                    Daily records
+                    {t('Daily records')}
                   </button>
-                  <h2>Manage your business</h2>
+                  <h2>{t('Manage your business')}</h2>
                   <button className="button secondary full" onClick={() => navigate('exports')}>
-                    Export purchases
+                    {t('Export purchases')}
                   </button>
                   <button className="button secondary full" onClick={() => navigate('connections')}>
-                    Connections
+                    {t('Connections')}
                   </button>
                   <button className="button secondary full" onClick={() => navigate('planning')}>
-                    Stock planning
+                    {t('Stock planning')}
                   </button>
                   <button className="button secondary full" onClick={() => navigate('assistant')}>
-                    Merchant help & language
+                    {t('Merchant help & language')}
                   </button>
                   <button className="button secondary full" onClick={() => navigate('payments')}>
-                    Check Paytm payments
-                  </button>
-                  <button className="button secondary full" onClick={() => navigate('cases')}>
-                    Missing Items & Refunds
-                  </button>
-                  <button className="button secondary full" onClick={() => navigate('suppliers')}>
-                    Supplier balances <ChevronRight size={18} />
-                  </button>
-                  <button className="button secondary full" onClick={() => navigate('insights')}>
-                    Money returned and export <ChevronRight size={18} />
+                    {t('Check Paytm payments')}
                   </button>
                   <button className="button secondary full" onClick={() => setHelp(true)}>
-                    Workflow guide <ChevronRight size={18} />
+                    {t('Workflow guide')} <ChevronRight size={18} />
                   </button>
-                  <label className="field">
-                    Interface language
-                    <select value={locale} onChange={(e) => setLocale(e.target.value)}>
-                      <option value="en">English</option>
-                      <option value="hi">हिन्दी · navigation only</option>
-                      <option value="kn">ಕನ್ನಡ · navigation only</option>
-                    </select>
-                  </label>
-                  {locale !== 'en' && (
+                  {locale === 'hi' && (
                     <p className="locale-note">
-                      Only navigation labels change. Bills and other workflows remain in English.
+                      Hindi controls are a preview. Some detailed instructions remain in English.
                     </p>
+                  )}
+                  {languageError && (
+                    <p role="status">{t(languageError)} This choice applies for this visit.</p>
                   )}
                   <p>
                     Role: {session.role}.{' '}
                     {session.store.demo ? 'Sample records only.' : 'Your store account.'}
                   </p>
-                  <button
-                    className="button secondary full"
-                    onClick={() => setDeviceWorkspace(true)}
-                  >
-                    Saved on Phone
+                  <button className="button secondary full" onClick={showDeviceWorkspace}>
+                    {t('Offline drafts')}
                   </button>
                   <AccountSecurity />
                   <button className="button secondary full" onClick={session.logout}>
-                    Sign out
+                    {t('Sign out')}
                   </button>
                 </section>
               )}
@@ -679,7 +703,7 @@ function App() {
             }}
           >
             <Icon size={21} />
-            <span>{label}</span>
+            <span>{t(label)}</span>
           </button>
         ))}
       </nav>
@@ -741,4 +765,10 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <LanguageProvider>
+      <MerchantApp />
+    </LanguageProvider>
+  );
+}

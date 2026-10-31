@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Wallet, ReceiptText, Clock3, Store } from 'lucide-react';
 import { api, money } from '../api';
+import { useLanguage } from '../language';
 import { Metric } from './ui';
 
 // Read existing server totals, never the last-100-entry history or provisional drafts.
 export function DailyRecordsSummary({ openRecords }) {
+  const { t } = useLanguage();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
@@ -42,7 +44,7 @@ export function DailyRecordsSummary({ openRecords }) {
   return (
     <section className="panel partner-screen daily-records" aria-label="Recorded business snapshot">
       <div className="brief-heading">
-        <h2>Your shop today · आज का हिसाब</h2>
+        <h2>{t('Your shop today')}</h2>
         <button className="button secondary" onClick={() => openRecords('/records/customers')}>
           Open daily records
         </button>
@@ -69,21 +71,21 @@ export function DailyRecordsSummary({ openRecords }) {
           </p>
           <div className="metrics">
             <Metric
-              label="Today’s recorded sales · आज की बिक्री"
+              label={t('Today’s recorded sales')}
               value={money(summary.today.sales_paise)}
               Icon={ReceiptText}
               foot="Paid sales + sales on credit · View sources"
               onClick={() => openRecords(summary.source_routes.sales)}
             />
             <Metric
-              label="Money to Collect · ग्राहक उधार"
+              label={t('Money to collect')}
               value={money(summary.customer_dues_paise)}
               Icon={Store}
               foot="Customer money still pending · See entries"
               onClick={() => openRecords(summary.source_routes.dues)}
             />
             <Metric
-              label="Cash in Galla · गल्ले में पैसा"
+              label={t('Cash in Galla')}
               value={
                 summary.cash.opening_recorded
                   ? money(summary.cash.recorded_balance_paise)
@@ -94,7 +96,7 @@ export function DailyRecordsSummary({ openRecords }) {
               onClick={() => openRecords('/records/galla')}
             />
             <Metric
-              label="Open tasks"
+              label={t('Open tasks')}
               value={summary.open_tasks}
               Icon={Clock3}
               foot="Tasks visible to your account · View sources"

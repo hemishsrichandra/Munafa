@@ -6,14 +6,14 @@ test.beforeEach(async ({ page, context }) => {
   if (demoCookies) {
     await context.addCookies(demoCookies);
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
     return;
   }
   await page.goto('/');
   await page.getByRole('button', { name: 'Development demo access', exact: true }).click();
   await page.getByLabel('Demo access code').fill('e2e-isolated-demo-access');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   demoCookies = await context.cookies();
 });
 
@@ -21,10 +21,10 @@ test('merchant completes the A-104 workflow and navigates the ledger', async ({ 
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Your next delivery starts here' })).toBeVisible();
   await page.screenshot({ path: 'test-results/overview-desktop.png', fullPage: true });
-  await page.getByRole('button', { name: 'Add New Bill · बिल जोड़ें', exact: true }).click();
+  await page.getByRole('button', { name: 'Add new bill', exact: true }).click();
   await page.getByRole('button', { name: 'Use sample invoice' }).click();
   await expect(page.getByRole('heading', { name: 'Invoice A-104', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Confirm shortage', exact: true })).toBeDisabled();
@@ -98,7 +98,7 @@ test('merchant completes the A-104 workflow and navigates the ledger', async ({ 
   await page.getByLabel('What did the supplier say?').fill('Adjust against next bill.');
   await page.getByRole('button', { name: 'Save promise' }).click();
   await expect(page.getByText('“Adjust against next bill.”')).toBeVisible();
-  await page.getByRole('button', { name: 'Record Money Received · पैसा वापस मिला' }).click();
+  await page.getByRole('button', { name: 'Record money received' }).click();
   await page.getByRole('button', { name: 'Load synthetic next-bill credit' }).click();
   await expect(
     page.getByRole('link', { name: 'Open and inspect attached evidence' }),
@@ -136,12 +136,12 @@ test('mobile overview, case detail and manual intake are usable without overflow
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
   await page.screenshot({ path: 'test-results/overview-mobile.png', fullPage: true });
-  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await merchantNavigate(page, 'Credit cases');
   await page.getByRole('textbox', { name: 'Search cases' }).fill('A-104');
   await page.getByRole('button', { name: 'Open invoice A-104', exact: true }).click();
@@ -151,7 +151,7 @@ test('mobile overview, case detail and manual intake are usable without overflow
   );
   await page.screenshot({ path: 'test-results/case-mobile.png', fullPage: true });
   await page.getByRole('button', { name: 'Back to workspace' }).click();
-  await page.getByRole('button', { name: 'Add New Bill · बिल जोड़ें', exact: true }).click();
+  await page.getByRole('button', { name: 'Add new bill', exact: true }).click();
   await page.getByRole('button', { name: 'Enter manually' }).click();
   await page.getByLabel('Supplier name').fill('Test Wholesale');
   await page.getByLabel('Invoice reference').fill('MANUAL-01');
@@ -208,7 +208,7 @@ test('mobile overview, case detail and manual intake are usable without overflow
   await page.getByLabel('What did the supplier say?').fill('Synthetic credit on the next bill.');
   await page.getByRole('button', { name: 'Save promise' }).click();
   await expect(page.locator('.evidence-total')).toHaveText('₹12.75');
-  await page.getByRole('button', { name: 'Record Money Received · पैसा वापस मिला' }).click();
+  await page.getByRole('button', { name: 'Record money received' }).click();
   await page.getByRole('button', { name: 'Load synthetic next-bill credit' }).click();
   await page.getByRole('checkbox', { name: /I checked this proof/ }).check();
   await page.getByRole('button', { name: 'Confirm money received' }).click();
@@ -246,19 +246,26 @@ for (const viewport of [
       }
     }
     if (mobile) {
-      await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
+      await page.getByRole('button', { name: 'More', exact: true }).click();
       await merchantNavigate(page, 'Credit cases');
       await expect(page.getByRole('heading', { name: 'Missing Items & Refunds' })).toBeVisible();
-      await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
+      await page.getByRole('button', { name: 'More', exact: true }).click();
       await expect(page.getByRole('heading', { name: 'Manage your business' })).toBeVisible();
-      await page.getByLabel('Interface language').selectOption('hi');
+      await page
+        .getByRole('combobox', { name: /Interface language|ऐप की भाषा/ })
+        .selectOption('hi');
       await expect(
-        page.getByText('Only navigation labels change.', { exact: false }),
+        page.getByText(
+          'Hindi controls are a preview. Some detailed instructions remain in English.',
+          { exact: true },
+        ),
       ).toBeVisible();
-      await page.getByLabel('Interface language').selectOption('en');
-      await page.getByRole('button', { name: 'Today · आज', exact: true }).click();
+      await page
+        .getByRole('combobox', { name: /Interface language|ऐप की भाषा/ })
+        .selectOption('en');
+      await page.getByRole('button', { name: 'Today', exact: true }).click();
     }
-    await page.getByRole('button', { name: 'Add New Bill · बिल जोड़ें', exact: true }).click();
+    await page.getByRole('button', { name: 'Add new bill', exact: true }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
     await assertFits();
@@ -301,7 +308,7 @@ test('manifest, worker and offline app shell isolate authenticated data', async 
   expect(keys.some((p) => p === '/index.html')).toBe(true);
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Drafts & sync', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Offline drafts', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'New offline invoice' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Sync now', exact: true })).toBeDisabled();
   await page.screenshot({ path: 'test-results/offline-shell.png', fullPage: true });

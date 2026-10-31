@@ -9,8 +9,8 @@ test('merchant saves one-time codes and recovers without exposing codes in offli
   await page.getByLabel('Username', { exact: true }).fill('polish-owner');
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   const panel = page.getByRole('region', { name: 'Account recovery', exact: true });
   await panel
     .getByLabel('Current password', { exact: true })
@@ -62,7 +62,7 @@ test('merchant saves one-time codes and recovers without exposing codes in offli
     await reset.getByLabel('Username', { exact: true }).fill('polish-owner');
     await reset.getByLabel('Password', { exact: true }).fill(password);
     await reset.getByRole('button', { name: 'Sign in', exact: true }).click();
-    await expect(reset.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
+    await expect(reset.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
     expect((await (await reset.request.get('/api/auth/security')).json()).remaining_codes).toBe(0);
   } finally {
     await other.close();

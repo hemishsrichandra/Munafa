@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Settings2,
 } from 'lucide-react';
+import { useLanguage } from '../language';
 import { api, money, day, today, downloadPrivate } from '../api';
 import { VoiceNote } from './Assistant';
 import { useSession } from '../session';
@@ -24,6 +25,7 @@ import { InvoiceFields } from './InvoiceIntake';
 import { Evidence, ShareModal, PromiseModal, ResolveModal } from './CaseActions';
 
 function CaseDetail({ c, onUpdate, back, config, notify }) {
+  const { t } = useLanguage();
   const session = useSession();
   const [invoice, setInvoice] = useState(c.invoice),
     [complete, setComplete] = useState(c.delivery_complete),
@@ -211,9 +213,7 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
                 <ShieldCheck size={21} className="green-text" />
               </div>
               <details>
-                <summary className="panel-heading">
-                  See bill and counted quantities · गिनती देखें
-                </summary>
+                <summary className="panel-heading">{t('See bill and counted quantities')}</summary>
                 <div className="confirmed-lines">
                   {c.invoice.lines.map((l, i) => (
                     <div key={i}>
@@ -280,7 +280,7 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
                   {c.promise ? 'Update follow-up' : 'Record supplier promise'}
                 </button>
                 <button className="button primary" onClick={() => setDialog('resolve')}>
-                  <ShieldCheck size={16} /> Record Money Received · पैसा वापस मिला
+                  <ShieldCheck size={16} /> {t('Record money received')}
                 </button>
                 <button className="text-button" onClick={() => setDialog('share')}>
                   Supplier message <ArrowUpRight size={14} />

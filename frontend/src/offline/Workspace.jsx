@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../language';
 import { useSession } from '../session';
 import { api, money, today, saveBlob } from '../api';
 import { Commerce, CommerceDraftFields } from '../components/Commerce';
@@ -60,6 +61,7 @@ const receiving = (c) => ({
 });
 const when = (t) => (t ? new Date(t).toLocaleString('en-IN') : 'Not yet');
 export function OfflineWorkspace({ standalone = false, onClose, onServerChange }) {
+  const { t } = useLanguage();
   const session = useSession(),
     local = useOffline();
   const [commerce, setCommerce] = useState(false);
@@ -70,6 +72,16 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
     [notice, setNotice] = useState(''),
     [conflict, setConflict] = useState(null);
   const [preview, setPreview] = useState('');
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('munafa-unsaved-device-draft', { detail: { dirty: !!editor } }),
+    );
+    return () =>
+      window.dispatchEvent(
+        new CustomEvent('munafa-unsaved-device-draft', { detail: { dirty: false } }),
+      );
+  }, [!!editor]);
+
   useEffect(() => {
     if (!file) {
       setPreview('');
@@ -157,8 +169,8 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
     <section className="offline-workspace panel" aria-label="Offline workspace">
       <div className="panel-heading">
         <div>
-          <div className="eyebrow">PRIVATE DEVICE WORKSPACE</div>
-          <h1>Drafts & sync</h1>
+          <div className="eyebrow">YOUR DEVICE DRAFTS</div>
+          <h1>{t('Offline drafts')}</h1>
           <p>
             {local.online && !session.offlineAccess
               ? 'Connected · server acceptance is required'
@@ -166,7 +178,16 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
           </p>
         </div>
         {onClose && (
-          <button className="button secondary" onClick={onClose}>
+          <button
+            className="button secondary"
+            onClick={() => {
+              if (
+                !editor ||
+                window.confirm('This device draft has unsaved edits. Leave without saving them?')
+              )
+                onClose();
+            }}
+          >
             Back to business
           </button>
         )}
@@ -177,9 +198,11 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
         list: {when(local.cache?.saved_at)} (expires after 24 hours).
       </p>
       <p className="info-box">
-        Entries saved on this phone still need checking. No stock, money or supplier message is
-        confirmed or sent here. Cloud OCR, translation, Paytm queries and AI require connectivity;
-        enter the bill manually below.
+        These are drafts saved in this browser on this device, not a phone backup. Clearing browser
+        data or losing the device can remove unsynced drafts. Unsaved forms are not included.
+        Entries saved here still need checking. No stock, money or supplier message is confirmed or
+        sent here. Cloud OCR, translation, Paytm queries and AI require connectivity; enter the bill
+        manually below.
       </p>
       <ErrorBox text={error || local.error || session.offlineUnavailable} />
       {notice && (
@@ -192,6 +215,13 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
           className="button primary"
           disabled={busy || !session.permissions.includes('write')}
           onClick={() => {
+            if (
+              editor &&
+              !window.confirm(
+                'Replace the open editor? Save it first if you need to keep its unsaved changes.',
+              )
+            )
+              return;
             setEditor(fresh());
             setFile(null);
             setError('');
@@ -535,7 +565,7 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
               ? d.payload?.invoice?.reference || 'Untitled invoice'
               : `${d.kind}: ${d.payload?.reference || d.payload?.draft?.reference || d.source?.invoice?.reference || d.entity_id || 'New draft'}`}
           </strong>
-          <span className={`sync-state ${d.state}`}>{stateLabel(d.state)}</span>
+          <span className={`sync-state ${d.state}`}>{t(stateLabel(d.state))}</span>
           <p>
             Saved {when(d.updated_at)}
             {d.updated_at < Date.now() - 30 * 86400000
@@ -617,7 +647,7 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
       {local.operations.map((o) => (
         <article className="offline-list-card" key={o.id}>
           <strong>{o.operation_type.replaceAll('_', ' ')}</strong>
-          <span className={`sync-state ${o.state}`}>{stateLabel(o.state)}</span>
+          <span className={`sync-state ${o.state}`}>{t(stateLabel(o.state))}</span>
           <p>
             {o.error ||
               (o.state === 'synced'

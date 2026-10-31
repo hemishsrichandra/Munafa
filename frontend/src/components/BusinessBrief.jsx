@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { api, money } from '../api';
+import { useLanguage } from '../language';
 import { ExpiryAttention } from './ExpiryRadar';
 import { ReviewedMessage } from './ReviewedMessage';
 import { useSession } from '../session';
 export function BusinessBrief({ follow }) {
+  const { t } = useLanguage();
   const session = useSession();
   const [reminderBusy, setReminderBusy] = useState(false);
   const [data, setData] = useState(null),
@@ -30,7 +32,7 @@ export function BusinessBrief({ follow }) {
   return (
     <section className="panel partner-screen brief-screen" aria-label="Evidence-backed daily brief">
       <header className="brief-heading">
-        <h2>Needs your attention</h2>
+        <h2>{t('Needs your attention')}</h2>
         <small>{data?.payment_label || 'Checking connected data…'}</small>
       </header>
       {error && (
@@ -224,6 +226,7 @@ export function BusinessBrief({ follow }) {
   );
 }
 export function Payments({ initialId = '' }) {
+  const { t } = useLanguage();
   const session = useSession();
   const [data, setData] = useState(null),
     [error, setError] = useState(''),
@@ -255,7 +258,7 @@ export function Payments({ initialId = '' }) {
   }
   return (
     <section className="panel partner-screen">
-      <h1>Check Paytm payments · पेमेंट की जांच</h1>
+      <h1>{t('Check Paytm payments')}</h1>
       <p>
         Review recorded settlements and any differences. Paytm is not connected; bank receipt is not
         verified.

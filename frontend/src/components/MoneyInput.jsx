@@ -1,7 +1,9 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
+import { useLanguage } from '../language';
 import { parseRupeeInput, rupeeInput } from '../api';
 
 export function MoneyInput({ label, value, change, signed = false }) {
+  const { t } = useLanguage();
   const [text, setText] = useState(() => rupeeInput(value));
   const input = useRef(null);
   const hint = useId();
@@ -16,10 +18,10 @@ export function MoneyInput({ label, value, change, signed = false }) {
   }, [invalid]);
   return (
     <label className="field">
-      {label}
+      {t(label)}
       <input
         ref={input}
-        aria-label={label}
+        aria-label={t(label)}
         aria-describedby={invalid ? hint : undefined}
         type="text"
         inputMode="decimal"

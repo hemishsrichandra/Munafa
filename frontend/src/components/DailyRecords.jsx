@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api, money, today } from '../api';
+import { useLanguage } from '../language';
 import { MoneyInput } from './MoneyInput';
 import { useSession } from '../session';
 import { useOffline } from '../offline/provider';
@@ -9,6 +10,7 @@ import * as db from '../offline/db';
 // Galla Hisab (गल्ला हिसाब / Cash Drawer) — Feature 2
 // ---------------------------------------------------------------------------
 function GallaHisabCard() {
+  const { t } = useLanguage();
   const [data, setData] = useState(null);
   const [countedPaise, setCountedPaise] = useState(null);
   const [result, setResult] = useState(null);
@@ -74,7 +76,7 @@ function GallaHisabCard() {
           flexWrap: 'wrap',
         }}
       >
-        <h3 style={{ margin: 0 }}>🌙 "Galla Hisab" — गल्ला हिसाब / Cash Drawer</h3>
+        <h3 style={{ margin: 0 }}>{t('Galla Hisab')}</h3>
         <span className="badge" style={{ fontSize: '0.8rem' }}>
           Closing Register
         </span>
@@ -312,12 +314,12 @@ function StoreSettingsPanel() {
 
 const labels = {
   opening_due: 'Old customer udhaar',
-  credit_sale: 'Gave Credit (−) · उधार दिया',
+  credit_sale: 'Gave credit (−)',
   cash_sale: 'Paid sale',
-  collection: 'Received Payment (+) · पैसा मिला',
+  collection: 'Received payment (+)',
   expense: 'Expense paid',
   opening_cash: 'Opening cash balance',
-  payable: 'Money to Pay · सप्लायर को देना है',
+  payable: 'Money to pay',
   payable_payment: 'Paid a supplier bill',
 };
 const freshEntry = () => ({
@@ -341,9 +343,10 @@ const freshCustomer = () => ({
   consent_note: '',
 });
 function Field({ label, children }) {
+  const { t } = useLanguage();
   return (
     <label className="field">
-      {label}
+      {t(label)}
       {children}
     </label>
   );
@@ -370,6 +373,7 @@ function Check({ children, checked, onChange }) {
 }
 
 export function DailyRecords({ initialRoute = '' }) {
+  const { t } = useLanguage();
   const local = useOffline();
   const session = useSession(),
     canWrite = session.permissions.includes('write'),
@@ -512,7 +516,7 @@ export function DailyRecords({ initialRoute = '' }) {
       <div className="page-heading">
         <div>
           <div className="eyebrow">YOUR MANUAL RECORDS</div>
-          <h1>Customer Khata · ग्राहक उधार</h1>
+          <h1>{t('Customer Khata')}</h1>
           <p>Customers, money and daily tasks — reviewed by you.</p>
         </div>
       </div>
@@ -538,7 +542,7 @@ export function DailyRecords({ initialRoute = '' }) {
               {source.items.map((r) => (
                 <article className="source-list-card" key={r.id}>
                   <strong>
-                    {labels[r.kind] || 'Reversal'} · {money(r.amount_paise)}
+                    {t(labels[r.kind] || 'Reversal')} · {money(r.amount_paise)}
                   </strong>
                   <p>
                     {r.reference} · {r.occurred_on}
@@ -567,8 +571,8 @@ export function DailyRecords({ initialRoute = '' }) {
               <h3>{source.record.reference || source.record.title || source.record.name}</h3>
               {source.record.amount_paise !== undefined && (
                 <p>
-                  {labels[source.record.kind] || 'Reversal'} · {money(source.record.amount_paise)} ·{' '}
-                  {source.record.payment_channel}
+                  {t(labels[source.record.kind] || 'Reversal')} ·{' '}
+                  {money(source.record.amount_paise)} · {source.record.payment_channel}
                 </p>
               )}
               <p>
@@ -643,18 +647,22 @@ export function DailyRecords({ initialRoute = '' }) {
           'Cash outlook',
           'Marketing drafts',
           'Store settings',
-        ].map((t) => (
-          <button key={t} className={tab === t ? 'chosen' : ''} onClick={() => setTab(t)}>
-            {
+        ].map((tabKey) => (
+          <button
+            key={tabKey}
+            className={tab === tabKey ? 'chosen' : ''}
+            onClick={() => setTab(tabKey)}
+          >
+            {t(
               {
-                Customers: 'Customer Khata · ग्राहक उधार',
+                Customers: 'Customers',
                 'Sales & expenses': 'Sales & spending',
                 Tasks: 'Shop tasks',
-                'Cash outlook': 'Galla Hisab · गल्ला हिसाब',
+                'Cash outlook': 'Galla Hisab',
                 'Marketing drafts': 'Offer messages',
                 'Store settings': 'Shop settings',
-              }[t]
-            }
+              }[tabKey],
+            )}
           </button>
         ))}
       </div>
@@ -676,7 +684,7 @@ export function DailyRecords({ initialRoute = '' }) {
         {tab === 'Customers' && (
           <>
             <section className="panel">
-              <h2>Money to Collect · उधार लेना है</h2>
+              <h2>{t('Money to collect')}</h2>
               <p>
                 Balances come only from explicit opening dues, credit sales and allocated customer
                 payments.
@@ -730,7 +738,7 @@ export function DailyRecords({ initialRoute = '' }) {
                     className="text-button"
                     onClick={() => openSource(`/records/customers/${p.id}`)}
                   >
-                    View account history
+                    {t('View account history')}
                   </button>
                   <div
                     style={{
@@ -749,7 +757,7 @@ export function DailyRecords({ initialRoute = '' }) {
                             setTab('Sales & expenses');
                           }}
                         >
-                          Gave Credit (−) · उधार दिया
+                          {t('Gave credit (−)')}
                         </button>
                         <button
                           className="button primary"
@@ -759,7 +767,7 @@ export function DailyRecords({ initialRoute = '' }) {
                             setTab('Sales & expenses');
                           }}
                         >
-                          Received Payment (+) · पैसा मिला
+                          {t('Received payment (+)')}
                         </button>
                       </>
                     )}
@@ -1165,7 +1173,7 @@ export function DailyRecords({ initialRoute = '' }) {
               {data?.entries.map((r) => (
                 <article className="panel" key={r.id}>
                   <h3>
-                    {labels[r.kind] || 'Reversal'} · {money(r.amount_paise)}
+                    {t(labels[r.kind] || 'Reversal')} · {money(r.amount_paise)}
                   </h3>
                   <p>
                     {r.reference} · {r.occurred_on} · {customerName(r.customer_id)} ·{' '}

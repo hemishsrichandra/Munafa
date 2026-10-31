@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Plus, ShieldCheck, X, Upload, Sparkles, AlertCircle } from 'lucide-react';
+import { useLanguage } from '../language';
 import { paiseFromInput, api, today } from '../api';
 import { icon, Modal, ErrorBox, Busy } from './ui';
 
@@ -22,6 +23,7 @@ const freshInvoice = () => ({
   lines: [freshLine()],
 });
 function InvoiceModal({ close, create, config }) {
+  const { t } = useLanguage();
   const [tab, setTab] = useState('sample'),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
@@ -53,7 +55,7 @@ function InvoiceModal({ close, create, config }) {
   }
   return (
     <Modal
-      title="Add New Bill · बिल जोड़ें"
+      title={t('Add new bill')}
       subtitle="Step 1: Add the bill. Step 2: Count what arrived."
       close={close}
       closeDisabled={busy}

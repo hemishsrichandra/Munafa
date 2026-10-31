@@ -10,7 +10,7 @@ test('WCAG AA automated scans on merchant destinations and bill dialog', async (
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   const nav = page.getByRole('navigation', { name: 'Main navigation', exact: true });
   const violations = [];
-  for (const label of ['Today · आज', 'Deliveries & Stock', 'Customer Khata', 'More · अन्य']) {
+  for (const label of ['Today', 'Deliveries & Stock', 'Customer Khata', 'More']) {
     await nav.getByRole('button', { name: label, exact: true }).click();
     await expect(page.getByRole('main')).toBeVisible();
     const result = await new AxeBuilder({ page })
@@ -24,9 +24,9 @@ test('WCAG AA automated scans on merchant destinations and bill dialog', async (
       })),
     );
   }
-  await nav.getByRole('button', { name: 'Today · आज', exact: true }).click();
+  await nav.getByRole('button', { name: 'Today', exact: true }).click();
   await page
-    .getByRole('button', { name: /New Bill/ })
+    .getByRole('button', { name: /New bill|Add new bill/ })
     .first()
     .click();
   await expect(page.getByRole('dialog')).toBeVisible();
