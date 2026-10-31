@@ -721,6 +721,7 @@ export function DailyRecords({ initialRoute = '' }) {
                     {canMessage && p.outstanding_paise > 0 && (
                       <button
                         className="button secondary"
+                        aria-label="Prepare payment reminder"
                         onClick={() =>
                           run(async () => {
                             const r = await api(`/records/customers/${p.id}/reminder`, {
