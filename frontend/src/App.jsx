@@ -36,6 +36,7 @@ import { Commerce } from './components/Commerce';
 import { Intelligence } from './components/Intelligence';
 import { Preparation } from './components/Preparation';
 import { DailyRecords } from './components/DailyRecords';
+import { DailyRecordsSummary } from './components/DailyRecordsSummary';
 import { Integrations } from './components/Integrations';
 import { Assistant, CachedHelp } from './components/Assistant';
 import { BusinessBrief, Payments } from './components/BusinessBrief';
@@ -386,6 +387,7 @@ function App() {
                   {view === 'overview' && (
                     <>
                       <BusinessBrief follow={followSource} />
+                      <DailyRecordsSummary openRecords={() => navigate('records')} />
                       <div className="section-caption">
                         <span>AT A GLANCE</span>
                         <span className="muted">

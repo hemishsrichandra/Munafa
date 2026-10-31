@@ -115,6 +115,22 @@ test('manual customer, allocation, cash, tasks and consented marketing work with
     path: 'artifacts/test-evidence/manual-records-marketing.png',
     fullPage: true,
   });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Home', exact: true }).click();
+  const snapshot = page.getByRole('region', { name: 'Recorded business snapshot' });
+  await expect(snapshot.getByText('₹10.01', { exact: true })).toBeVisible();
+  await expect(snapshot.getByText('₹8.00', { exact: true })).toBeVisible();
+  await expect(snapshot.getByText('₹1.00', { exact: true })).toBeVisible();
+  await expect(snapshot.getByText(/Cash drawer: ₹102.01/)).toBeVisible();
+  await expect(snapshot.getByText('0', { exact: true })).toBeVisible();
+  for (const width of [320, 390, 844]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  }
+  await snapshot.getByRole('button', { name: 'Open daily records' }).click();
+  await expect(page.getByRole('heading', { name: 'Customer accounts', exact: true })).toBeVisible();
 });
 
 test('manual cash draft survives offline reload and reaches ledger once after queued review', async ({
