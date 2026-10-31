@@ -478,29 +478,75 @@ def resolve(case_id: str, body: Resolution):
     return present(c)
 
 
-def message(c):
+def message(c, lang="en-IN"):
     p = present(c)
-    lines = [
-        f"Hello, please review the delivery shortage on invoice {c['invoice']['reference']} ({c['invoice']['date']})."
-    ]
-    for index, line in enumerate(c["invoice"]["lines"]):
-        from decimal import Decimal
+    ref = c["invoice"]["reference"]
+    date = c["invoice"]["date"]
 
-        short = Decimal(str(line["billed"])) - Decimal(str(line["received"]))
-        if short:
-            lines.append(
-                f"{line['name']}: {line['billed']} billed, {line['received']} received ({line['unit']}). {short} x INR {rupees(line['price_paise'])} = INR {rupees(p['calculation']['lines'][index]['amount_paise'])}."
-            )
-    lines.append(
-        f"Total reviewed shortage: INR {rupees(c['approved_amount_paise'])}. Please issue a credit note referencing this invoice and confirm when applied, or refund the amount. Thank you."
-    )
-    if c["resolutions"]:
+    if lang == "hi-IN":
+        lines = [f"नमस्ते, कृपया इनवॉइस {ref} ({date}) पर डिलीवरी में कमी (shortage) की समीक्षा करें।"]
+        for index, line in enumerate(c["invoice"]["lines"]):
+            from decimal import Decimal
+
+            short = Decimal(str(line["billed"])) - Decimal(str(line["received"]))
+            if short:
+                amt = rupees(p["calculation"]["lines"][index]["amount_paise"])
+                price = rupees(line["price_paise"])
+                lines.append(
+                    f"{line['name']}: {line['billed']} बिल किया, {line['received']} प्राप्त हुआ ({line['unit']})। {short} x INR {price} = INR {amt}।"
+                )
         lines.append(
-            f"Already verified: INR {rupees(p['recovered_paise'])}. Remaining: INR {rupees(p['remaining_paise'])}."
+            f"कुल समीक्षा की गई कमी: INR {rupees(c['approved_amount_paise'])}। कृपया इस इनवॉइस के संदर्भ में क्रेडिट नोट जारी करें और पुष्टि करें, या राशि वापस करें। धन्यवाद।"
         )
-    if c["synthetic"]:
-        lines.insert(0, "[SYNTHETIC DEMO — NOT A REAL CLAIM]")
-    return "\n".join(lines)
+        if c["resolutions"]:
+            lines.append(
+                f"पहले से सत्यापित: INR {rupees(p['recovered_paise'])}। शेष: INR {rupees(p['remaining_paise'])}।"
+            )
+        if c["synthetic"]:
+            lines.insert(0, "[SYNTHETIC DEMO — NOT A REAL CLAIM]")
+        return "\n".join(lines)
+    elif lang == "kn-IN":
+        lines = [f"ನಮಸ್ಕಾರ, ದಯವಿಟ್ಟು ಸರಕುಪಟ್ಟಿ {ref} ({date}) ನಲ್ಲಿನ ವಿತರಣಾ ಕೊರತೆಯನ್ನು (shortage) ಪರಿಶೀಲಿಸಿ."]
+        for index, line in enumerate(c["invoice"]["lines"]):
+            from decimal import Decimal
+
+            short = Decimal(str(line["billed"])) - Decimal(str(line["received"]))
+            if short:
+                amt = rupees(p["calculation"]["lines"][index]["amount_paise"])
+                price = rupees(line["price_paise"])
+                lines.append(
+                    f"{line['name']}: {line['billed']} ಬಿಲ್ ಮಾಡಲಾಗಿದೆ, {line['received']} ಸ್ವೀಕರಿಸಲಾಗಿದೆ ({line['unit']}). {short} x INR {price} = INR {amt}."
+                )
+        lines.append(
+            f"ಒಟ್ಟು ಪರಿಶೀಲಿಸಿದ ಕೊರತೆ: INR {rupees(c['approved_amount_paise'])}. ದಯವಿಟ್ಟು ಈ ಸರಕುಪಟ್ಟಿಯ ಉಲ್ಲೇಖದೊಂದಿಗೆ ಕ್ರೆಡಿಟ್ ನೋಟ್ ನೀಡಿ ಮತ್ತು ಖಚಿತಪಡಿಸಿ, ಅಥವಾ ಮೊತ್ತವನ್ನು ಮರುಪಾವತಿಸಿ. ಧನ್ಯವಾದಗಳು."
+        )
+        if c["resolutions"]:
+            lines.append(
+                f"ಈಗಾಗಲೇ ಪರಿಶೀಲಿಸಲಾಗಿದೆ: INR {rupees(p['recovered_paise'])}. ಉಳಿದಿದೆ: INR {rupees(p['remaining_paise'])}."
+            )
+        if c["synthetic"]:
+            lines.insert(0, "[SYNTHETIC DEMO — NOT A REAL CLAIM]")
+        return "\n".join(lines)
+    else:
+        lines = [f"Hello, please review the delivery shortage on invoice {ref} ({date})."]
+        for index, line in enumerate(c["invoice"]["lines"]):
+            from decimal import Decimal
+
+            short = Decimal(str(line["billed"])) - Decimal(str(line["received"]))
+            if short:
+                lines.append(
+                    f"{line['name']}: {line['billed']} billed, {line['received']} received ({line['unit']}). {short} x INR {rupees(line['price_paise'])} = INR {rupees(p['calculation']['lines'][index]['amount_paise'])}."
+                )
+        lines.append(
+            f"Total reviewed shortage: INR {rupees(c['approved_amount_paise'])}. Please issue a credit note referencing this invoice and confirm when applied, or refund the amount. Thank you."
+        )
+        if c["resolutions"]:
+            lines.append(
+                f"Already verified: INR {rupees(p['recovered_paise'])}. Remaining: INR {rupees(p['remaining_paise'])}."
+            )
+        if c["synthetic"]:
+            lines.insert(0, "[SYNTHETIC DEMO — NOT A REAL CLAIM]")
+        return "\n".join(lines)
 
 
 class Draft(StrictModel):
@@ -513,8 +559,31 @@ def draft(case_id: str, body: Draft):
         c = store.get(db, case_id)
     if c["approved_version"] is None:
         raise RuleError("Approve the evidence before preparing the supplier message.")
-    original = message(c)
-    translated = ai.translate(original, body.language)
+    original = message(c, "en-IN")
+    provider = "rules"
+    translated = None
+
+    if body.language != "en-IN":
+        # Check if Cloud AI is permitted for this session/account
+        principal = auth.current()
+        from . import usage as provider_usage
+
+        can_use_cloud = (
+            provider_usage.public_settings_enabled()
+            if principal.public_demo
+            else principal.provider_access
+        ) and ai.configured()
+
+        if can_use_cloud:
+            translated = ai.translate(original, body.language)
+            provider = "sarvam"
+        else:
+            # Deterministic Indic draft: safe, instant, zero cost, works in demo and offline
+            translated = message(c, body.language)
+            provider = "rules"
+    else:
+        translated = original
+
     from .providers import numeric_tokens
 
     match = numeric_tokens(original) == numeric_tokens(translated)
@@ -526,7 +595,7 @@ def draft(case_id: str, body: Draft):
         if match
         else "Numeric/reference mismatch: use the original or correct manually.",
         "original": original,
-        "provider": "sarvam" if body.language != "en-IN" else "rules",
+        "provider": provider,
         "version": c["version"],
         "language": body.language,
     }

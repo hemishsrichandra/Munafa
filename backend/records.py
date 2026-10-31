@@ -543,8 +543,8 @@ def reminder(eid: str):
         # Multilingual reminder templates — merchant must review before sending
         templates = {
             "en": (
-                f"Namaste {p['name']} ji, your pending balance at {store_name} is "
-                f"INR {amount_str} (\u20b9{amount_str}). Kindly settle at your convenience. Thank you!"
+                f"Namaste {p['name']} ji, our records show INR {amount_str} pending "
+                f"(\u20b9{amount_str}) at {store_name}. Kindly settle at your convenience. Thank you!"
             ),
             "hi": (
                 f"\u0928\u092e\u0938\u094d\u0924\u0947 {p['name']} \u091c\u0940, "
@@ -585,8 +585,8 @@ def reminder(eid: str):
                 )
             else:
                 text_with_link = (
-                    f"Namaste {p['name']} ji, your pending balance at {store_name} is "
-                    f"INR {amount_str} (\u20b9{amount_str}). Kindly pay using this UPI link: {payment_link}. Thank you!"
+                    f"Namaste {p['name']} ji, our records show INR {amount_str} pending "
+                    f"(\u20b9{amount_str}) at {store_name}. Kindly pay using this UPI link: {payment_link}. Thank you!"
                 )
             upi_display = payment_link
         else:
