@@ -17,7 +17,11 @@ async function main() {
     build.once('exit', (code) => resolve(code ?? 1));
   });
   if (built !== 0) return built;
-  const files = readdirSync('tests/e2e').filter((f) => f.endsWith('.spec.js'));
+  const files = readdirSync('tests/e2e').filter(
+    (f) =>
+      f.endsWith('.spec.js') &&
+      (!process.env.E2E_SPEC_FILTER || new RegExp(process.env.E2E_SPEC_FILTER).test(f)),
+  );
   for (const group of files.map((file) => [file])) {
     if (!group.length) continue;
     // A remote connection avoids Windows browser-fixture shutdown hanging after
@@ -26,6 +30,11 @@ async function main() {
       process.platform === 'win32'
         ? await chromium.launchServer({
             headless: true,
+            args: [
+              '--disable-backgrounding-occluded-windows',
+              '--disable-renderer-backgrounding',
+              '--disable-features=CalculateNativeWinOcclusion',
+            ],
             ...(process.env.PLAYWRIGHT_EXECUTABLE_PATH
               ? { executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH }
               : {}),

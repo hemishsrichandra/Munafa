@@ -28,7 +28,8 @@ Prototype bounds: review refuses balances above the 10,000-record or 10^15-paise
 
 - New backend regression suite: 17 passed in targeted run (financial kinds, strict money, replay/reference guards, concurrent collections, reversals, tenant/role boundaries, consent withdrawal, task versions, reminders, offline operation and noncash handling).
 - Frontend storage/exact-money suite: 19 passed, including business draft confirmation, operation mapping and persistence.
-- Final full backend/browser totals are recorded after completion in HANDOFF.md.
+- Post-merge browser coverage: all 28 journeys passed across isolated spec runs (authentication 2, commerce 3, extension 1, offline 6, partner 3, polish 1, daily records 2, release 2, workflow 8). Two initial partner checks timed out waiting for element stability in Windows Chrome; both passed after disabling background rendering throttling for the test browser. The remaining specs also passed with that setting. No forced clicks or production rate-limit changes were used.
+- Before merging the latest authentication/deployment changes, the full backend run had 276 passes and one failure caused by a UTC-versus-store-date test fixture. The fixture now uses tomorrow; the production date validation was retained. After merging, all 39 targeted checks passed (17 manual-record checks, the corrected cross-store check and 21 authentication checks). A complete backend rerun after that merge has not been claimed.
 - Fresh forward migration and Alembic drift checks passed. Build, source lint, format and release audit are checked separately.
 
 ## Still unavailable
