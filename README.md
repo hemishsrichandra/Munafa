@@ -152,3 +152,7 @@ More → **Connections & readiness** now shows honest provider blockers, accepte
 Latest: [final owner checklist review](docs/FINAL-CHECKLIST-REVIEW.md) — all 31 checks, fresh test results, synthetic website scenario, remaining gaps and required credentials/decisions.
 
 Merchant UI: [current screen names, rupee inputs and verification](docs/UI-POLISH.md). Connections, stock planning and purchase exports are separate tasks under More; setup/evaluation diagnostics stay in the documentation.
+
+## Manual daily records
+
+More → Daily records adds merchant-reviewed customer dues/allocations, paid sales, expenses, task assignments, local reminders, cash scenarios and promotional drafts. Cash, bank and UPI entries remain explicitly manual; only cash affects the cash-drawer balance. Existing purchase/receiving and supplier recovery stay separate. See [manual records](docs/MANUAL-RECORDS.md) and the [57-feature audit](docs/FEATURE-CHECKLIST-AUDIT.md). Apply `alembic upgrade head` (head `19b0c9cc7712`) before restarting. No live sending, payment links, tax filing, lender decisions or complete business-profit claims are enabled.

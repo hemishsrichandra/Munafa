@@ -124,7 +124,7 @@ def test_cross_store_every_entity_endpoint_and_same_store_shared_access(client):
             {
                 "version": c["version"],
                 "note": "Synthetic promise",
-                "follow_up": datetime.now(timezone.utc).date().isoformat(),
+                "follow_up": (datetime.now(timezone.utc) + timedelta(days=1)).date().isoformat(),
             },
         ),
         ("POST", f"/cases/{c['id']}/sample-proof", {}),
@@ -489,7 +489,7 @@ def test_postgresql_backup_restore_rehearsal_only_disposable_objects(client, tmp
             assert snapshot(db) == before
             assert (
                 db.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "c6ec82a178d3"
+                == "19b0c9cc7712"
             )
             assert (
                 db.execute(select(func.sum(m.financial_events.c.amount_paise))).scalar_one() == 8000

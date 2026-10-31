@@ -305,3 +305,26 @@ test('a resumed stale tab cannot complete or fail another tab’s recovered atte
   await db.updateOperation(scope, id, 'pending_sync', { error: 'late timeout' }, 'old-tab');
   assert.equal((await db.list('outbox', scope))[0].state, 'synced');
 });
+
+test('reviewed manual business entry queues exactly and cannot queue without confirmation', async () => {
+  const d = {
+    id: crypto.randomUUID(),
+    kind: 'business_entry',
+    payload: {
+      kind: 'cash_sale',
+      reference: 'OFF-CASH',
+      amount_paise: 101,
+      merchant_confirmed: false,
+    },
+  };
+  await db.saveDraft(scope, d);
+  await assert.rejects(db.queueDraft(scope, d.id), /confirm/);
+  d.payload.merchant_confirmed = true;
+  await db.saveDraft(scope, d);
+  const id = await db.queueDraft(scope, d.id);
+  const row = await db.getRecord('outbox', id, scope);
+  assert.equal(row.operation_type, 'business_entry_create');
+  assert.equal(row.payload.amount_paise, 101);
+  db.closeDB();
+  assert.equal((await db.getRecord('outbox', id, scope)).payload.reference, 'OFF-CASH');
+});

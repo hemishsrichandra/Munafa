@@ -50,6 +50,8 @@ try:
     for name in (
         "offline-owner",
         "commerce-owner",
+        "records-owner",
+        "records-offline",
         "partner-owner",
         "extension-owner",
         "polish-owner",

@@ -18,6 +18,7 @@ router = APIRouter(prefix="/api/sync")
 class Operation(StrictModel):
     operation_id: UUID
     operation_type: Literal[
+        "business_entry_create",
         "invoice_create",
         "receiving_save",
         "attachment_upload",
@@ -80,6 +81,19 @@ def apply_operation(body: Operation, request: Request):
             )
             if not accepted or accepted["response"].get("operation_id") != str(dependency):
                 raise HTTPException(409, "A prerequisite has not been accepted for this store.")
+        if body.operation_type == "business_entry_create":
+            from .records import Entry, record_entry
+
+            if body.entity_id is not None or body.expected_version is not None:
+                raise RuleError("New manual records cannot overwrite an existing entity.")
+            result = record_entry(Entry.model_validate(body.payload))
+            return {
+                "operation_id": str(body.operation_id),
+                "entity_id": result["id"],
+                "entity_version": 1,
+                "entity_family": "business_entry",
+                "accepted_at": datetime.now().astimezone().isoformat(),
+            }
         if body.operation_type in (
             "purchase_create",
             "purchase_document_upload",

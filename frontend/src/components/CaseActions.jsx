@@ -309,7 +309,12 @@ function ResolveModal({ c, close, update, notify }) {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [proofName, setProofName] = useState('');
-  const change = (key, value) => setData((prev) => ({ ...prev, [key]: value }));
+  const change = (key, value) =>
+    setData((prev) => ({
+      ...prev,
+      [key]: value,
+      ...(key === 'applied_confirmed' ? {} : { applied_confirmed: false }),
+    }));
   async function sample() {
     setBusy(true);
     setError('');
@@ -478,6 +483,7 @@ function ResolveModal({ c, close, update, notify }) {
             <input
               type="checkbox"
               required
+              disabled={busy || !data.attachment_id}
               checked={data.applied_confirmed}
               onChange={(e) => change('applied_confirmed', e.target.checked)}
             />

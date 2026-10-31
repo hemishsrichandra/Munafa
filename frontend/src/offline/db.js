@@ -228,9 +228,14 @@ export async function cacheCases(scope, cases) {
 }
 export async function saveDraft(scope, draft, file) {
   if (
-    !['invoice', 'receiving', 'purchase', 'purchase_receiving', 'inventory_movement'].includes(
-      draft.kind,
-    )
+    ![
+      'invoice',
+      'receiving',
+      'purchase',
+      'purchase_receiving',
+      'inventory_movement',
+      'business_entry',
+    ].includes(draft.kind)
   )
     throw new Error('Unsupported device draft type.');
   let attachment;
@@ -295,6 +300,8 @@ export async function queueDraft(scope, id) {
     if (!draft || draft.scope !== scope || draft.schema_version !== 1)
       throw new Error('Draft schema needs attention. Keep it and update the app.');
     if (draft.state !== 'local_draft') throw new Error('This draft is already queued.');
+    if (draft.kind === 'business_entry' && !draft.payload.merchant_confirmed)
+      throw new Error('Review and confirm the manual record before queuing.');
     const opId = crypto.randomUUID();
     const row = {
       id: opId,
@@ -302,6 +309,7 @@ export async function queueDraft(scope, id) {
       scope,
       draft_id: id,
       operation_type: {
+        business_entry: 'business_entry_create',
         invoice: 'invoice_create',
         receiving: 'receiving_save',
         purchase: 'purchase_create',

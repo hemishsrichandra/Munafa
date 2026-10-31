@@ -4593,3 +4593,30 @@ textarea:focus-visible,
     font-size: 14px;
   }
 }
+
+/* Additive records screen only; existing screens retain their layout. */
+.daily-records {
+  min-width: 0;
+}
+.daily-records > fieldset {
+  display: grid;
+  gap: 18px;
+}
+.daily-records .panel {
+  min-width: 0;
+}
+.daily-records p,
+.daily-records small,
+.daily-records h3 {
+  overflow-wrap: anywhere;
+}
+.daily-records .check-field {
+  min-height: 44px;
+  line-height: 1.6;
+}
+.daily-records .tabs button {
+  min-height: 44px;
+}
+.daily-records article.panel {
+  margin-top: 16px;
+}

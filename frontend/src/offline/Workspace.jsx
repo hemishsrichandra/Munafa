@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSession } from '../session';
 import { api, money, today, saveBlob } from '../api';
 import { Commerce, CommerceDraftFields } from '../components/Commerce';
+import { RecordDraftFields } from '../components/RecordDraftFields';
 import { InvoiceFields } from '../components/InvoiceIntake';
 import { ErrorBox, Busy } from '../components/ui';
 import { useOffline } from './provider';
@@ -103,6 +104,8 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
         setConflict({ draft, latest });
       } else {
         let copy = { ...draft, id: crypto.randomUUID(), state: 'local_draft' };
+        if (draft.kind === 'business_entry')
+          copy.payload = { ...draft.payload, merchant_confirmed: false };
         if (draft.kind === 'purchase_receiving') {
           const latest = await api(`/purchases/${draft.entity_id}`);
           if (latest.status !== 'accepted' || latest.delivery_complete)
@@ -280,9 +283,11 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
           <h2>
             {editor.kind === 'invoice'
               ? 'Manual invoice draft'
-              : `${editor.kind} · ${editor.source?.invoice?.reference || editor.payload?.draft?.reference || editor.entity_id || 'New draft'}`}
+              : `${editor.kind} · ${editor.source?.invoice?.reference || editor.payload?.reference || editor.payload?.draft?.reference || editor.entity_id || 'New draft'}`}
           </h2>
-          {!['invoice', 'receiving'].includes(editor.kind) ? (
+          {editor.kind === 'business_entry' ? (
+            <RecordDraftFields payload={editor.payload} change={changePayload} />
+          ) : !['invoice', 'receiving'].includes(editor.kind) ? (
             <CommerceDraftFields
               kind={editor.kind}
               payload={editor.payload}
@@ -528,7 +533,7 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
           <strong>
             {d.kind === 'invoice'
               ? d.payload?.invoice?.reference || 'Untitled invoice'
-              : `${d.kind}: ${d.payload?.draft?.reference || d.source?.invoice?.reference || d.entity_id || 'New draft'}`}
+              : `${d.kind}: ${d.payload?.reference || d.payload?.draft?.reference || d.source?.invoice?.reference || d.entity_id || 'New draft'}`}
           </strong>
           <span className={`sync-state ${d.state}`}>{stateLabel(d.state)}</span>
           <p>
@@ -548,6 +553,7 @@ export function OfflineWorkspace({ standalone = false, onClose, onServerChange }
               'purchase',
               'purchase_receiving',
               'inventory_movement',
+              'business_entry',
             ].includes(d.kind) && (
               <>
                 <button

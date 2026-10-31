@@ -35,6 +35,7 @@ import { Suppliers, Insights } from './components/LedgerViews';
 import { Commerce } from './components/Commerce';
 import { Intelligence } from './components/Intelligence';
 import { Preparation } from './components/Preparation';
+import { DailyRecords } from './components/DailyRecords';
 import { Integrations } from './components/Integrations';
 import { Assistant, CachedHelp } from './components/Assistant';
 import { BusinessBrief, Payments } from './components/BusinessBrief';
@@ -246,6 +247,7 @@ function App() {
                     planning: 'Stock planning',
                     exports: 'Export purchases',
                     connections: 'Connections',
+                    records: 'Daily records',
                     more: 'More',
                   }[view]}
             </strong>
@@ -303,7 +305,9 @@ function App() {
                   <button onClick={load}>Retry</button>
                 </div>
               )}
-              {view === 'connections' ? (
+              {view === 'records' ? (
+                <DailyRecords />
+              ) : view === 'connections' ? (
                 <Integrations />
               ) : view === 'exports' ? (
                 <section className="panel partner-screen">
@@ -498,6 +502,9 @@ function App() {
               )}
               {view === 'more' && (
                 <section className="panel more-panel">
+                  <button className="button secondary full" onClick={() => navigate('records')}>
+                    Daily records
+                  </button>
                   <h2>Manage your business</h2>
                   <button className="button secondary full" onClick={() => navigate('exports')}>
                     Export purchases
