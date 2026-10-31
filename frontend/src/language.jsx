@@ -170,7 +170,7 @@ export function LanguagePicker() {
         onChange={(e) => setLocale(e.target.value)}
       >
         <option value="en">English</option>
-        <option value="hi">हिन्दी (पूर्वावलोकन)</option>
+        <option value="hi">हिन्दी</option>
       </select>
     </label>
   );
