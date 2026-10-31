@@ -1,7 +1,8 @@
 """Manual ledgers never infer debt from payments or overwrite financial evidence."""
 
 import uuid
-from datetime import date, timedelta
+from datetime import timedelta
+from backend.tests.clock import merchant_today
 from concurrent.futures import ThreadPoolExecutor
 import pytest
 from sqlalchemy import update
@@ -42,7 +43,7 @@ def entry(c, kind="credit_sale", amount=10000, **kw):
             "kind": kind,
             "reference": uuid.uuid4().hex,
             "amount_paise": amount,
-            "occurred_on": date.today().isoformat(),
+            "occurred_on": merchant_today(c).isoformat(),
             "note": "Reviewed paper source",
             "merchant_confirmed": True,
             **kw,
@@ -109,14 +110,19 @@ def test_allocation_target_customer_date_and_overpayment_checks(client):
     assert entry(client, "cash_sale", 100, target_id=debt["id"]).status_code == 409
     assert (
         entry(
-            client, "cash_sale", 100, occurred_on=(date.today() + timedelta(days=1)).isoformat()
+            client,
+            "cash_sale",
+            100,
+            occurred_on=(merchant_today(client) + timedelta(days=1)).isoformat(),
         ).status_code
         == 409
     )
     assert entry(client, "cash_sale", 100, merchant_confirmed=False).status_code == 409
     assert (
         entry(
-            client, customer_id=a["id"], due_on=(date.today() - timedelta(days=1)).isoformat()
+            client,
+            customer_id=a["id"],
+            due_on=(merchant_today(client) - timedelta(days=1)).isoformat(),
         ).status_code
         == 409
     )
@@ -130,7 +136,7 @@ def test_reference_guard_idempotent_response_and_append_only_database(client):
         "kind": "cash_sale",
         "reference": ref,
         "amount_paise": 101,
-        "occurred_on": date.today().isoformat(),
+        "occurred_on": merchant_today(client).isoformat(),
         "note": "Checked original",
         "merchant_confirmed": True,
     }
@@ -174,7 +180,10 @@ def test_simultaneous_collections_cannot_overallocate(client):
 def test_payables_and_expenses_affect_only_explicit_cash_movements(client):
     ok(entry(client, "opening_cash", 10000), 201)
     bill = ok(
-        entry(client, "payable", 8000, due_on=(date.today() + timedelta(days=7)).isoformat()), 201
+        entry(
+            client, "payable", 8000, due_on=(merchant_today(client) + timedelta(days=7)).isoformat()
+        ),
+        201,
     )
     assert summary(client)["cash"]["recorded_balance_paise"] == 10000
     ok(entry(client, "payable_payment", 3000, target_id=bill["id"]), 201)
@@ -245,7 +254,8 @@ def test_tasks_assignment_role_versions_and_tenant_scope(client):
     staff, sid = fresh_client("staff")
     foreign_task = ok(
         staff.post(
-            "/api/records/tasks", json={"title": "Open shop", "due_on": date.today().isoformat()}
+            "/api/records/tasks",
+            json={"title": "Open shop", "due_on": merchant_today(client).isoformat()},
         ),
         201,
     )
@@ -260,7 +270,7 @@ def test_tasks_assignment_role_versions_and_tenant_scope(client):
             "/api/records/tasks",
             json={
                 "title": "Bad assignment",
-                "due_on": date.today().isoformat(),
+                "due_on": merchant_today(client).isoformat(),
                 "assignee_id": client.get("/api/auth/me").json()["user_id"],
             },
         ).status_code
@@ -281,7 +291,8 @@ def test_tasks_assignment_role_versions_and_tenant_scope(client):
     viewer, _ = fresh_client("viewer", sid)
     assert (
         viewer.post(
-            "/api/records/tasks", json={"title": "Bad", "due_on": date.today().isoformat()}
+            "/api/records/tasks",
+            json={"title": "Bad", "due_on": merchant_today(client).isoformat()},
         ).status_code
         == 403
     )
@@ -317,7 +328,7 @@ def test_offline_manual_record_replay_and_target_checks(client):
         "operation_id": str(uuid.uuid4()),
         "operation_type": "business_entry_create",
         "payload_schema_version": 1,
-        "client_created_at": date.today().isoformat() + "T12:00:00+05:30",
+        "client_created_at": merchant_today(client).isoformat() + "T12:00:00+05:30",
         "dependency_ids": [],
         "entity_id": None,
         "expected_version": None,
@@ -325,7 +336,7 @@ def test_offline_manual_record_replay_and_target_checks(client):
             "kind": "cash_sale",
             "reference": "OFF-CASH",
             "amount_paise": 101,
-            "occurred_on": date.today().isoformat(),
+            "occurred_on": merchant_today(client).isoformat(),
             "note": "Reviewed offline source",
             "merchant_confirmed": True,
         },

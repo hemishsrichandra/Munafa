@@ -1,7 +1,7 @@
 import sys
 import copy
 import json
-from datetime import date
+from backend.tests.clock import merchant_today
 import pytest
 import httpx
 from backend.domain import calculate
@@ -55,7 +55,10 @@ def resolution(client, c, **overrides):
     return {**proof, "version": c["version"], "applied_confirmed": True, **overrides}
 
 
-def test_complete_shortage_to_resolution_and_export(client):
+@pytest.mark.parametrize(
+    "business_clock", ["2026-10-31T18:29:00+00:00", "2026-10-31T18:31:00+00:00"], indirect=True
+)
+def test_complete_shortage_to_resolution_and_export(client, business_clock):
     c = shared(client)
     assert c["approved_amount_paise"] == 8000
     assert c["status"] == "sent"
@@ -64,7 +67,7 @@ def test_complete_shortage_to_resolution_and_export(client):
         json={
             "version": c["version"],
             "note": "Adjust next bill",
-            "follow_up": date.today().isoformat(),
+            "follow_up": merchant_today(client).isoformat(),
         },
     )
     assert promise.status_code == 200
@@ -469,3 +472,29 @@ def test_reset_is_disabled_and_does_not_delete(client):
     assert result.returncode != 0
     assert "Reset is disabled" in result.stderr
     assert client.get(f"/api/cases/{c['id']}").status_code == 200
+
+
+@pytest.mark.parametrize(
+    "business_clock", ["2026-10-31T18:29:00+00:00", "2026-10-31T18:31:00+00:00"], indirect=True
+)
+def test_followup_rejects_store_yesterday_and_accepts_store_today(client, business_clock):
+    from datetime import timedelta
+
+    c = shared(client)
+    today = merchant_today(client)
+    assert today.isoformat() == (
+        "2026-10-31" if business_clock.hour == 18 and business_clock.minute == 29 else "2026-11-01"
+    )
+    body = {"version": c["version"], "note": "Synthetic boundary promise"}
+    past = client.post(
+        f"/api/cases/{c['id']}/promise",
+        json={**body, "follow_up": (today - timedelta(days=1)).isoformat()},
+    )
+    assert past.status_code == 409
+    unchanged = client.get(f"/api/cases/{c['id']}").json()
+    assert unchanged["version"] == c["version"] and unchanged["status"] == "sent"
+    accepted = client.post(
+        f"/api/cases/{c['id']}/promise", json={**body, "follow_up": today.isoformat()}
+    )
+    assert accepted.status_code == 200, accepted.text
+    assert accepted.json()["follow_up"] == today.isoformat()

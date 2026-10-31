@@ -69,3 +69,26 @@ def client(database):
         )
         assert r.status_code == 200, r.text
         yield c
+
+
+@pytest.fixture
+def business_clock(request, monkeypatch):
+    """Exercise real timezone conversion on both sides of India's midnight boundary.
+
+    Session expiry keeps its real clock; only domain instants and fixture business
+    dates are frozen. Never change a production date rule to accommodate CI.
+    """
+    from datetime import datetime, timezone
+    from backend import domain
+    from backend.tests import clock
+
+    instant = datetime.fromisoformat(request.param).astimezone(timezone.utc)
+
+    class FrozenDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return instant.astimezone(tz) if tz is not None else instant.replace(tzinfo=None)
+
+    monkeypatch.setattr(domain, "datetime", FrozenDatetime)
+    monkeypatch.setattr(clock, "datetime", FrozenDatetime)
+    return instant

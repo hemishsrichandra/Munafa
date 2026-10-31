@@ -16,6 +16,7 @@ from backend.app import app
 from backend import models as m, auth, actions
 from backend.db import engine
 from backend.samples import sample_invoice
+from backend.tests.clock import merchant_today
 from backend.tests.test_trust import other_client
 from backend.tests.test_commerce import purchase, receiving, receive, accept, ok
 from backend.tests.test_workflow import shared, resolution
@@ -80,7 +81,10 @@ def export_action(client):
     return action["id"]
 
 
-def test_cross_store_every_entity_endpoint_and_same_store_shared_access(client):
+@pytest.mark.parametrize(
+    "business_clock", ["2026-10-31T18:29:00+00:00", "2026-10-31T18:31:00+00:00"], indirect=True
+)
+def test_cross_store_every_entity_endpoint_and_same_store_shared_access(client, business_clock):
     # Valid bodies reach ownership checks rather than merely failing validation.
     c = shared(client)
     proof = resolution(client, c)
@@ -130,7 +134,7 @@ def test_cross_store_every_entity_endpoint_and_same_store_shared_access(client):
             {
                 "version": c["version"],
                 "note": "Synthetic promise",
-                "follow_up": (datetime.now(timezone.utc) + timedelta(days=1)).date().isoformat(),
+                "follow_up": merchant_today(other).isoformat(),
             },
         ),
         ("POST", f"/cases/{c['id']}/sample-proof", {}),
