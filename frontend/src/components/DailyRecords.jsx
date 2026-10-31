@@ -5,6 +5,311 @@ import { useSession } from '../session';
 import { useOffline } from '../offline/provider';
 import * as db from '../offline/db';
 
+// ---------------------------------------------------------------------------
+// Galla Hisab (Nightly Cash Drawer Balancing) — Feature 2
+// ---------------------------------------------------------------------------
+function GallaHisabCard() {
+  const [data, setData] = useState(null);
+  const [countedPaise, setCountedPaise] = useState(null);
+  const [result, setResult] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const loadHisab = async () => {
+    try {
+      const res = await api('/records/galla-hisab');
+      setData(res);
+      setError('');
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  useEffect(() => {
+    loadHisab();
+  }, []);
+
+  const handleVerify = async (e) => {
+    e?.preventDefault();
+    if (countedPaise === null || countedPaise === undefined) return;
+    setBusy(true);
+    setError('');
+    try {
+      const res = await api('/records/galla-hisab/verify', {
+        method: 'POST',
+        body: { counted_cash_paise: countedPaise },
+      });
+      setResult(res);
+      setData(res);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!data && !error) return <p>Loading Galla Hisab…</p>;
+
+  const expensesFormatted = Object.entries(data?.expenses_breakdown || {})
+    .map(([cat, amt]) => `${cat}: ${money(amt)}`)
+    .join(', ');
+
+  return (
+    <section
+      className="panel galla-hisab-card"
+      style={{
+        border: '2px solid var(--accent, #00baf2)',
+        borderRadius: '8px',
+        padding: '1rem',
+        marginTop: '0.5rem',
+        marginBottom: '1rem',
+      }}
+      aria-label="Galla Hisab"
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+        }}
+      >
+        <h3 style={{ margin: 0 }}>🌙 "Galla Hisab" — Nightly Cash Drawer Balancing</h3>
+        <span className="badge" style={{ fontSize: '0.8rem' }}>
+          Closing Register
+        </span>
+      </div>
+      <p className="tiny-help" style={{ margin: '0.5rem 0' }}>
+        Calculates expected physical cash in the drawer based on verified cash movements. Count your
+        actual drawer cash at closing to detect any discrepancy.
+      </p>
+      {error && (
+        <p className="error-box" role="alert">
+          {error}
+        </p>
+      )}
+
+      <div
+        style={{
+          background: 'var(--bg-subtle, #f8f9fa)',
+          padding: '0.85rem',
+          borderRadius: '6px',
+          margin: '0.75rem 0',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            padding: '0.3rem 0',
+            borderBottom: '1px solid #e0e0e0',
+          }}
+        >
+          <span>Starting Cash:</span>
+          <strong>{money(data?.opening_cash_paise || 0)}</strong>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            padding: '0.3rem 0',
+            borderBottom: '1px solid #e0e0e0',
+            color: '#137333',
+          }}
+        >
+          <span>(+) Cash Sales Today:</span>
+          <strong>+{money(data?.cash_sales_today_paise || 0)}</strong>
+        </div>
+        {data?.cash_collections_today_paise > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              padding: '0.3rem 0',
+              borderBottom: '1px solid #e0e0e0',
+              color: '#137333',
+            }}
+          >
+            <span>(+) Cash Udhaari Collected Today:</span>
+            <strong>+{money(data.cash_collections_today_paise)}</strong>
+          </div>
+        )}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            padding: '0.3rem 0',
+            borderBottom: '1px solid #e0e0e0',
+            color: '#c5221f',
+          }}
+        >
+          <span>(−) Cash Expenses Today {expensesFormatted ? `(${expensesFormatted})` : ''}:</span>
+          <strong>−{money(data?.cash_expenses_today_paise || 0)}</strong>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            padding: '0.5rem 0',
+            fontWeight: 'bold',
+            fontSize: '1.05rem',
+          }}
+        >
+          <span>Expected Cash in Drawer:</span>
+          <span style={{ color: 'var(--text-primary, #111)' }}>
+            {money(data?.expected_cash_paise || 0)}
+          </span>
+        </div>
+      </div>
+
+      <form onSubmit={handleVerify} style={{ marginTop: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1', minWidth: '180px' }}>
+            <MoneyInput
+              label="Enter Counted Cash (₹)"
+              value={countedPaise}
+              change={(v) => {
+                setCountedPaise(v);
+                setResult(null);
+              }}
+            />
+          </div>
+          <button
+            type="submit"
+            className="button primary"
+            disabled={busy || countedPaise === null || countedPaise === undefined}
+          >
+            {busy ? 'Verifying…' : '⚖️ Balance Drawer'}
+          </button>
+        </div>
+      </form>
+
+      {result && (
+        <div
+          style={{
+            marginTop: '1rem',
+            padding: '0.75rem',
+            borderRadius: '6px',
+            background:
+              result.status === 'balanced'
+                ? '#e6f4ea'
+                : result.status === 'shortage'
+                  ? '#fce8e6'
+                  : '#e8f0fe',
+            border: `1px solid ${result.status === 'balanced' ? '#34a853' : result.status === 'shortage' ? '#ea4335' : '#4285f4'}`,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
+            <span style={{ fontSize: '1.2rem' }}>
+              {result.status === 'balanced' ? '🟢' : result.status === 'shortage' ? '🔴' : '🔵'}
+            </span>
+            <span>{result.badge}</span>
+          </div>
+          <p className="tiny-help" style={{ margin: '0.4rem 0 0' }}>
+            Counted: {money(result.counted_cash_paise)} vs Expected:{' '}
+            {money(result.expected_cash_paise)}
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Store Settings panel — UPI VPA + reminder language (Feature 1)
+// ---------------------------------------------------------------------------
+function StoreSettingsPanel() {
+  const session = useSession();
+  const canWrite = session.permissions.includes('write');
+  const [settings, setSettings] = useState({ upi_vpa: '', reminder_language: 'en' });
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    api('/records/store-settings')
+      .then((s) =>
+        setSettings({ upi_vpa: s.upi_vpa || '', reminder_language: s.reminder_language || 'en' }),
+      )
+      .catch((e) => setError(e.message));
+  }, []);
+
+  async function save(e) {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await api('/records/store-settings', {
+        method: 'PATCH',
+        body: { upi_vpa: settings.upi_vpa || null, reminder_language: settings.reminder_language },
+      });
+      setNotice('Store settings saved.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="panel" aria-label="Store settings">
+      <h2>Store settings</h2>
+      <p>
+        Configure your store's UPI VPA so WhatsApp payment reminders include a clickable UPI payment
+        link. The merchant must review every reminder before sending.
+      </p>
+      {error && (
+        <p className="error-box" role="alert">
+          {error}
+        </p>
+      )}
+      {notice && (
+        <p className="notice-box" role="status">
+          {notice}
+        </p>
+      )}
+      <form onSubmit={save}>
+        <fieldset disabled={busy || !canWrite} style={{ border: 0, padding: 0 }}>
+          <div className="form-grid">
+            <label>
+              UPI VPA (e.g. <code>storename@paytm</code>)
+              <input
+                type="text"
+                value={settings.upi_vpa}
+                placeholder="e.g. lakshmi@paytm"
+                onChange={(e) => setSettings((s) => ({ ...s, upi_vpa: e.target.value }))}
+              />
+            </label>
+            <label>
+              Reminder language
+              <select
+                value={settings.reminder_language}
+                onChange={(e) => setSettings((s) => ({ ...s, reminder_language: e.target.value }))}
+              >
+                <option value="en">English</option>
+                <option value="hi">Hindi (हिंदी)</option>
+                <option value="kn">Kannada (ಕನ್ನಡ)</option>
+              </select>
+            </label>
+          </div>
+          {canWrite && (
+            <button type="submit" className="button primary" style={{ marginTop: '1rem' }}>
+              Save settings
+            </button>
+          )}
+          {!canWrite && <p className="tiny-help">Only store owners can change settings.</p>}
+        </fieldset>
+      </form>
+      <p className="tiny-help" style={{ marginTop: '1rem' }}>
+        UPI links open the customer's UPI app pre-filled with the amount. Payment is not confirmed
+        server-side. Always verify the bank/UPI receipt separately before marking a balance as
+        cleared.
+      </p>
+    </section>
+  );
+}
+
 const labels = {
   opening_due: 'Opening customer due',
   credit_sale: 'Sale on credit',
@@ -81,7 +386,7 @@ export function DailyRecords({ initialRoute = '' }) {
     [customer, setCustomer] = useState(freshCustomer),
     [entry, setEntry] = useState(freshEntry),
     [reverse, setReverse] = useState(null),
-    [reminder, setReminder] = useState('');
+    [reminder, setReminder] = useState(null);
   const [source, setSource] = useState(null);
   const [sourceBusy, setSourceBusy] = useState(false);
   const [sourceError, setSourceError] = useState('');
@@ -319,7 +624,14 @@ export function DailyRecords({ initialRoute = '' }) {
         acceptance.
       </p>
       <div className="tabs" style={{ flexWrap: 'wrap' }}>
-        {['Customers', 'Sales & expenses', 'Tasks', 'Cash outlook', 'Marketing drafts'].map((t) => (
+        {[
+          'Customers',
+          'Sales & expenses',
+          'Tasks',
+          'Cash outlook',
+          'Marketing drafts',
+          'Store settings',
+        ].map((t) => (
           <button key={t} className={tab === t ? 'chosen' : ''} onClick={() => setTab(t)}>
             {t}
           </button>
@@ -351,57 +663,140 @@ export function DailyRecords({ initialRoute = '' }) {
               {!people.length && <p>No customers recorded yet.</p>}
               {people.map((p) => (
                 <article className="panel" key={p.id}>
-                  <h3>{p.name}</h3>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      flexWrap: 'wrap',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <div>
+                      <h3 style={{ margin: 0 }}>{p.name}</h3>
+                      <p
+                        style={{
+                          margin: '0.2rem 0',
+                          color: 'var(--text-muted, #666)',
+                          fontSize: '0.875rem',
+                        }}
+                      >
+                        {p.reference} · {p.phone || 'No phone recorded'}
+                      </p>
+                    </div>
+                    {p.outstanding_paise > 0 && (
+                      <span
+                        className="badge badge-warn"
+                        style={{ fontSize: '1rem', fontWeight: 700 }}
+                      >
+                        {money(p.outstanding_paise)} pending
+                      </span>
+                    )}
+                  </div>
                   <p>
-                    {p.reference} · {p.phone || 'No phone recorded'}
+                    {p.recorded_sale_count} recorded sales · Last: {p.last_recorded_sale || 'None'}
                   </p>
                   <p>
-                    <strong>{money(p.outstanding_paise)} pending</strong> · {p.recorded_sale_count}{' '}
-                    recorded sales
+                    Marketing consent: {p.marketing_consent ? 'Agreed' : 'Not agreed / withdrawn'}
                   </p>
-                  <p>
-                    Last recorded sale: {p.last_recorded_sale || 'None'}. This does not establish
-                    whether the customer visited elsewhere or made unrecorded purchases.
-                  </p>
-                  <p>
-                    Local marketing selection:{' '}
-                    {p.marketing_consent ? 'Agreed' : 'Not agreed / withdrawn'}
-                  </p>
-                  {canWrite && (
-                    <button
-                      className="button secondary"
-                      onClick={() => {
-                        setCustomer({ ...p });
-                        setReminder('');
-                      }}
-                    >
-                      Edit customer
-                    </button>
-                  )}{' '}
-                  {canMessage && p.outstanding_paise > 0 && (
-                    <button
-                      className="button secondary"
-                      onClick={() =>
-                        run(async () => {
-                          const r = await api(`/records/customers/${p.id}/reminder`, {
-                            method: 'POST',
-                          });
-                          setReminder(r.text);
-                        })
-                      }
-                    >
-                      Prepare payment reminder
-                    </button>
-                  )}
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '0.5rem',
+                      flexWrap: 'wrap',
+                      marginTop: '0.5rem',
+                    }}
+                  >
+                    {canWrite && (
+                      <button
+                        className="button secondary"
+                        onClick={() => {
+                          setCustomer({ ...p });
+                          setReminder(null);
+                        }}
+                      >
+                        Edit customer
+                      </button>
+                    )}
+                    {canMessage && p.outstanding_paise > 0 && (
+                      <button
+                        className="button secondary"
+                        onClick={() =>
+                          run(async () => {
+                            const r = await api(`/records/customers/${p.id}/reminder`, {
+                              method: 'POST',
+                            });
+                            setReminder({ ...r, customerId: p.id });
+                          })
+                        }
+                      >
+                        📲 Prepare WhatsApp reminder
+                      </button>
+                    )}
+                  </div>
                 </article>
               ))}
               {reminder && (
-                <div className="info-box">
-                  <h3>Reminder draft — nothing sent</h3>
-                  <p>{reminder}</p>
-                  <p>
-                    Review with the customer before sharing manually. No payment link has been
-                    generated.
+                <div className="info-box" style={{ borderLeft: '4px solid #25d366' }}>
+                  <h3 style={{ marginTop: 0 }}>💬 Reminder draft — review before sending</h3>
+                  <p style={{ fontWeight: 600 }}>
+                    {reminder.customer_name} · {money(reminder.amount_paise)} pending
+                  </p>
+                  <p
+                    style={{
+                      background: 'var(--bg-subtle, #f5f5f5)',
+                      padding: '0.75rem',
+                      borderRadius: '0.5rem',
+                      fontFamily: 'monospace',
+                      fontSize: '0.9rem',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {reminder.text_plain || reminder.text}
+                  </p>
+                  {reminder.payment_link && (
+                    <p style={{ fontSize: '0.85rem', color: '#555', wordBreak: 'break-all' }}>
+                      UPI link: <code>{reminder.payment_link}</code>
+                    </p>
+                  )}
+                  {!reminder.payment_link && (
+                    <p className="tiny-help">
+                      No UPI link — configure your store UPI VPA in Store Settings to include one
+                      automatically.
+                    </p>
+                  )}
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '0.5rem',
+                      flexWrap: 'wrap',
+                      marginTop: '0.75rem',
+                    }}
+                  >
+                    {reminder.customer_phone && (
+                      <a
+                        className="button primary"
+                        href={`https://wa.me/${reminder.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(reminder.text)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        📲 Open WhatsApp
+                      </a>
+                    )}
+                    {!reminder.customer_phone && (
+                      <p className="tiny-help">
+                        No phone number recorded for this customer — add one to enable the WhatsApp
+                        button.
+                      </p>
+                    )}
+                    <button className="button secondary" onClick={() => setReminder(null)}>
+                      Dismiss
+                    </button>
+                  </div>
+                  <p className="tiny-help" style={{ marginTop: '0.5rem' }}>
+                    Opening WhatsApp does not send automatically. Review the message, then send it
+                    yourself. Nothing is recorded as sent unless you confirm.
                   </p>
                 </div>
               )}
@@ -878,59 +1273,62 @@ export function DailyRecords({ initialRoute = '' }) {
           </>
         )}
         {tab === 'Cash outlook' && (
-          <section className="panel">
-            <h2>Manual cash outlook</h2>
-            <p>{data?.cash.warning}</p>
-            <p>
-              Recorded cash:{' '}
-              <strong>
-                {data?.cash.opening_recorded
-                  ? money(data.cash.recorded_balance_paise)
-                  : 'Unknown — record an opening cash balance first'}
-              </strong>
-            </p>
-            <p>
-              Recorded sales: {money(data?.sales_paise)}. This includes credit sales, which are not
-              cash collected.
-            </p>
-            <Field label="Outlook period">
-              <select value={horizon} onChange={(e) => setHorizon(e.target.value)}>
-                <option value="7">Next 7 days and overdue</option>
-                <option value="30">Next 30 days and overdue</option>
-              </select>
-            </Field>
-            <p>
-              Customer obligations due in this window: {money(incoming)}. Payables due:{' '}
-              {money(outgoing)}.
-            </p>
-            {data?.cash.opening_recorded && (
+          <>
+            <GallaHisabCard />
+            <section className="panel">
+              <h2>Manual cash outlook</h2>
+              <p>{data?.cash.warning}</p>
               <p>
-                Scenario if all these dues are collected and payables paid:{' '}
-                <strong>{money(data.cash.recorded_balance_paise + incoming - outgoing)}</strong>.
-                Collections are not guaranteed.
+                Recorded cash:{' '}
+                <strong>
+                  {data?.cash.opening_recorded
+                    ? money(data.cash.recorded_balance_paise)
+                    : 'Unknown — record an opening cash balance first'}
+                </strong>
               </p>
-            )}
-            {obligations
-              .filter((d) => d.remaining_paise > 0)
-              .map((d) => (
-                <p key={d.id}>
-                  {d.reference} · {customerName(d.customer_id)} · {money(d.remaining_paise)}{' '}
-                  remaining · {d.due_on || 'Due date unknown'}
-                  {d.due_on && d.due_on < today() ? ' · overdue' : ''}
+              <p>
+                Recorded sales: {money(data?.sales_paise)}. This includes credit sales, which are
+                not cash collected.
+              </p>
+              <Field label="Outlook period">
+                <select value={horizon} onChange={(e) => setHorizon(e.target.value)}>
+                  <option value="7">Next 7 days and overdue</option>
+                  <option value="30">Next 30 days and overdue</option>
+                </select>
+              </Field>
+              <p>
+                Customer obligations due in this window: {money(incoming)}. Payables due:{' '}
+                {money(outgoing)}.
+              </p>
+              {data?.cash.opening_recorded && (
+                <p>
+                  Scenario if all these dues are collected and payables paid:{' '}
+                  <strong>{money(data.cash.recorded_balance_paise + incoming - outgoing)}</strong>.
+                  Collections are not guaranteed.
+                </p>
+              )}
+              {obligations
+                .filter((d) => d.remaining_paise > 0)
+                .map((d) => (
+                  <p key={d.id}>
+                    {d.reference} · {customerName(d.customer_id)} · {money(d.remaining_paise)}{' '}
+                    remaining · {d.due_on || 'Due date unknown'}
+                    {d.due_on && d.due_on < today() ? ' · overdue' : ''}
+                  </p>
+                ))}
+              <h3>Reviewed expenses</h3>
+              {Object.entries(data?.expenses_by_category || {}).map(([c, n]) => (
+                <p key={c}>
+                  {c}: {money(n)}
                 </p>
               ))}
-            <h3>Reviewed expenses</h3>
-            {Object.entries(data?.expenses_by_category || {}).map(([c, n]) => (
-              <p key={c}>
-                {c}: {money(n)}
+              <p>
+                Missing purchases, unrecorded cash, other bank accounts and obligations are not
+                inferred. Paytm connection, loan eligibility and automatic forecasts remain
+                unavailable.
               </p>
-            ))}
-            <p>
-              Missing purchases, unrecorded cash, other bank accounts and obligations are not
-              inferred. Paytm connection, loan eligibility and automatic forecasts remain
-              unavailable.
-            </p>
-          </section>
+            </section>
+          </>
         )}
         {tab === 'Marketing drafts' && (
           <>
@@ -1062,6 +1460,7 @@ export function DailyRecords({ initialRoute = '' }) {
           </>
         )}
       </fieldset>
+      {tab === 'Store settings' && <StoreSettingsPanel />}
     </section>
   );
 }

@@ -399,3 +399,28 @@ def test_offline_commerce_operations_replay_without_duplicate_stock(client):
     applied = ok(submit(event), 201)
     assert ok(submit(event), 201) == applied
     assert stock(client) == 2
+
+
+def test_smart_low_stock_reorder_and_whatsapp_po(client):
+    sku = ok(
+        client.post(
+            "/api/products",
+            json={
+                "code": uuid.uuid4().hex,
+                "name": "Britannia Good Day 100g",
+                "unit": "pack",
+                "reorder_threshold": "10",
+            },
+        ),
+        201,
+    )
+    # Stock is currently 0 <= 10 (below threshold)
+    res = ok(client.get("/api/inventory/reorder-suggestions"))
+    assert res["count"] >= 1
+    match = next(s for s in res["suggestions"] if s["product_id"] == sku["id"])
+    assert match["product_name"] == "Britannia Good Day 100g"
+    assert match["reorder_threshold"] == "10"
+    # Expected reorder qty: 10 * 2 - 0 = 20
+    assert Decimal(match["recommended_reorder_qty"]) >= 10
+    assert "Britannia Good Day 100g" in match["po_message"]
+    assert "https://wa.me/" in match["whatsapp_url"]

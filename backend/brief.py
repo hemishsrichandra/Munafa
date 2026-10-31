@@ -18,27 +18,27 @@ def build(db):
     items = []
 
     def add(
-        kind, eid, title, reason, priority, source_ids, route, observed, status="open", demo=None
+        kind, eid, title, reason, priority, source_ids, route, observed, status="open", demo=None, **extra
     ):
         observed = observed if isinstance(observed, datetime) else datetime.fromisoformat(observed)
-        items.append(
-            {
-                "action_id": f"{kind}:{eid}",
-                "type": kind,
-                "priority": priority,
-                "title": title,
-                "reason": reason,
-                "source_entity_ids": source_ids,
-                "data_freshness": {
-                    "source_updated_at": observed,
-                    "queried_at": now,
-                    "stale": now - observed > timedelta(hours=24),
-                },
-                "status": status,
-                "route": route,
-                "mode": mode if demo is None else demo,
-            }
-        )
+        item = {
+            "action_id": f"{kind}:{eid}",
+            "type": kind,
+            "priority": priority,
+            "title": title,
+            "reason": reason,
+            "source_entity_ids": source_ids,
+            "data_freshness": {
+                "source_updated_at": observed,
+                "queried_at": now,
+                "stale": now - observed > timedelta(hours=24),
+            },
+            "status": status,
+            "route": route,
+            "mode": mode if demo is None else demo,
+        }
+        item.update(extra)
+        items.append(item)
 
     for r in payment["settlements"]:
         if r["needs_review"]:
@@ -162,6 +162,65 @@ def build(db):
     expenses = [r for r in active if r["kind"] == "expense"]
     obligations = [r for r in active if r["kind"] in ("opening_due", "credit_sale")]
     dues = [(r, records.outstanding(active, r)) for r in obligations]
+
+    # Feature 4: Overdue Customer Dues elevated to Priority 1 Customer Credit Collection
+    overdue_by_customer = {}
+    for r, remaining in dues:
+        if remaining > 0 and r["due_on"] and r["due_on"] < today and r["customer_id"]:
+            cid = r["customer_id"]
+            if cid not in overdue_by_customer:
+                cust = db.execute(
+                    select(m.business_customers).where(m.business_customers.c.id == cid)
+                ).mappings().first()
+                cname = cust["name"] if cust else "Unknown Customer"
+                cphone = cust["phone"] if cust else ""
+                overdue_by_customer[cid] = {
+                    "customer_id": cid,
+                    "customer_name": cname,
+                    "customer_phone": cphone,
+                    "total_paise": 0,
+                    "max_days_overdue": 0,
+                }
+            overdue_by_customer[cid]["total_paise"] += remaining
+            days_overdue = (today - r["due_on"]).days
+            if days_overdue > overdue_by_customer[cid]["max_days_overdue"]:
+                overdue_by_customer[cid]["max_days_overdue"] = days_overdue
+
+    if overdue_by_customer:
+        total_overdue = sum(c["total_paise"] for c in overdue_by_customer.values())
+        sorted_custs = sorted(
+            overdue_by_customer.values(), key=lambda x: x["total_paise"], reverse=True
+        )
+        top_summaries = [
+            f"{c['customer_name']} owes {c['total_paise'] // 100} INR ({c['max_days_overdue']} days overdue)"
+            for c in sorted_custs[:2]
+        ]
+        num_cust = len(overdue_by_customer)
+        total_str = f"{total_overdue // 100} INR"
+        desc = (
+            f"{num_cust} customer{'s have' if num_cust != 1 else ' has'} overdue payments totaling {total_str}. "
+            + "; ".join(top_summaries)
+            + "."
+        )
+        top_c = sorted_custs[0]
+        sources = [r["id"] for r, rem in dues if rem > 0 and r["due_on"] and r["due_on"] < today]
+        add(
+            "customer_credit_collection",
+            "overdue_summary",
+            "Priority 1: Customer Credit Collection",
+            desc,
+            1,
+            sources,
+            "/records/customers",
+            now,
+            top_customer={
+                "customer_id": top_c["customer_id"],
+                "customer_name": top_c["customer_name"],
+                "customer_phone": top_c["customer_phone"],
+                "amount_paise": top_c["total_paise"],
+            },
+        )
+
     for r, remaining in dues:
         if remaining > 0 and r["due_on"] and r["due_on"] <= today:
             sources = [x for x in history if x["id"] == r["id"] or x["target_id"] == r["id"]]

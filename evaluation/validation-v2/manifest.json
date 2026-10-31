@@ -1,0 +1,144 @@
+{
+  "schema_version": 2,
+  "mode": "synthetic",
+  "source": "project-owned generated text, not merchant documents",
+  "consent_required_for_real_data": true,
+  "human_review_observations": 0,
+  "cases": [
+    {
+      "id": "printed-en",
+      "split": "held_out",
+      "condition": "printed_synthetic",
+      "language": "en",
+      "image": "printed-en.png",
+      "ground_truth": {
+        "supplier": "Synthetic Kirana Wholesale",
+        "reference": "SYN-PRINTED-EN",
+        "date": "2026-10-31",
+        "lines": [
+          {
+            "description": "Rice",
+            "billed_quantity": "2.5",
+            "unit": "kg",
+            "unit_price_paise": 8000
+          }
+        ],
+        "subtotal_paise": 20000,
+        "tax_paise": 0,
+        "discount_paise": 0,
+        "total_paise": 20000
+      },
+      "evidence_class": "owned_programmatic_synthetic",
+      "independently_adjudicated": false,
+      "real_handwriting": false
+    },
+    {
+      "id": "thermal-en",
+      "split": "held_out",
+      "condition": "thermal_typography_proxy",
+      "language": "en",
+      "image": "thermal-en.png",
+      "ground_truth": {
+        "supplier": "Synthetic Kirana Wholesale",
+        "reference": "SYN-THERMAL-EN",
+        "date": "2026-10-31",
+        "lines": [
+          {
+            "description": "Tea",
+            "billed_quantity": "2.5",
+            "unit": "kg",
+            "unit_price_paise": 8000
+          }
+        ],
+        "subtotal_paise": 20000,
+        "tax_paise": 0,
+        "discount_paise": 0,
+        "total_paise": 20000
+      },
+      "evidence_class": "owned_programmatic_synthetic",
+      "independently_adjudicated": false,
+      "real_handwriting": false
+    },
+    {
+      "id": "handwriting-proxy",
+      "split": "held_out",
+      "condition": "handwriting_typography_proxy",
+      "language": "en",
+      "image": "handwriting-proxy.png",
+      "ground_truth": {
+        "supplier": "Synthetic Kirana Wholesale",
+        "reference": "SYN-HANDWRITING-PROXY",
+        "date": "2026-10-31",
+        "lines": [
+          {
+            "description": "Sugar",
+            "billed_quantity": "2.5",
+            "unit": "kg",
+            "unit_price_paise": 8000
+          }
+        ],
+        "subtotal_paise": 20000,
+        "tax_paise": 0,
+        "discount_paise": 0,
+        "total_paise": 20000
+      },
+      "evidence_class": "owned_programmatic_synthetic",
+      "independently_adjudicated": false,
+      "real_handwriting": false
+    },
+    {
+      "id": "printed-hi",
+      "split": "held_out",
+      "condition": "printed_synthetic",
+      "language": "hi",
+      "image": "printed-hi.png",
+      "ground_truth": {
+        "supplier": "सिंथेटिक किराना",
+        "reference": "SYN-PRINTED-HI",
+        "date": "2026-10-31",
+        "lines": [
+          {
+            "description": "चावल",
+            "billed_quantity": "2.5",
+            "unit": "kg",
+            "unit_price_paise": 8000
+          }
+        ],
+        "subtotal_paise": 20000,
+        "tax_paise": 0,
+        "discount_paise": 0,
+        "total_paise": 20000
+      },
+      "evidence_class": "owned_programmatic_synthetic",
+      "independently_adjudicated": false,
+      "real_handwriting": false
+    },
+    {
+      "id": "printed-kn",
+      "split": "held_out",
+      "condition": "printed_synthetic",
+      "language": "kn",
+      "image": "printed-kn.png",
+      "ground_truth": {
+        "supplier": "ಸಿಂಥೆಟಿಕ್ ಕಿರಾಣಿ",
+        "reference": "SYN-PRINTED-KN",
+        "date": "2026-10-31",
+        "lines": [
+          {
+            "description": "ಅಕ್ಕಿ",
+            "billed_quantity": "2.5",
+            "unit": "kg",
+            "unit_price_paise": 8000
+          }
+        ],
+        "subtotal_paise": 20000,
+        "tax_paise": 0,
+        "discount_paise": 0,
+        "total_paise": 20000
+      },
+      "evidence_class": "owned_programmatic_synthetic",
+      "independently_adjudicated": false,
+      "real_handwriting": false
+    }
+  ]
+}

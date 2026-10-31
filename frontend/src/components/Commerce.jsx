@@ -251,6 +251,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
     [purchases, setPurchases] = useState([]),
     [products, setProducts] = useState([]),
     [expiry, setExpiry] = useState([]),
+    [reorders, setReorders] = useState([]),
     [selected, setSelected] = useState(null),
     [draft, setDraft] = useState(null),
     [receiving, setReceiving] = useState(null),
@@ -275,14 +276,16 @@ export function Commerce({ openCase, initialRoute = '' }) {
       }
       return;
     }
-    const [ps, sk, ex] = await Promise.all([
+    const [ps, sk, ex, reorderData] = await Promise.all([
       api('/purchases'),
       api('/products'),
       api('/inventory/expiry'),
+      api('/inventory/reorder-suggestions').catch(() => ({ suggestions: [] })),
     ]);
     setPurchases(ps);
     setProducts(sk);
     setExpiry(ex.lots);
+    setReorders(reorderData.suggestions || []);
     await db.transaction(['meta', 'cache'], async (s) => {
       if ((await db.requestValue(s.meta.get('context')))?.scope !== local.scope) return;
       s.cache.put({
@@ -941,6 +944,126 @@ export function Commerce({ openCase, initialRoute = '' }) {
         {tab === 'stock' && (
           <div className="panel">
             <h2>SKU catalogue & confirmed stock</h2>
+            {reorders.length > 0 && (
+              <div
+                className="panel"
+                style={{
+                  border: '2px solid #e53935',
+                  borderRadius: '8px',
+                  padding: '1rem',
+                  marginBottom: '1.25rem',
+                  background: '#fffbfa',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <h3 style={{ margin: 0, color: '#c62828' }}>
+                    ⚠️ Smart Low-Stock Reorder ({reorders.length} SKU
+                    {reorders.length !== 1 ? 's' : ''})
+                  </h3>
+                  <span className="badge badge-warn" style={{ fontWeight: 'bold' }}>
+                    Action Needed
+                  </span>
+                </div>
+                <p className="tiny-help" style={{ margin: '0.4rem 0 0.8rem' }}>
+                  Calculated from merchant reorder threshold and latest accepted invoice prices.
+                  1-tap WhatsApp formats a draft purchase order.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {reorders.map((item) => (
+                    <div
+                      key={item.product_id}
+                      style={{
+                        background: '#fff',
+                        border: '1px solid #ffcdd2',
+                        borderRadius: '6px',
+                        padding: '0.85rem',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          flexWrap: 'wrap',
+                          gap: '0.5rem',
+                        }}
+                      >
+                        <div>
+                          <strong style={{ fontSize: '1rem' }}>{item.product_name}</strong>
+                          <div style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.2rem' }}>
+                            {item.stock_quantity} {item.unit} remaining (threshold:{' '}
+                            {item.reorder_threshold})
+                          </div>
+                        </div>
+                        <span
+                          className="badge badge-warn"
+                          style={{ fontWeight: 'bold', fontSize: '0.9rem' }}
+                        >
+                          Recommended: {item.recommended_reorder_qty} {item.unit}
+                          {item.estimated_cost_paise
+                            ? ` (~${money(item.estimated_cost_paise)})`
+                            : ''}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: '0.85rem', marginTop: '0.5rem', color: '#444' }}>
+                        <strong>Preferred Supplier:</strong> {item.preferred_supplier}
+                        {item.last_price_paise
+                          ? ` (Last billed: ${money(item.last_price_paise)}/${item.unit}${item.last_billed_date ? ` on ${item.last_billed_date}` : ''})`
+                          : ''}
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: '0.75rem',
+                          display: 'flex',
+                          gap: '0.5rem',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <a
+                          className="button primary"
+                          href={item.whatsapp_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                          }}
+                        >
+                          📲 Draft Order on WhatsApp
+                        </a>
+                        <details style={{ fontSize: '0.85rem', color: '#666' }}>
+                          <summary style={{ cursor: 'pointer' }}>Preview PO Message</summary>
+                          <pre
+                            style={{
+                              background: '#f5f5f5',
+                              padding: '0.5rem',
+                              borderRadius: '4px',
+                              whiteSpace: 'pre-wrap',
+                              marginTop: '0.3rem',
+                              fontSize: '0.8rem',
+                            }}
+                          >
+                            {item.po_message}
+                          </pre>
+                        </details>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <button
               className="button primary"
               onClick={() =>

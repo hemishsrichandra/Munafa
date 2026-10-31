@@ -162,6 +162,7 @@ test('throttled startup, keyboard dialog, offline warm launch and production she
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   const cdp = await context.newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
   await cdp.send('Network.enable');
   await cdp.send('Network.emulateNetworkConditions', {
     offline: false,
@@ -263,7 +264,9 @@ test('throttled startup, keyboard dialog, offline warm launch and production she
     JSON.stringify(
       {
         sample_size: 1,
-        environment: 'Headless Chromium local PostgreSQL; simulated network, no CPU throttling',
+        environment:
+          'Headless Chromium local PostgreSQL; simulated network and 4x CPU slowdown, not a physical low-end device',
+        cpu_slowdown_rate: 4,
         network: {
           latency_ms: 120,
           download_bytes_per_second: 200000,

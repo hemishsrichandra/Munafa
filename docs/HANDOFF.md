@@ -148,3 +148,7 @@ Ignored screenshots include `artifacts/test-evidence/batch10-integrated-recovery
 Suggested continuation:
 
 > Pull origin/main, inspect Git status/history, read docs/HANDOFF.md, BATCH-10.md and DEMO.md. Batch 10 is a tested local synthetic demo candidate with explicit skipped/external checks; no live Paytm/real device/provider performance or production/legal readiness is established. Preserve exact-money, source, tenant, approval, append-only and offline invariants; do not reset/import data. I authorise [specific remaining acceptance or separately scoped implementation]. Update docs/this handoff and commit/push before exit.
+
+## 31 October five-improvement continuation
+
+Start with [FIVE-IMPROVEMENTS-VALIDATION.md](FIVE-IMPROVEMENTS-VALIDATION.md) and [IMPROVEMENTS-HANDOFF.md](IMPROVEMENTS-HANDOFF.md). Onboarding/home checkpoint cc17329 and recovery/operations d48a6ac were pushed. Preserve parallel uncommitted store-settings/UPI work and unrelated regulatory-starter deletions. Provider access is operator-approved; demo AI is default-off. Backups need a private destination; Sarvam key is Render-only and live OCR was explicitly left unmeasured. Actual Android/pilot access is unavailable. No destructive migration/import or new paid API was performed.

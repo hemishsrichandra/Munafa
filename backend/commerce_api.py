@@ -158,6 +158,110 @@ def expiry():
         return {"as_of": today.isoformat(), "window_days": 30, "lots": result}
 
 
+@router.get("/inventory/reorder-suggestions")
+def reorder_suggestions():
+    import urllib.parse
+    import re
+    with store.connect() as db:
+        prods = inventory.products(db)
+        store_name = auth.current().store_name
+        suggestions = []
+
+        for p in prods:
+            if not p.get("below_threshold") or p.get("reorder_threshold") is None:
+                continue
+
+            stock_qty = Decimal(p["stock_quantity"])
+            threshold_qty = Decimal(p["reorder_threshold"])
+
+            last_line_query = (
+                select(
+                    m.purchase_lines.c.effective_price_paise,
+                    m.purchase_lines.c.billed_quantity,
+                    m.purchase_lines.c.unit,
+                    m.purchases.c.draft,
+                    m.purchases.c.created_at,
+                )
+                .join(
+                    m.purchases,
+                    (m.purchase_lines.c.purchase_id == m.purchases.c.id)
+                    & (m.purchase_lines.c.store_id == m.purchases.c.store_id),
+                )
+                .where(
+                    store.scope(m.purchase_lines),
+                    store.scope(m.purchases),
+                    m.purchase_lines.c.product_id == p["id"],
+                    m.purchases.c.status == "accepted",
+                )
+                .order_by(m.purchases.c.created_at.desc())
+                .limit(1)
+            )
+            last_line = db.execute(last_line_query).mappings().first()
+
+            last_price = last_line["effective_price_paise"] if last_line else None
+            last_billed_qty = Decimal(last_line["billed_quantity"]) if last_line else None
+            supplier_name = (
+                last_line["draft"].get("supplier")
+                if last_line and isinstance(last_line["draft"], dict)
+                else None
+            ) or "Preferred Supplier"
+            supplier_phone = (
+                last_line["draft"].get("supplier_phone")
+                if last_line and isinstance(last_line["draft"], dict)
+                else ""
+            ) or ""
+            last_billed_date = (
+                last_line["draft"].get("date")
+                if last_line and isinstance(last_line["draft"], dict)
+                else None
+            )
+
+            needed = (threshold_qty * 2) - stock_qty
+            if last_billed_qty and last_billed_qty >= needed:
+                reorder_qty = last_billed_qty
+            else:
+                reorder_qty = max(needed, threshold_qty)
+            if reorder_qty <= 0:
+                reorder_qty = threshold_qty
+
+            reorder_qty_str = inventory.quantity(reorder_qty)
+            est_cost_paise = int(round(reorder_qty * last_price)) if last_price else None
+
+            po_message = (
+                f"Order from {store_name}: Please send {reorder_qty_str} {p['unit']} of "
+                f"{p['name']}. Standard payment upon delivery. Thank you!"
+            )
+
+            clean_phone = re.sub(r"\D", "", supplier_phone)
+            encoded_msg = urllib.parse.quote(po_message)
+            whatsapp_url = (
+                f"https://wa.me/{clean_phone}?text={encoded_msg}"
+                if clean_phone
+                else f"https://wa.me/?text={encoded_msg}"
+            )
+
+            suggestions.append(
+                {
+                    "product_id": p["id"],
+                    "product_name": p["name"],
+                    "code": p["code"],
+                    "unit": p["unit"],
+                    "stock_quantity": p["stock_quantity"],
+                    "reorder_threshold": p["reorder_threshold"],
+                    "recommended_reorder_qty": reorder_qty_str,
+                    "last_price_paise": last_price,
+                    "estimated_cost_paise": est_cost_paise,
+                    "preferred_supplier": supplier_name,
+                    "supplier_phone": supplier_phone,
+                    "last_billed_date": last_billed_date,
+                    "po_message": po_message,
+                    "whatsapp_url": whatsapp_url,
+                }
+            )
+
+        return {"count": len(suggestions), "suggestions": suggestions}
+
+
 @router.get("/purchases")
 def purchases():
     with store.connect() as db:

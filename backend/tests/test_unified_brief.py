@@ -150,3 +150,42 @@ def test_source_pagination_has_no_silent_last_100_limit(client):
     assert len(a["items"]) == 50 and len(b["items"]) == 2
     assert a["total_count"] == 52 and a["next_offset"] == 50 and b["next_offset"] is None
     assert not ({x["id"] for x in a["items"]} & {x["id"] for x in b["items"]})
+
+
+def test_overdue_customer_credit_collection_elevated_in_brief(client):
+    person1 = customer(client, name="Suresh Kumar")
+    person2 = customer(client, name="Anita Devi")
+    t = merchant_today(client)
+
+    # Suresh owes ₹2,400 overdue by 7 days (recorded 14 days ago)
+    ok(
+        entry(
+            client,
+            customer_id=person1["id"],
+            amount=240000,
+            occurred_on=(t - timedelta(days=14)).isoformat(),
+            due_on=(t - timedelta(days=7)).isoformat(),
+        ),
+        201,
+    )
+    # Anita owes ₹850 overdue by 5 days (recorded 10 days ago)
+    ok(
+        entry(
+            client,
+            customer_id=person2["id"],
+            amount=85000,
+            occurred_on=(t - timedelta(days=10)).isoformat(),
+            due_on=(t - timedelta(days=5)).isoformat(),
+        ),
+        201,
+    )
+
+    data = client.get("/api/brief").json()
+    p1 = next(x for x in data["items"] if x["type"] == "customer_credit_collection")
+    assert p1["priority"] == 1
+    assert "Suresh Kumar" in p1["reason"]
+    assert "2400 INR" in p1["reason"]
+    assert "7 days overdue" in p1["reason"]
+    assert "Anita Devi" in p1["reason"]
+    assert p1["top_customer"]["customer_name"] == "Suresh Kumar"
+    assert p1["top_customer"]["amount_paise"] == 240000

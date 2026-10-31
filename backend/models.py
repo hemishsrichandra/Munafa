@@ -64,6 +64,14 @@ stores = table(
     C("timezone", String(80), nullable=False),
     C("demo", Boolean, nullable=False),
 )
+store_settings = table(
+    "store_settings",
+    C("store_id", String(64), ForeignKey("stores.id"), primary_key=True),
+    C("upi_vpa", String(120)),
+    C("reminder_language", String(8), nullable=False, server_default="en"),
+    C("updated_at", DateTime(timezone=True), nullable=False),
+    Check("reminder_language IN ('en','hi','kn')", name="settings_language"),
+)
 users = table(
     "users",
     identity(),

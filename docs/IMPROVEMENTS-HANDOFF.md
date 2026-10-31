@@ -46,7 +46,7 @@ Extend labelled synthetic printed/thermal/script/adversarial coverage; distingui
 
 Available browser checks: camera/file flows, simulated microphone denial, durable reload and interrupted sync, throttled network/CPU where meaningful. Rebuild same Capacitor source if tooling available; inspect ADB device availability but no invented physical coverage. Provide consent/withdrawal/minimised pilot protocol and evidence matrix using existing scripts/analyse_pilot.py. No actual pilot without consenting merchants.
 
-Status: PLANNED; real invoice/device/pilot evidence BLOCKED BY CONFIRMED ACCESS LIMITS.
+Status: IMPLEMENTED tooling/synthetic regressions; live OCR was not run because the key is Render-only and the owner requested unmeasured results. Real invoice/device/pilot evidence remains BLOCKED BY CONFIRMED ACCESS LIMITS. Full validation and continuation are in FIVE-IMPROVEMENTS-VALIDATION.md.
 
 ## Baseline
 
@@ -61,3 +61,5 @@ Another editor created untracked a1b2c3d4e5f6_store_settings_upi_vpa.py (parent 
 Latest completed checks before the final provider-approval hardening: full backend 337 passed; full browser 33 passed; target recovery/operations/migration with the approval flag 20 passed; source-evidence/operations 15 passed; personalized provider/assistant target 27 passed. Final snapshot checks must supersede these counts. No real bucket, real data import, device or pilot test has been run. Sarvam synthetic run up to ₹10 is approved but has **not yet been executed**.
 
 Final security checkpoint validation (isolated staged tree 8fb891f64d757e5b57b35d391c90e942de28b2c0): **339 backend tests passed**, **33 Playwright journeys passed**, **19 offline unit tests passed**. Ruff check/format, Prettier and production build passed. The first snapshot exposed accidentally staged parallel model metadata; the index was corrected without altering that editor’s working file and the entire backend rerun passed. Parent remote remains 86d8b17. No skipped device/pilot/storage integration is counted as passing.
+
+Checkpoint 2 published: d48a6ac. Checkpoint 3 details and owner actions: [FIVE-IMPROVEMENTS-VALIDATION.md](FIVE-IMPROVEMENTS-VALIDATION.md). Sarvam has not been called; the owner confirmed Render-only key and chose unmeasured live results. Same-source APK assembled, Android lint passed (0 errors, 28 warnings), no ADB device. Final backend run: 344 passed. Browser rerun and final evidence append follow.

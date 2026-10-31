@@ -524,13 +524,82 @@ def reminder(eid: str):
         if balance <= 0:
             raise RuleError("No recorded outstanding amount for this customer.")
         whole, cents = divmod(balance, 100)
+        amount_str = f"{whole}.{cents:02d}" if cents else str(whole)
+
+        # Fetch store settings (may not exist yet for older stores)
+        principal = auth.current()
+        settings_row = db.execute(
+            select(m.store_settings).where(m.store_settings.c.store_id == principal.store_id)
+        ).mappings().first()
+        upi_vpa = settings_row["upi_vpa"] if settings_row else None
+        lang = (settings_row["reminder_language"] if settings_row else None) or "en"
+
+        store_name = principal.store_name
+
+        # Multilingual reminder templates — merchant must review before sending
+        templates = {
+            "en": (
+                f"Namaste {p['name']} ji, your pending balance at {store_name} is "
+                f"INR {amount_str} (\u20b9{amount_str}). Kindly settle at your convenience. Thank you!"
+            ),
+            "hi": (
+                f"\u0928\u092e\u0938\u094d\u0924\u0947 {p['name']} \u091c\u0940, "
+                f"{store_name} \u092e\u0947\u0902 \u0906\u092a\u0915\u093e \u092c\u0915\u093e\u092f\u093e "
+                f"\u0930\u093e\u0936\u093f INR {amount_str} (\u20b9{amount_str}) \u0939\u0948\u0964 "
+                f"\u0915\u0943\u092a\u092f\u093e \u0938\u0941\u0935\u093f\u0927\u093e\u0928\u0941\u0938\u093e\u0930 "
+                f"\u091c\u092e\u093e \u0915\u0930\u0947\u0902\u0964 \u0927\u0928\u094d\u092f\u0935\u093e\u0926!"
+            ),
+            "kn": (
+                f"\u0ca8\u0cae\u0cb8\u0ccd\u0c95\u0cbe\u0cb0 {p['name']} \u0c85\u0cb5\u0cb0\u0cc7, "
+                f"{store_name} \u0ca8\u0cb2\u0ccd\u0cb2\u0cbf \u0ca8\u0cbf\u0cae\u0ccd\u0cae \u0cac\u0cbe\u0c95\u0cbf "
+                f"INR {amount_str} (\u20b9{amount_str}) \u0c87\u0ca6\u0cc6. \u0c85\u0ca8\u0cc1\u0c95\u0cc2\u0cb2\u0cb5\u0cbe\u0c97\u0cbf "
+                f"\u0caa\u0ca1\u0cc6 \u0cae\u0cbe\u0ca1\u0cbf. \u0ca7\u0ca8\u0ccd\u0caf\u0cb5\u0cbe\u0ca6\u0c97\u0cb3\u0cc1!"
+            ),
+        }
+        text = templates.get(lang, templates["en"])
+
+        # Build UPI deep link if store VPA is configured
+        payment_link = None
+        upi_display = None
+        if upi_vpa:
+            import urllib.parse
+            clean_store = store_name.replace(" ", "")
+            params = f"pa={upi_vpa}&pn={urllib.parse.quote(clean_store)}&am={amount_str}&cu=INR"
+            payment_link = f"upi://pay?{params}"
+            if lang == "hi":
+                text_with_link = (
+                    f"\u0928\u092e\u0938\u094d\u0924\u0947 {p['name']} \u091c\u0940, {store_name} \u092e\u0947\u0902 "
+                    f"\u0906\u092a\u0915\u093e \u092c\u0915\u093e\u092f\u093e \u0930\u093e\u0936\u093f \u20b9{amount_str} \u0939\u0948\u0964 "
+                    f"\u0915\u0943\u092a\u092f\u093e \u0907\u0938 UPI \u0932\u093f\u0902\u0915 \u0938\u0947 \u092d\u0941\u0917\u0924\u093e\u0928 \u0915\u0930\u0947\u0902: {payment_link}\u0964 \u0927\u0928\u094d\u092f\u0935\u093e\u0926!"
+                )
+            elif lang == "kn":
+                text_with_link = (
+                    f"\u0ca8\u0cae\u0cb8\u0ccd\u0c95\u0cbe\u0cb0 {p['name']} \u0c85\u0cb5\u0cb0\u0cc7, {store_name} \u0ca8\u0cb2\u0ccd\u0cb2\u0cbf "
+                    f"\u0ca8\u0cbf\u0cae\u0ccd\u0cae \u0cac\u0cbe\u0c95\u0cbf \u20b9{amount_str} \u0c87\u0ca6\u0cc6. "
+                    f"\u0ca6\u0caf\u0cb5\u0cbf\u0c9f\u0ccd\u0c9f\u0cc1 \u0c88 UPI \u0cb2\u0cbf\u0c82\u0c95\u0ccd \u0cac\u0cb3\u0cb8\u0cbf \u0caa\u0cbe\u0cb5\u0ca4\u0cbf\u0cb8\u0cbf: {payment_link}. \u0ca7\u0ca8\u0ccd\u0caf\u0cb5\u0cbe\u0ca6\u0c97\u0cb3\u0cc1!"
+                )
+            else:
+                text_with_link = (
+                    f"Namaste {p['name']} ji, your pending balance at {store_name} is "
+                    f"INR {amount_str} (\u20b9{amount_str}). Kindly pay using this UPI link: {payment_link}. Thank you!"
+                )
+            upi_display = payment_link
+        else:
+            text_with_link = text
+
         audit(db, eid, "Local customer reminder draft prepared; no message sent")
         return {
-            "text": f"Hello {p['name']}, our manually reviewed records show INR {whole}.{cents:02d} pending. Please check this with us if anything differs. Thank you.",
+            "text": text_with_link,
+            "text_plain": text,
             "amount_paise": balance,
+            "customer_name": p["name"],
+            "customer_phone": p["phone"],
+            "store_name": store_name,
+            "upi_vpa": upi_vpa,
+            "payment_link": upi_display,
+            "lang": lang,
             "review_required": True,
             "sent": False,
-            "payment_link": None,
         }
 
 
@@ -658,3 +727,148 @@ def campaigns():
                 }
             )
         return result
+
+
+# ---------------------------------------------------------------------------
+# Store settings (UPI VPA + reminder language) — Feature 1
+# ---------------------------------------------------------------------------
+
+class StoreSettingsInput(StrictModel):
+    upi_vpa: str | None = None
+    reminder_language: str = "en"
+
+
+@router.get("/store-settings")
+def get_store_settings():
+    with store.connect() as db:
+        sid = auth.current().store_id
+        row = db.execute(
+            select(m.store_settings).where(m.store_settings.c.store_id == sid)
+        ).mappings().first()
+        if not row:
+            return {"upi_vpa": None, "reminder_language": "en"}
+        return {"upi_vpa": row["upi_vpa"], "reminder_language": row["reminder_language"]}
+
+
+@router.patch("/store-settings")
+def update_store_settings(body: StoreSettingsInput):
+    if body.reminder_language not in ("en", "hi", "kn"):
+        raise RuleError("Reminder language must be en, hi or kn.")
+    if body.upi_vpa is not None:
+        import re
+        if not re.fullmatch(r"[a-zA-Z0-9.\-_@]{3,120}", body.upi_vpa or ""):
+            raise RuleError("Enter a valid UPI VPA (e.g. storename@paytm).")
+    with store.connect("write") as db:
+        sid = auth.current("write").store_id
+        existing = db.execute(
+            select(m.store_settings).where(m.store_settings.c.store_id == sid)
+        ).mappings().first()
+        from datetime import datetime, timezone
+        from sqlalchemy import insert, update as sa_update
+        now = datetime.now(timezone.utc)
+        if existing:
+            db.execute(
+                sa_update(m.store_settings)
+                .where(m.store_settings.c.store_id == sid)
+                .values(
+                    upi_vpa=body.upi_vpa,
+                    reminder_language=body.reminder_language,
+                    updated_at=now,
+                )
+            )
+        else:
+            db.execute(
+                insert(m.store_settings).values(
+                    store_id=sid,
+                    upi_vpa=body.upi_vpa,
+                    reminder_language=body.reminder_language,
+                    updated_at=now,
+                )
+            )
+        store.audit_record(db, sid, "Store settings updated", entity_type="store_settings")
+        return {"upi_vpa": body.upi_vpa, "reminder_language": body.reminder_language}
+
+
+# ---------------------------------------------------------------------------
+# Galla Hisab (Nightly Cash Drawer Balancing) — Feature 2
+# ---------------------------------------------------------------------------
+
+class GallaHisabCheck(StrictModel):
+    counted_cash_paise: int = Field(ge=0, le=1000000000000, strict=True)
+
+
+@router.get("/galla-hisab")
+def get_galla_hisab():
+    with store.connect() as db:
+        rows = active_entries(db)
+        today_date = today()
+        opening = next((r for r in rows if r["kind"] == "opening_cash"), None)
+        opening_paise = opening["amount_paise"] if opening else 0
+
+        today_cash_sales = sum(
+            r["amount_paise"]
+            for r in rows
+            if r["kind"] == "cash_sale" and r["occurred_on"] == today_date and r["payment_channel"] == "cash"
+        )
+        today_cash_collections = sum(
+            r["amount_paise"]
+            for r in rows
+            if r["kind"] == "collection" and r["occurred_on"] == today_date and r["payment_channel"] == "cash"
+        )
+        today_expenses_rows = [
+            r for r in rows
+            if r["kind"] in ("expense", "payable_payment") and r["occurred_on"] == today_date and r["payment_channel"] == "cash"
+        ]
+        today_cash_expenses = sum(r["amount_paise"] for r in today_expenses_rows)
+
+        expected_cash_paise = max(0, opening_paise + today_cash_sales + today_cash_collections - today_cash_expenses)
+
+        expense_breakdown = {}
+        for r in today_expenses_rows:
+            cat = r.get("category", "other")
+            expense_breakdown[cat] = expense_breakdown.get(cat, 0) + r["amount_paise"]
+
+        return {
+            "as_of": today_date.isoformat(),
+            "opening_cash_paise": opening_paise,
+            "cash_sales_today_paise": today_cash_sales,
+            "cash_collections_today_paise": today_cash_collections,
+            "cash_expenses_today_paise": today_cash_expenses,
+            "expected_cash_paise": expected_cash_paise,
+            "expenses_breakdown": expense_breakdown,
+            "has_opening_cash": opening is not None,
+        }
+
+
+@router.post("/galla-hisab/verify")
+def verify_galla_hisab(body: GallaHisabCheck):
+    with store.connect("write") as db:
+        data = get_galla_hisab()
+        expected = data["expected_cash_paise"]
+        counted = body.counted_cash_paise
+        diff = counted - expected
+
+        if diff == 0:
+            status = "balanced"
+            badge = "Exact match! Cash drawer is balanced."
+        elif diff < 0:
+            status = "shortage"
+            shortage_paise = abs(diff)
+            w, c = divmod(shortage_paise, 100)
+            shortage_str = f"₹{w}.{c:02d}" if c else f"₹{w}"
+            badge = f"Shortage of {shortage_str} — Check for unrecorded cash payments or counting discrepancy."
+        else:
+            status = "surplus"
+            surplus_paise = diff
+            w, c = divmod(surplus_paise, 100)
+            surplus_str = f"₹{w}.{c:02d}" if c else f"₹{w}"
+            badge = f"Surplus of {surplus_str} — Check for unrecorded sales or counting discrepancy."
+
+        audit(db, auth.current().store_id, f"Galla Hisab verified: counted {counted}, expected {expected}, status: {status}")
+        return {
+            **data,
+            "counted_cash_paise": counted,
+            "difference_paise": diff,
+            "status": status,
+            "badge": badge,
+        }

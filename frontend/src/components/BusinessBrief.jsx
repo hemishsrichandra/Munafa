@@ -3,7 +3,8 @@ import { api, money } from '../api';
 import { useSession } from '../session';
 export function BusinessBrief({ follow }) {
   const [data, setData] = useState(null),
-    [error, setError] = useState('');
+    [error, setError] = useState(''),
+    [briefReminder, setBriefReminder] = useState(null);
   async function load() {
     setError('');
     try {
@@ -84,34 +85,151 @@ export function BusinessBrief({ follow }) {
             </p>
           )}
           <div className="commerce-list">
-            {data.items.map((item) => (
-              <article className="panel" key={item.action_id}>
-                <small>
-                  {item.mode === 'demo' ? 'SYNTHETIC DEMO · ' : ''}
-                  {item.data_freshness.stale
-                    ? 'Older records · check for updates'
-                    : 'Ready to review'}
-                </small>
-                <h3>{item.title}</h3>
-                <p>
-                  {item.type === 'reconciliation'
-                    ? 'Check the settlement breakdown against the recorded payout.'
-                    : item.reason}
+            {briefReminder && (
+              <div
+                className="info-box"
+                style={{
+                  borderLeft: '4px solid #25d366',
+                  padding: '0.75rem',
+                  marginBottom: '1rem',
+                  background: '#f0fdf4',
+                }}
+              >
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <strong>💬 WhatsApp Reminder Draft Prepared</strong>
+                  <button className="text-button" onClick={() => setBriefReminder(null)}>
+                    Dismiss
+                  </button>
+                </div>
+                <p style={{ margin: '0.4rem 0', fontSize: '0.85rem' }}>
+                  Prepared for <strong>{briefReminder.customer_name}</strong> (
+                  {money(briefReminder.amount_paise)} pending).
                 </p>
-                {item.type === 'reconciliation' && (
-                  <details>
-                    <summary>Why this needs review</summary>
-                    <p>{item.reason}</p>
-                  </details>
+                <p
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: '0.8rem',
+                    background: '#fff',
+                    padding: '0.5rem',
+                    borderRadius: '4px',
+                  }}
+                >
+                  {briefReminder.text_plain || briefReminder.text}
+                </p>
+                {briefReminder.customer_phone ? (
+                  <a
+                    className="button primary small"
+                    href={`https://wa.me/${briefReminder.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(briefReminder.text)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ textDecoration: 'none', display: 'inline-block', marginTop: '0.4rem' }}
+                  >
+                    📲 Open in WhatsApp
+                  </a>
+                ) : (
+                  <small className="muted">
+                    No phone recorded for customer. Add phone in Daily Records.
+                  </small>
                 )}
-                <small>
-                  Record updated {new Date(item.data_freshness.source_updated_at).toLocaleString()}
-                </small>
-                <button className="button secondary" onClick={() => follow(item.route)}>
-                  Review source
-                </button>
-              </article>
-            ))}
+              </div>
+            )}
+            {data.items.map((item) =>
+              item.type === 'customer_credit_collection' ? (
+                <article
+                  className="panel"
+                  key={item.action_id}
+                  style={{
+                    border: '2px solid #ea4335',
+                    borderRadius: '8px',
+                    background: '#fff8f7',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '0.3rem',
+                    }}
+                  >
+                    <small style={{ color: '#c5221f', fontWeight: 'bold' }}>
+                      🔴 PRIORITY 1 ACTION
+                    </small>
+                    <span className="badge badge-warn">Overdue Khata</span>
+                  </div>
+                  <h3 style={{ margin: '0.2rem 0', color: '#b31412' }}>
+                    Customer Credit Collection
+                  </h3>
+                  <p style={{ fontSize: '0.95rem', margin: '0.5rem 0' }}>{item.reason}</p>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '0.5rem',
+                      flexWrap: 'wrap',
+                      marginTop: '0.75rem',
+                    }}
+                  >
+                    {item.top_customer && (
+                      <button
+                        className="button primary"
+                        onClick={async () => {
+                          try {
+                            const res = await api(
+                              `/records/customers/${item.top_customer.customer_id}/reminder`,
+                              { method: 'POST' },
+                            );
+                            setBriefReminder(res);
+                            if (res.customer_phone) {
+                              window.open(
+                                `https://wa.me/${res.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(res.text)}`,
+                                '_blank',
+                              );
+                            }
+                          } catch (e) {
+                            setError(e.message);
+                          }
+                        }}
+                      >
+                        📲 Send {item.top_customer.customer_name} Reminder
+                      </button>
+                    )}
+                    <button className="button secondary" onClick={() => follow(item.route)}>
+                      📋 View All Dues
+                    </button>
+                  </div>
+                </article>
+              ) : (
+                <article className="panel" key={item.action_id}>
+                  <small>
+                    {item.mode === 'demo' ? 'SYNTHETIC DEMO · ' : ''}
+                    {item.data_freshness.stale
+                      ? 'Older records · check for updates'
+                      : 'Ready to review'}
+                  </small>
+                  <h3>{item.title}</h3>
+                  <p>
+                    {item.type === 'reconciliation'
+                      ? 'Check the settlement breakdown against the recorded payout.'
+                      : item.reason}
+                  </p>
+                  {item.type === 'reconciliation' && (
+                    <details>
+                      <summary>Why this needs review</summary>
+                      <p>{item.reason}</p>
+                    </details>
+                  )}
+                  <small>
+                    Record updated{' '}
+                    {new Date(item.data_freshness.source_updated_at).toLocaleString()}
+                  </small>
+                  <button className="button secondary" onClick={() => follow(item.route)}>
+                    Review source
+                  </button>
+                </article>
+              ),
+            )}
           </div>
           {data.omitted_count > 0 && (
             <p>

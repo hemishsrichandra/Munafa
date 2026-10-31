@@ -1,0 +1,65 @@
+{
+  "schema_version": 2,
+  "synthetic": true,
+  "sample_size": 5,
+  "measured_documents": 0,
+  "field_exact_match": null,
+  "field_metrics": {},
+  "field_recall": null,
+  "field_precision": null,
+  "field_difference_rate": null,
+  "failure_rate": null,
+  "p50_latency_ms": null,
+  "p95_latency_ms": null,
+  "usage_estimate_paise_excluding_gst": null,
+  "verified_billed_cost_paise": null,
+  "cost_per_accepted_invoice_paise": null,
+  "human_correction_rate": null,
+  "correction_adjusted_task_time_ms": null,
+  "actual_merchant_pilot": false,
+  "results": [
+    {
+      "id": "printed-en",
+      "condition": "printed_synthetic",
+      "language": "en",
+      "status": "not_measured"
+    },
+    {
+      "id": "thermal-en",
+      "condition": "thermal_typography_proxy",
+      "language": "en",
+      "status": "not_measured"
+    },
+    {
+      "id": "handwriting-proxy",
+      "condition": "handwriting_typography_proxy",
+      "language": "en",
+      "status": "not_measured"
+    },
+    {
+      "id": "printed-hi",
+      "condition": "printed_synthetic",
+      "language": "hi",
+      "status": "not_measured"
+    },
+    {
+      "id": "printed-kn",
+      "condition": "printed_synthetic",
+      "language": "kn",
+      "status": "not_measured"
+    }
+  ],
+  "limitations": [
+    "Five controlled synthetic layouts are not a representative real-invoice sample.",
+    "Thermal/handwriting typography proxies are not actual thermal photographs or handwritten invoices.",
+    "Field errors versus programmatic ground truth are not observed human corrections or timing.",
+    "No merchant acceptances, human correction time, verified billing or real pilot are measured."
+  ],
+  "status": "NOT_MEASURED",
+  "reason": "Owner confirmed Sarvam key is on Render only; no live API calls made.",
+  "provider": "sarvam",
+  "model": "gemma4",
+  "request_attempts": 0,
+  "paid_api_calls": 0,
+  "accepted_invoices": 0
+}

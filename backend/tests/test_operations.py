@@ -82,7 +82,7 @@ def test_real_pg_snapshot_archive_restore_and_encrypted_upload_contract(client, 
     manifest = backup.archive_database(config.source_url, database, archive)
     assert manifest["archive_verified"] is True and not manifest["offhost_verified"]
     assert manifest["table_counts"]["cases"] == 1
-    assert manifest["migration_head"] == "f237b2e9c014"
+    assert manifest["migration_head"] == "a1b2c3d4e5f6"
     assert not manifest["restore_rehearsed"]
     restored = backup.restore_rehearsal(archive, manifest, config.source_url)
     assert restored["restore_rehearsed"] and restored["existing_database_overwritten"] is False

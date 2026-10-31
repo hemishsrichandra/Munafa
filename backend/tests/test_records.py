@@ -379,3 +379,57 @@ def test_noncash_manual_payment_reduces_debt_without_inventing_cash(client):
     assert summary(client)["cash"]["recorded_balance_paise"] == 10000
     assert summary(client)["customers"][0]["outstanding_paise"] == 10000
     assert entry(client, "opening_cash", 1, payment_channel="bank").status_code == 409
+
+
+def test_store_settings_and_whatsapp_upi_reminder(client):
+    settings = ok(client.get("/api/records/store-settings"))
+    assert settings["upi_vpa"] is None
+    assert settings["reminder_language"] == "en"
+
+    updated = ok(
+        client.patch(
+            "/api/records/store-settings",
+            json={"upi_vpa": "lakshmi@paytm", "reminder_language": "hi"},
+        )
+    )
+    assert updated["upi_vpa"] == "lakshmi@paytm"
+    assert updated["reminder_language"] == "hi"
+
+    p = customer(client)
+    ok(entry(client, amount=125000, customer_id=p["id"]), 201)
+    r = ok(client.post(f"/api/records/customers/{p['id']}/reminder"))
+    assert r["amount_paise"] == 125000
+    assert r["upi_vpa"] == "lakshmi@paytm"
+    assert "upi://pay?pa=lakshmi@paytm" in r["payment_link"]
+    assert "1250" in r["payment_link"]
+    assert "upi://pay?pa=lakshmi@paytm" in r["text"]
+    assert "1250" in r["text"]
+    assert r["sent"] is False
+
+
+def test_galla_hisab_expected_calculation_and_verification(client):
+    # Starting cash: ₹2,000 (200000 paise)
+    ok(entry(client, "opening_cash", 200000), 201)
+    # Cash sales today: ₹8,450 (845000 paise)
+    ok(entry(client, "cash_sale", 845000, payment_channel="cash"), 201)
+    # Cash expenses today: ₹1,200 (120000 paise)
+    ok(entry(client, "expense", 120000, category="transport", payment_channel="cash"), 201)
+
+    hisab = ok(client.get("/api/records/galla-hisab"))
+    # Expected: 2000 + 8450 - 1200 = 9250 (925000 paise)
+    assert hisab["opening_cash_paise"] == 200000
+    assert hisab["cash_sales_today_paise"] == 845000
+    assert hisab["cash_expenses_today_paise"] == 120000
+    assert hisab["expected_cash_paise"] == 925000
+
+    # Counted cash: ₹9,100 (910000 paise) -> shortage of ₹150 (15000 paise)
+    res = ok(client.post("/api/records/galla-hisab/verify", json={"counted_cash_paise": 910000}))
+    assert res["status"] == "shortage"
+    assert res["difference_paise"] == -15000
+    assert "Shortage of ₹150" in res["badge"]
+
+    # Counted cash: ₹9,250 (925000 paise) -> exact match
+    res_exact = ok(client.post("/api/records/galla-hisab/verify", json={"counted_cash_paise": 925000}))
+    assert res_exact["status"] == "balanced"
+    assert res_exact["difference_paise"] == 0
+    assert "Exact match" in res_exact["badge"]

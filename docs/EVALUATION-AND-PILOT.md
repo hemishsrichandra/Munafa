@@ -45,7 +45,7 @@ Structural checks do not prove source quality, legal consent or real data.
 Retain the existing 12-case synthetic corpus, calibration/held-out split, generated
 image variants, ground truth and adversarial cases in `evaluation/corpus/`.
 Do not relabel it real, independently annotated or statistically representative.
-The existing `scripts/evaluate_ai.py` scorer remains the single invoice evaluator;
+The existing `scripts/evaluate_ai.py` scorer remains the shared field-comparison baseline;
 see `docs/AI-EVALUATION.md` and `AI-DATA-HANDLING.md`. Provider comparison is blocked
 until permissioned data, provider access, handling review and independent reviewers
 exist. No new cloud call or price/model quality claim is made by this extension.
@@ -155,3 +155,5 @@ outlier/small-cell suppression, repeated-query/differencing controls and attack
 tests, retention and withdrawal. Removing names alone is not anonymisation.
 There is no configured safe cohort threshold or privacy review, so every cohort
 is suppressed regardless of a client-supplied size. No raw peer data reaches an LLM.
+
+31 October supplement: [five-improvement validation](FIVE-IMPROVEMENTS-VALIDATION.md) records the bounded synthetic image runner and available browser/APK evidence. It does not establish a real-invoice or merchant pilot result. No pilot participant was recruited.

@@ -72,7 +72,18 @@ def _extract_once(text=None, data=None, mime=None):
     }
     if mime == "application/pdf":
         pdf = pdf_text(data)
-        prov.update(page_count=pdf["page_count"], text_pages=[p["page"] for p in pdf["pages"]])
+        prov.update(
+            page_count=pdf["page_count"],
+            text_pages=[p["page"] for p in pdf["pages"]],
+            text_complete=pdf.get("text_complete", False),
+            truncated=pdf.get("truncated", False),
+        )
+        if pdf.get("truncated"):
+            return PurchaseDraft().model_dump(mode="json"), {
+                **prov,
+                "manual_required": True,
+                "warning": "PDF text exceeds the safe extraction limit and is incomplete. Review the entire preserved document and enter the invoice manually.",
+            }
         text = "\n".join(f"Page {p['page']}\n{p['text']}" for p in pdf["pages"])
         if pdf.get("error") or not text.strip():
             return PurchaseDraft().model_dump(mode="json"), {
@@ -103,6 +114,7 @@ def _extract_once(text=None, data=None, mime=None):
         else text
     )
     started = time.monotonic()
+    reported = {}
     try:
         result = ai.post(
             "/v2/chat/completions",
@@ -115,6 +127,18 @@ def _extract_once(text=None, data=None, mime=None):
                 "temperature": 0,
                 "max_tokens": 4000,
             },
+        )
+        usage = result.get("usage", {})
+        reported = (
+            {
+                k: v
+                for k, v in usage.items()
+                if k in ("prompt_tokens", "completion_tokens", "total_tokens")
+                and type(v) is int
+                and v >= 0
+            }
+            if isinstance(usage, dict)
+            else {}
         )
         raw = result["choices"][0]["message"]["content"].strip()
         if raw.startswith("```"):
@@ -160,18 +184,6 @@ def _extract_once(text=None, data=None, mime=None):
             rounding_paise=paise(parsed.get("rounding"), True) or 0,
             total_paise=paise(parsed.get("total")),
         )
-        usage = result.get("usage", {})
-        reported = (
-            {
-                k: v
-                for k, v in usage.items()
-                if k in ("prompt_tokens", "completion_tokens", "total_tokens")
-                and isinstance(v, int)
-                and v >= 0
-            }
-            if isinstance(usage, dict)
-            else {}
-        )
         return d.model_dump(mode="json"), {
             **prov,
             "provider": "sarvam",
@@ -186,6 +198,7 @@ def _extract_once(text=None, data=None, mime=None):
             "provider": "sarvam",
             "model": model,
             "latency_ms": int((time.monotonic() - started) * 1000),
+            "provider_reported_usage": reported,
             "failure_kind": "provider_error" if isinstance(exc, RuleError) else "invalid",
             "warning": "Extraction was invalid or incomplete. No stock or purchase was accepted. Complete the manual draft against the preserved source.",
         }
