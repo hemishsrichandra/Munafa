@@ -18,7 +18,17 @@ def build(db):
     items = []
 
     def add(
-        kind, eid, title, reason, priority, source_ids, route, observed, status="open", demo=None, **extra
+        kind,
+        eid,
+        title,
+        reason,
+        priority,
+        source_ids,
+        route,
+        observed,
+        status="open",
+        demo=None,
+        **extra,
     ):
         observed = observed if isinstance(observed, datetime) else datetime.fromisoformat(observed)
         item = {
@@ -169,9 +179,11 @@ def build(db):
         if remaining > 0 and r["due_on"] and r["due_on"] < today and r["customer_id"]:
             cid = r["customer_id"]
             if cid not in overdue_by_customer:
-                cust = db.execute(
-                    select(m.business_customers).where(m.business_customers.c.id == cid)
-                ).mappings().first()
+                cust = (
+                    db.execute(select(m.business_customers).where(m.business_customers.c.id == cid))
+                    .mappings()
+                    .first()
+                )
                 cname = cust["name"] if cust else "Unknown Customer"
                 cphone = cust["phone"] if cust else ""
                 overdue_by_customer[cid] = {

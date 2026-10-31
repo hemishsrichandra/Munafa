@@ -152,3 +152,7 @@ Suggested continuation:
 ## 31 October five-improvement continuation
 
 Start with [FIVE-IMPROVEMENTS-VALIDATION.md](FIVE-IMPROVEMENTS-VALIDATION.md) and [IMPROVEMENTS-HANDOFF.md](IMPROVEMENTS-HANDOFF.md). Onboarding/home checkpoint cc17329 and recovery/operations d48a6ac were pushed. Preserve parallel uncommitted store-settings/UPI work and unrelated regulatory-starter deletions. Provider access is operator-approved; demo AI is default-off. Backups need a private destination; Sarvam key is Render-only and live OCR was explicitly left unmeasured. Actual Android/pilot access is unavailable. No destructive migration/import or new paid API was performed.
+
+## Owner stop checkpoint
+
+Work stopped on request. Start at the top of [IMPROVEMENTS-HANDOFF.md](IMPROVEMENTS-HANDOFF.md): latest combined product eb003ee, 353 backend tests passed, 19 offline tests passed; combined browser result not confirmed at stop (33 passed on prior isolated implementation). APK build/lint passed; real device/pilot, live OCR and configured off-host backups remain unavailable. Preserve parallel committed features and unrelated local starter deletions. No new work until owner resumes.

@@ -528,9 +528,13 @@ def reminder(eid: str):
 
         # Fetch store settings (may not exist yet for older stores)
         principal = auth.current()
-        settings_row = db.execute(
-            select(m.store_settings).where(m.store_settings.c.store_id == principal.store_id)
-        ).mappings().first()
+        settings_row = (
+            db.execute(
+                select(m.store_settings).where(m.store_settings.c.store_id == principal.store_id)
+            )
+            .mappings()
+            .first()
+        )
         upi_vpa = settings_row["upi_vpa"] if settings_row else None
         lang = (settings_row["reminder_language"] if settings_row else None) or "en"
 
@@ -563,6 +567,7 @@ def reminder(eid: str):
         upi_display = None
         if upi_vpa:
             import urllib.parse
+
             clean_store = store_name.replace(" ", "")
             params = f"pa={upi_vpa}&pn={urllib.parse.quote(clean_store)}&am={amount_str}&cu=INR"
             payment_link = f"upi://pay?{params}"
@@ -733,6 +738,7 @@ def campaigns():
 # Store settings (UPI VPA + reminder language) — Feature 1
 # ---------------------------------------------------------------------------
 
+
 class StoreSettingsInput(StrictModel):
     upi_vpa: str | None = None
     reminder_language: str = "en"
@@ -742,9 +748,11 @@ class StoreSettingsInput(StrictModel):
 def get_store_settings():
     with store.connect() as db:
         sid = auth.current().store_id
-        row = db.execute(
-            select(m.store_settings).where(m.store_settings.c.store_id == sid)
-        ).mappings().first()
+        row = (
+            db.execute(select(m.store_settings).where(m.store_settings.c.store_id == sid))
+            .mappings()
+            .first()
+        )
         if not row:
             return {"upi_vpa": None, "reminder_language": "en"}
         return {"upi_vpa": row["upi_vpa"], "reminder_language": row["reminder_language"]}
@@ -756,15 +764,19 @@ def update_store_settings(body: StoreSettingsInput):
         raise RuleError("Reminder language must be en, hi or kn.")
     if body.upi_vpa is not None:
         import re
+
         if not re.fullmatch(r"[a-zA-Z0-9.\-_@]{3,120}", body.upi_vpa or ""):
             raise RuleError("Enter a valid UPI VPA (e.g. storename@paytm).")
     with store.connect("write") as db:
         sid = auth.current("write").store_id
-        existing = db.execute(
-            select(m.store_settings).where(m.store_settings.c.store_id == sid)
-        ).mappings().first()
+        existing = (
+            db.execute(select(m.store_settings).where(m.store_settings.c.store_id == sid))
+            .mappings()
+            .first()
+        )
         from datetime import datetime, timezone
         from sqlalchemy import insert, update as sa_update
+
         now = datetime.now(timezone.utc)
         if existing:
             db.execute(
@@ -793,6 +805,7 @@ def update_store_settings(body: StoreSettingsInput):
 # Galla Hisab (Nightly Cash Drawer Balancing) — Feature 2
 # ---------------------------------------------------------------------------
 
+
 class GallaHisabCheck(StrictModel):
     counted_cash_paise: int = Field(ge=0, le=1000000000000, strict=True)
 
@@ -808,20 +821,29 @@ def get_galla_hisab():
         today_cash_sales = sum(
             r["amount_paise"]
             for r in rows
-            if r["kind"] == "cash_sale" and r["occurred_on"] == today_date and r["payment_channel"] == "cash"
+            if r["kind"] == "cash_sale"
+            and r["occurred_on"] == today_date
+            and r["payment_channel"] == "cash"
         )
         today_cash_collections = sum(
             r["amount_paise"]
             for r in rows
-            if r["kind"] == "collection" and r["occurred_on"] == today_date and r["payment_channel"] == "cash"
+            if r["kind"] == "collection"
+            and r["occurred_on"] == today_date
+            and r["payment_channel"] == "cash"
         )
         today_expenses_rows = [
-            r for r in rows
-            if r["kind"] in ("expense", "payable_payment") and r["occurred_on"] == today_date and r["payment_channel"] == "cash"
+            r
+            for r in rows
+            if r["kind"] in ("expense", "payable_payment")
+            and r["occurred_on"] == today_date
+            and r["payment_channel"] == "cash"
         ]
         today_cash_expenses = sum(r["amount_paise"] for r in today_expenses_rows)
 
-        expected_cash_paise = max(0, opening_paise + today_cash_sales + today_cash_collections - today_cash_expenses)
+        expected_cash_paise = max(
+            0, opening_paise + today_cash_sales + today_cash_collections - today_cash_expenses
+        )
 
         expense_breakdown = {}
         for r in today_expenses_rows:
@@ -862,9 +884,15 @@ def verify_galla_hisab(body: GallaHisabCheck):
             surplus_paise = diff
             w, c = divmod(surplus_paise, 100)
             surplus_str = f"₹{w}.{c:02d}" if c else f"₹{w}"
-            badge = f"Surplus of {surplus_str} — Check for unrecorded sales or counting discrepancy."
+            badge = (
+                f"Surplus of {surplus_str} — Check for unrecorded sales or counting discrepancy."
+            )
 
-        audit(db, auth.current().store_id, f"Galla Hisab verified: counted {counted}, expected {expected}, status: {status}")
+        audit(
+            db,
+            auth.current().store_id,
+            f"Galla Hisab verified: counted {counted}, expected {expected}, status: {status}",
+        )
         return {
             **data,
             "counted_cash_paise": counted,

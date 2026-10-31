@@ -429,7 +429,9 @@ def test_galla_hisab_expected_calculation_and_verification(client):
     assert "Shortage of ₹150" in res["badge"]
 
     # Counted cash: ₹9,250 (925000 paise) -> exact match
-    res_exact = ok(client.post("/api/records/galla-hisab/verify", json={"counted_cash_paise": 925000}))
+    res_exact = ok(
+        client.post("/api/records/galla-hisab/verify", json={"counted_cash_paise": 925000})
+    )
     assert res_exact["status"] == "balanced"
     assert res_exact["difference_paise"] == 0
     assert "Exact match" in res_exact["badge"]

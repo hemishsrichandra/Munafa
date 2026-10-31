@@ -16,12 +16,12 @@ def upgrade():
         sa.Column("upi_vpa", sa.String(length=120), nullable=True),
         sa.Column("reminder_language", sa.String(length=8), nullable=False, server_default="en"),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), nullable=False,
+            "updated_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
             server_default=sa.text("now()"),
         ),
-        sa.CheckConstraint(
-            "reminder_language IN ('en','hi','kn')", name="settings_language"
-        ),
+        sa.CheckConstraint("reminder_language IN ('en','hi','kn')", name="settings_language"),
         sa.ForeignKeyConstraint(
             ["store_id"], ["stores.id"], name=op.f("fk_store_settings_store_id_stores")
         ),

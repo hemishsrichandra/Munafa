@@ -1,5 +1,21 @@
 # Five-improvement validation and continuation
 
+## STOP checkpoint — owner requested handoff and no further work
+
+31 October 2026. Implementation/testing stopped at the owner’s request. **Latest combined published product commit: eb003ee** (parallel editor included our staged OCR/validation files in that commit). Earlier pushed checkpoints: cc17329 onboarding/home; d48a6ac recovery/security/backup tooling. Preserve this history; do not reset/rewrite it.
+
+Confirmed results: combined eb003ee **353 PostgreSQL backend tests passed**, 19 offline unit tests passed, Prettier passed. The preceding isolated implementation passed **344 backend and all 33 Playwright journeys**; the combined browser rerun had not returned a final result at the stop checkpoint, so do not claim the combined browser suite passed. No new tests should be launched without the owner resuming work. Combined source audit: 359 files, zero detected private-value/key-material leaks, zero runtime SQLite imports, 94 API endpoints; this is not a full security certification.
+
+Combined Android APK assembleDebug and lintDebug succeeded in a separate native export. Earlier app lint: 0 errors/28 warnings. No Android device connected, no install/hardware/pilot test. Current ignored APK: artifacts/android/munafa-debug-eb003ee.apk; SHA256 10318ef07afe6ef9321af08329243eaccc80116ba32dc7ba4825e5d427821e16. Rebuild from source on another system; APK is not committed. An earlier isolated APK has a different hash and is superseded for the combined UI. Five Python formatting-only changes have identical ASTs to tested eb003ee and are included with this handoff; Ruff check/format then passed. No framework/dependency update was performed in this final checkpoint.
+
+External gaps: live OCR remains **UNMEASURED** (owner confirmed key is Render-only; zero paid calls). No other paid API used. No configured off-host backup destination, no email recovery service, no real thermal/handwritten consented corpus, no actual Android device or merchant pilot. Recovery codes, manual workflows and default-off demo AI work without those prerequisites. See ACCOUNT-RECOVERY.md and ../ops/BACKUP-RECOVERY.md for setup. Render public health returned HTTP200 with signup/demo enabled and a server-side Sarvam key; this does not prove the latest rollout/migration or a live OCR test.
+
+Owner next actions: verify APP_ENV=production/ALLOW_DEV_LOGIN=0 and remove DEV_LOGIN_CODE in actual Render settings; keep PUBLIC_DEMO_AI_ENABLED=0; deliberately allow-ai only for trusted accounts if desired; configure and verify a private compatible backup destination; approve native https://localhost origin before actual APK API tests. Do not paste secrets. No live data import/reset/production restore or destructive retention action was performed.
+
+Continuation: pull main first, inspect status/instructions and coordinate any active editor. Parallel store-settings/UPI/receiving work is now committed in eb003ee, including migration a1b2c3d4e5f6 (parent f237b2e9c014); do not treat it as untracked or overwrite it. Unrelated deleted starters/regulatory-starter files remain local and excluded from commits. Retained safety stash 'codex recovery ops before latest Render config merge' must not be blindly popped. Temporary validation paths: /private/tmp/munafa-combined-340_u_9l (combined tests), /private/tmp/munafa-combined-native-jnf_8rcr (APK/lint), /private/tmp/munafa-validation-final-63z2np0p (isolated full browser pass). They are disposable machine-local evidence, not portable dependencies. Next session should first collect/finish combined browser validation only after owner authorisation, then address external gates. Never fabricate absent metrics or count unfinished tests as passing.
+
+Earlier checkpoint history below (superseded where the stop checkpoint differs):
+
 31 October 2026. This report distinguishes implemented software, synthetic regression evidence and unavailable field evidence. No real merchant documents, new production demo records, storage service or additional paid API was used. Sarvam is the only authorised paid AI provider; the local benchmark made **zero API calls** because its key exists only on Render. The owner chose to leave live results unmeasured.
 
 ## Delivery status

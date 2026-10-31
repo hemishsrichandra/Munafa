@@ -162,6 +162,7 @@ def expiry():
 def reorder_suggestions():
     import urllib.parse
     import re
+
     with store.connect() as db:
         prods = inventory.products(db)
         store_name = auth.current().store_name
