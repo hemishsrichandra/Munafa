@@ -3,12 +3,12 @@ import { ReceiptText, ChevronRight, X, AlertCircle, LoaderCircle } from 'lucide-
 import { money, day, today } from '../api';
 
 const labels = {
-  review: 'Needs review',
-  ready: 'Ready to share',
-  sent: 'Awaiting supplier',
-  promised: 'Credit promised',
-  partial: 'Partially resolved',
-  resolved: 'Resolved',
+  review: 'Check the bill',
+  ready: 'Confirmed Shortage',
+  sent: 'Waiting for supplier',
+  promised: 'Supplier promised',
+  partial: 'Some money returned',
+  resolved: 'Money received',
 };
 const badge = (status) => (
   <span className={`badge ${status}`}>

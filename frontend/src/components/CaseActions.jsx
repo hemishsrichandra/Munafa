@@ -401,14 +401,14 @@ function ResolveModal({ c, close, update, notify }) {
           )}
           <div className="form-grid resolution-form">
             <label className="field">
-              Resolution type
+              How did the supplier pay?
               <select value={data.kind} onChange={(e) => change('kind', e.target.value)}>
-                <option value="credit">Credit applied to a bill</option>
+                <option value="credit">Reduced from a bill</option>
                 <option value="refund">Refund received</option>
               </select>
             </label>
             <label className="field">
-              Amount actually applied / received (₹)
+              Money actually received or reduced from a bill (₹)
               <input
                 required
                 type="number"
@@ -438,7 +438,7 @@ function ResolveModal({ c, close, update, notify }) {
               />
             </label>
             <label className="field span-two">
-              Unique credit-note / refund reference
+              Credit note or refund number
               <input
                 required
                 placeholder="e.g. CN-148 or bank transaction reference"
@@ -498,7 +498,7 @@ function ResolveModal({ c, close, update, notify }) {
             disabled={busy || !data.attachment_id || !data.applied_confirmed}
           >
             <Busy busy={busy}>
-              <ShieldCheck size={16} /> Verify and record
+              <ShieldCheck size={16} /> Confirm money received
             </Busy>
           </button>
         </div>

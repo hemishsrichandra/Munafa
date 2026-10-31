@@ -372,7 +372,9 @@ export function Commerce({ openCase, initialRoute = '' }) {
       <div className="page-heading">
         <div>
           <span className="eyebrow">YOUR SUPPLY DESK</span>
-          <h1>Purchases & stock</h1>
+          <h1>
+            Deliveries &amp; Stock <small>सामान और स्टॉक</small>
+          </h1>
           <p>Review the bill first. Count the physical delivery separately.</p>
         </div>
         <button
@@ -389,9 +391,21 @@ export function Commerce({ openCase, initialRoute = '' }) {
             setReceiving(null);
           }}
         >
-          <Plus size={17} aria-hidden="true" /> New purchase
+          <Plus size={17} aria-hidden="true" /> Add New Bill · बिल जोड़ें
         </button>
       </div>
+      <ol className="delivery-steps" aria-label="Two steps for every delivery">
+        <li>
+          <strong>1 · What the bill says</strong>
+          <span>बिल में क्या लिखा है</span>
+          <small>Check items, prices and quantities. Saving a bill does not add stock.</small>
+        </li>
+        <li>
+          <strong>2 · Count Delivered Items</strong>
+          <span>सामान की गिनती</span>
+          <small>Count what arrived. Only confirmed usable items go into stock.</small>
+        </li>
+      </ol>
       <div className="commerce-summary" aria-label="Purchase and stock summary">
         <div>
           <span>
@@ -590,12 +604,12 @@ export function Commerce({ openCase, initialRoute = '' }) {
                         value={l.description}
                         change={(v) => changeLine(i, 'description', v)}
                       />
-                      <Field label="Reviewed SKU">
+                      <Field label="Reviewed Item">
                         <select
                           value={l.product_id || ''}
                           onChange={(e) => changeLine(i, 'product_id', e.target.value || null)}
                         >
-                          <option value="">Choose a SKU from Stock</option>
+                          <option value="">Choose a Item from Stock</option>
                           {products.map((p) => (
                             <option key={p.id} value={p.id}>
                               {p.name} ({p.unit})
@@ -736,7 +750,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
                       })
                     }
                   >
-                    Confirm reviewed invoice (no stock change)
+                    Save checked bill · stock stays the same
                   </button>
                 )}
                 {selected.status === 'accepted' && (
@@ -750,7 +764,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
                     ))}
                     {!selected.delivery_complete && (
                       <button className="button primary" onClick={() => startReceiving()}>
-                        Record physical delivery
+                        Count Delivered Items · सामान की गिनती
                       </button>
                     )}
                     {selected.receiving_drafts.map((r) => (
@@ -806,7 +820,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
                   });
                 }}
               >
-                <h2>Physical receiving</h2>
+                <h2>Count Delivered Items · सामान की गिनती</h2>
                 <p>
                   Enter quantities in this delivery only. Damaged units do not enter usable stock.
                 </p>
@@ -943,7 +957,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
         )}
         {tab === 'stock' && (
           <div className="panel">
-            <h2>SKU catalogue & confirmed stock</h2>
+            <h2>Item catalogue & confirmed stock</h2>
             {reorders.length > 0 && (
               <div
                 className="panel"
@@ -964,7 +978,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
                   }}
                 >
                   <h3 style={{ margin: 0, color: '#c62828' }}>
-                    ⚠️ Smart Low-Stock Reorder ({reorders.length} SKU
+                    ⚠️ Smart Low-Stock Reorder ({reorders.length} Item
                     {reorders.length !== 1 ? 's' : ''})
                   </h3>
                   <span className="badge badge-warn" style={{ fontWeight: 'bold' }}>
@@ -1076,7 +1090,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
                 })
               }
             >
-              New SKU
+              New Item
             </button>
             {products.map((p) => (
               <div className="panel commerce-stock-card" key={p.id}>
@@ -1092,8 +1106,12 @@ export function Commerce({ openCase, initialRoute = '' }) {
                   </div>
                 </div>
                 <p className="commerce-stock-balance">
-                  {p.stock_quantity} {p.unit} · {p.stock_state}{' '}
-                  {p.below_threshold ? '· REORDER' : ''}
+                  {p.stock_quantity} {p.unit} · Saved stock count{' '}
+                  {p.below_threshold ? (
+                    <span className="badge review">Low Stock Alert · सामान कम है</span>
+                  ) : (
+                    ''
+                  )}
                 </p>
                 <button
                   onClick={() =>
@@ -1102,9 +1120,9 @@ export function Commerce({ openCase, initialRoute = '' }) {
                     )
                   }
                 >
-                  Movement timeline
+                  Stock changes
                 </button>
-                <button onClick={() => setSku(p)}>Edit SKU</button>
+                <button onClick={() => setSku(p)}>Edit item</button>
                 <button
                   onClick={() =>
                     setMovement({
@@ -1124,7 +1142,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
               </div>
             ))}
             {!products.length && (
-              <p className="commerce-empty">Create a SKU before accepting invoice lines.</p>
+              <p className="commerce-empty">Create a Item before accepting invoice lines.</p>
             )}
             {sku && (
               <form
@@ -1148,7 +1166,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
                   });
                 }}
               >
-                <h3>SKU details</h3>
+                <h3>Item details</h3>
                 {['code', 'name', 'barcode', 'reorder_threshold'].map((k) => (
                   <Input
                     key={k}
@@ -1167,7 +1185,7 @@ export function Commerce({ openCase, initialRoute = '' }) {
                   Track expiry
                 </label>
                 <button className="button primary" disabled={actionsDisabled}>
-                  Save SKU
+                  Save Item
                 </button>
               </form>
             )}

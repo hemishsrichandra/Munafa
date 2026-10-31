@@ -53,8 +53,8 @@ function InvoiceModal({ close, create, config }) {
   }
   return (
     <Modal
-      title="Let’s check a delivery."
-      subtitle="Start with a bill. You’ll confirm what actually arrived."
+      title="Add New Bill · बिल जोड़ें"
+      subtitle="Step 1: Add the bill. Step 2: Count what arrived."
       close={close}
       closeDisabled={busy}
       wide

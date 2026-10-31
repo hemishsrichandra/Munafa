@@ -6,7 +6,7 @@ import { useOffline } from '../offline/provider';
 import * as db from '../offline/db';
 
 // ---------------------------------------------------------------------------
-// Galla Hisab (Nightly Cash Drawer Balancing) — Feature 2
+// Galla Hisab (गल्ला हिसाब / Cash Drawer) — Feature 2
 // ---------------------------------------------------------------------------
 function GallaHisabCard() {
   const [data, setData] = useState(null);
@@ -74,7 +74,7 @@ function GallaHisabCard() {
           flexWrap: 'wrap',
         }}
       >
-        <h3 style={{ margin: 0 }}>🌙 "Galla Hisab" — Nightly Cash Drawer Balancing</h3>
+        <h3 style={{ margin: 0 }}>🌙 "Galla Hisab" — गल्ला हिसाब / Cash Drawer</h3>
         <span className="badge" style={{ fontSize: '0.8rem' }}>
           Closing Register
         </span>
@@ -155,7 +155,7 @@ function GallaHisabCard() {
             fontSize: '1.05rem',
           }}
         >
-          <span>Expected Cash in Drawer:</span>
+          <span>Cash that should be in your galla:</span>
           <span style={{ color: 'var(--text-primary, #111)' }}>
             {money(data?.expected_cash_paise || 0)}
           </span>
@@ -311,13 +311,13 @@ function StoreSettingsPanel() {
 }
 
 const labels = {
-  opening_due: 'Opening customer due',
-  credit_sale: 'Sale on credit',
+  opening_due: 'Old customer udhaar',
+  credit_sale: 'Gave Credit (−) · उधार दिया',
   cash_sale: 'Paid sale',
-  collection: 'Customer payment received',
+  collection: 'Received Payment (+) · पैसा मिला',
   expense: 'Expense paid',
   opening_cash: 'Opening cash balance',
-  payable: 'Upcoming amount to pay',
+  payable: 'Money to Pay · सप्लायर को देना है',
   payable_payment: 'Payment of recorded payable',
 };
 const freshEntry = () => ({
@@ -397,6 +397,12 @@ export function DailyRecords({ initialRoute = '' }) {
       const url = new URL(route, location.origin);
       const parts = url.pathname.split('/').filter(Boolean);
       const section = parts[1];
+      if (section === 'galla' || section === 'new-credit') {
+        setSource(null);
+        setTab(section === 'galla' ? 'Cash outlook' : 'Sales & expenses');
+        if (section === 'new-credit') setEntry({ ...freshEntry(), kind: 'credit_sale' });
+        return;
+      }
       if (section === 'history') {
         setTab('Sales & expenses');
         const group = url.searchParams.get('group') || 'all';
@@ -506,7 +512,7 @@ export function DailyRecords({ initialRoute = '' }) {
       <div className="page-heading">
         <div>
           <div className="eyebrow">YOUR MANUAL RECORDS</div>
-          <h1>Daily records</h1>
+          <h1>Customer Khata · ग्राहक उधार</h1>
           <p>Customers, money and daily tasks — reviewed by you.</p>
         </div>
       </div>
@@ -633,7 +639,16 @@ export function DailyRecords({ initialRoute = '' }) {
           'Store settings',
         ].map((t) => (
           <button key={t} className={tab === t ? 'chosen' : ''} onClick={() => setTab(t)}>
-            {t}
+            {
+              {
+                Customers: 'Customer Khata · ग्राहक उधार',
+                'Sales & expenses': 'Sales & spending',
+                Tasks: 'Shop tasks',
+                'Cash outlook': 'Galla Hisab · गल्ला हिसाब',
+                'Marketing drafts': 'Offer messages',
+                'Store settings': 'Shop settings',
+              }[t]
+            }
           </button>
         ))}
       </div>
@@ -655,7 +670,7 @@ export function DailyRecords({ initialRoute = '' }) {
         {tab === 'Customers' && (
           <>
             <section className="panel">
-              <h2>Customer accounts</h2>
+              <h2>Money to Collect · उधार लेना है</h2>
               <p>
                 Balances come only from explicit opening dues, credit sales and allocated customer
                 payments.
@@ -707,6 +722,29 @@ export function DailyRecords({ initialRoute = '' }) {
                       marginTop: '0.5rem',
                     }}
                   >
+                    {canWrite && (
+                      <>
+                        <button
+                          className="button secondary"
+                          onClick={() => {
+                            setEntry({ ...freshEntry(), kind: 'credit_sale', customer_id: p.id });
+                            setTab('Sales & expenses');
+                          }}
+                        >
+                          Gave Credit (−) · उधार दिया
+                        </button>
+                        <button
+                          className="button primary"
+                          disabled={!p.outstanding_paise}
+                          onClick={() => {
+                            setEntry({ ...freshEntry(), kind: 'collection', customer_id: p.id });
+                            setTab('Sales & expenses');
+                          }}
+                        >
+                          Received Payment (+) · पैसा मिला
+                        </button>
+                      </>
+                    )}
                     {canWrite && (
                       <button
                         className="button secondary"
@@ -899,7 +937,7 @@ export function DailyRecords({ initialRoute = '' }) {
                   });
                 }}
               >
-                <h2>Record reviewed activity</h2>
+                <h2>Write a sale or payment</h2>
                 <p>
                   Choose the payment channel you actually checked. Bank and UPI receipts do not
                   change cash in the drawer. A paid sale is already paid. Choose how the money
@@ -964,7 +1002,7 @@ export function DailyRecords({ initialRoute = '' }) {
                     </Field>
                   )}
                   <Text
-                    label="Unique record reference"
+                    label="Entry number (must be different)"
                     required
                     value={entry.reference}
                     onChange={(v) => changeEntry('reference', v)}
@@ -1034,7 +1072,7 @@ export function DailyRecords({ initialRoute = '' }) {
                   className="button primary"
                   disabled={!entry.merchant_confirmed || !navigator.onLine}
                 >
-                  Save reviewed entry
+                  Save checked entry
                 </button>{' '}
                 <button
                   type="button"
@@ -1276,7 +1314,7 @@ export function DailyRecords({ initialRoute = '' }) {
           <>
             <GallaHisabCard />
             <section className="panel">
-              <h2>Manual cash outlook</h2>
+              <h2>Money coming and going</h2>
               <p>{data?.cash.warning}</p>
               <p>
                 Recorded cash:{' '}

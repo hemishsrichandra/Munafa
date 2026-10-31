@@ -1,4 +1,7 @@
 :root {
+  --merchant-green: #137333;
+  --merchant-red: #c5221f;
+  --merchant-amber: #8a4b00;
   font-family:
     'DM Sans',
     -apple-system,
@@ -4610,6 +4613,199 @@ textarea:focus-visible,
   }
   .commerce-row-total strong {
     font-size: 14px;
+  }
+}
+
+/* Merchant shell: four destinations on every device, same underlying routes. */
+.app-shell .sidebar {
+  display: none;
+}
+.app-shell .main-shell {
+  margin-left: 0;
+  width: 100%;
+}
+.app-shell main {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: 24px 24px 120px;
+}
+.app-shell .bottom-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 40;
+  padding: 8px max(8px, calc((100vw - 1100px) / 2)) calc(8px + env(safe-area-inset-bottom));
+  gap: 4px;
+  background: #fff;
+  border-top: 1px solid #cbd5ce;
+  box-shadow: 0 -4px 24px #173b2112;
+}
+.app-shell .bottom-nav > button {
+  min-width: 0;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  font-size: 13px;
+  color: #33483a;
+  white-space: normal;
+}
+.app-shell .bottom-nav > button[aria-current='page'] {
+  background: #e5f2e9;
+  color: #14532d;
+  font-weight: 700;
+}
+.app-shell .button,
+.app-shell .icon-button,
+.app-shell .tabs button,
+.app-shell input:not([type='checkbox']):not([type='radio']),
+.app-shell select {
+  min-height: 52px;
+}
+.app-shell .button {
+  font-size: 15px;
+  white-space: normal;
+  line-height: 1.45;
+  border-radius: 12px;
+}
+.app-shell .button.primary {
+  background: #137333;
+  border-color: #137333;
+  color: #fff;
+}
+.app-shell input,
+.app-shell select,
+.app-shell textarea {
+  font-size: 16px;
+}
+.app-shell .field {
+  color: #33483a;
+  font-size: 15px;
+  gap: 8px;
+}
+.app-shell .tiny-help,
+.app-shell .muted,
+.app-shell .metric-foot,
+.app-shell .metric-top {
+  color: #4b5d50;
+}
+.app-shell .metric-value {
+  font-size: clamp(24px, 4vw, 34px);
+}
+.app-shell .panel {
+  border-color: #d4ddd5;
+  border-radius: 16px;
+}
+.app-shell .tabs {
+  gap: 8px;
+  overflow-x: auto;
+}
+.app-shell .tabs button {
+  flex-shrink: 0;
+  font-size: 14px;
+  border-radius: 12px;
+}
+.app-shell .tabs button.chosen {
+  background: #e5f2e9;
+  color: #14532d;
+  border-color: #137333;
+}
+.app-shell .badge {
+  min-height: 30px;
+  font-size: 13px;
+  white-space: normal;
+}
+.app-shell .badge.resolved,
+.app-shell .green-text {
+  color: #137333;
+  background: #e6f4ea;
+}
+.app-shell .badge.review,
+.app-shell .badge.promised,
+.app-shell .badge.sent {
+  color: #804400;
+  background: #fff1d6;
+}
+.app-shell .badge.partial,
+.app-shell .error-box {
+  color: #a51d19;
+  background: #fce8e6;
+}
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.quick-actions button {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 8px;
+}
+.quick-actions small {
+  display: block;
+  font-size: 14px;
+}
+.delivery-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 0;
+  list-style: none;
+  gap: 12px;
+  margin: 18px 0;
+}
+.delivery-steps li {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid #c7dbcb;
+  background: #eff6ef;
+  border-radius: 16px;
+}
+.delivery-steps small {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #405545;
+}
+.commerce-workspace h1 small {
+  display: block;
+  font-size: 18px;
+  font-weight: 500;
+  margin-top: 8px;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #235caa;
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .app-shell main {
+    padding: 20px 12px 120px;
+  }
+  .app-shell .bottom-nav > button {
+    font-size: 11px;
+    padding: 8px 2px;
+  }
+  .quick-actions {
+    gap: 6px;
+  }
+  .quick-actions .button {
+    font-size: 13px;
+  }
+  .delivery-steps {
+    grid-template-columns: 1fr;
+  }
+  .app-shell .panel-heading {
+    flex-wrap: wrap;
   }
 }
 

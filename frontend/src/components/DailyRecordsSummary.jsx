@@ -48,8 +48,9 @@ export function DailyRecordsSummary({ openRecords }) {
         </button>
       </div>
       <p className="tiny-help">
-        Merchant-reviewed manual records · all recorded dates. Not total shop sales, profit or
-        verified bank data. Unsynced device drafts are excluded.
+        Sales are entries recorded for today. Customer udhaar and cash use your saved history. These
+        are your entries, not a bank check or complete shop profit. Entries still on your phone are
+        excluded.
       </p>
       {error ? (
         <div role="status">
@@ -68,25 +69,29 @@ export function DailyRecordsSummary({ openRecords }) {
           </p>
           <div className="metrics">
             <Metric
-              label="Recorded sales"
-              value={money(summary.sales_paise)}
+              label="Today’s recorded sales · आज की बिक्री"
+              value={money(summary.today.sales_paise)}
               Icon={ReceiptText}
               foot="Paid sales + sales on credit · View sources"
               onClick={() => openRecords(summary.source_routes.sales)}
             />
             <Metric
-              label="Customer dues"
+              label="Money to Collect · ग्राहक उधार"
               value={money(summary.customer_dues_paise)}
               Icon={Store}
               foot="Outstanding customer obligations · View sources"
               onClick={() => openRecords(summary.source_routes.dues)}
             />
             <Metric
-              label="Recorded expenses"
-              value={money(summary.expenses_paise)}
+              label="Cash in Galla · गल्ले में पैसा"
+              value={
+                summary.cash.opening_recorded
+                  ? money(summary.cash.recorded_balance_paise)
+                  : 'Not set'
+              }
               Icon={Wallet}
-              foot="All payment channels · View sources"
-              onClick={() => openRecords(summary.source_routes.expenses)}
+              foot="Cash only · Count your galla"
+              onClick={() => openRecords('/records/galla')}
             />
             <Metric
               label="Open tasks"

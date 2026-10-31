@@ -112,13 +112,15 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
         </div>
       </div>
       <div className="steps">
-        {['Confirm delivery', 'Approve evidence', 'Follow up', 'Verify resolution'].map((s, i) => (
-          <div key={s} className={i <= stage ? 'current' : ''}>
-            <span>{i < stage ? <Check size={14} /> : i + 1}</span>
-            {s}
-            {i < 3 && <ChevronRight size={15} />}
-          </div>
-        ))}
+        {['Count delivered items', 'Confirm shortage', 'Follow up', 'Check money received'].map(
+          (s, i) => (
+            <div key={s} className={i <= stage ? 'current' : ''}>
+              <span>{i < stage ? <Check size={14} /> : i + 1}</span>
+              {s}
+              {i < 3 && <ChevronRight size={15} />}
+            </div>
+          ),
+        )}
       </div>
       {!session.permissions.includes('approve') && (
         <div className="info-box" role="status">
@@ -203,31 +205,36 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
             <section className="panel">
               <div className="panel-heading">
                 <div>
-                  <h2>Confirmed delivery</h2>
+                  <h2>Items you counted</h2>
                   <p>Merchant-reviewed counts and effective prices.</p>
                 </div>
                 <ShieldCheck size={21} className="green-text" />
               </div>
-              <div className="confirmed-lines">
-                {c.invoice.lines.map((l, i) => (
-                  <div key={i}>
-                    <span className="line-check">
-                      <Check size={16} />
-                    </span>
-                    <div>
-                      <strong>{l.name}</strong>
-                      <span>
-                        {l.billed} billed · {l.received} received · {l.unit}
+              <details>
+                <summary className="panel-heading">
+                  See bill and counted quantities · गिनती देखें
+                </summary>
+                <div className="confirmed-lines">
+                  {c.invoice.lines.map((l, i) => (
+                    <div key={i}>
+                      <span className="line-check">
+                        <Check size={16} />
                       </span>
+                      <div>
+                        <strong>{l.name}</strong>
+                        <span>
+                          {l.billed} billed · {l.received} received · {l.unit}
+                        </span>
+                      </div>
+                      <strong>
+                        {l.billed - l.received
+                          ? money(c.calculation.lines[i].amount_paise)
+                          : 'Matched'}
+                      </strong>
                     </div>
-                    <strong>
-                      {l.billed - l.received
-                        ? money(c.calculation.lines[i].amount_paise)
-                        : 'Matched'}
-                    </strong>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </details>
             </section>
           )}
           {c.status === 'ready' && !editing && (
@@ -273,7 +280,7 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
                   {c.promise ? 'Update follow-up' : 'Record supplier promise'}
                 </button>
                 <button className="button primary" onClick={() => setDialog('resolve')}>
-                  <ShieldCheck size={16} /> Verify credit / refund
+                  <ShieldCheck size={16} /> Record Money Received · पैसा वापस मिला
                 </button>
                 <button className="text-button" onClick={() => setDialog('share')}>
                   Supplier message <ArrowUpRight size={14} />
@@ -341,7 +348,7 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
             <div className="panel-heading">
               <div>
                 <h2>The full paper trail</h2>
-                <p>Every review, promise and verified resolution.</p>
+                <p>Your checks, supplier promises and money returned.</p>
               </div>
             </div>
             <ol className="timeline">
@@ -411,7 +418,7 @@ function CaseDetail({ c, onUpdate, back, config, notify }) {
                 onClick={() => run('approve')}
               >
                 <Busy busy={busy}>
-                  <ShieldCheck size={16} /> Approve evidence
+                  <ShieldCheck size={16} /> Confirm shortage
                 </Busy>
               </button>
             </div>

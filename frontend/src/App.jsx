@@ -45,7 +45,7 @@ import { BusinessBrief, Payments } from './components/BusinessBrief';
 const navs = [
   { id: 'overview', label: 'Overview', Icon: LayoutDashboard },
   { id: 'purchases', label: 'Purchases & stock', Icon: ReceiptText },
-  { id: 'cases', label: 'Credit cases', Icon: ReceiptText },
+  { id: 'cases', label: 'Missing Items & Refunds', Icon: ReceiptText },
   { id: 'suppliers', label: 'Suppliers', Icon: Store },
   { id: 'insights', label: 'Insights', Icon: ChartNoAxesCombined },
   { id: 'planning', label: 'Stock planning', Icon: Leaf },
@@ -253,11 +253,11 @@ function App() {
             Workspace <ChevronRight size={14} />
             <strong>
               {selected
-                ? 'Credit cases'
+                ? 'Missing Items & Refunds'
                 : navs.find((n) => n.id === view)?.label ||
                   {
                     assistant: 'Merchant help',
-                    payments: 'Payments & reconciliation',
+                    payments: 'Check Paytm payments',
                     planning: 'Stock planning',
                     exports: 'Export purchases',
                     connections: 'Connections',
@@ -291,7 +291,7 @@ function App() {
         <main>
           <div className="device-sync-summary">
             <button className="button secondary" onClick={() => setDeviceWorkspace(true)}>
-              Drafts &amp; sync
+              Saved on Phone
             </button>
             <span>
               {local.operations.filter((o) => o.state !== 'synced').length > 0
@@ -368,11 +368,11 @@ function App() {
                       <h1>
                         {
                           {
-                            overview: 'Daily business brief',
-                            more: 'Your workspace',
-                            cases: 'Supplier claims',
+                            overview: 'Today · आज',
+                            more: 'Your shop · आपकी दुकान',
+                            cases: 'Missing Items & Refunds',
                             suppliers: 'Suppliers',
-                            insights: 'Recovery report',
+                            insights: 'Money returned',
                           }[view]
                         }
                       </h1>
@@ -381,7 +381,7 @@ function App() {
                           {
                             overview: 'What needs your attention today.',
                             more: 'Reports, suppliers, language and account controls.',
-                            cases: 'From a delivery gap to a documented resolution.',
+                            cases: 'Check missing goods and track the money your supplier returns.',
                             suppliers: 'Supplier balances, open cases and the next conversation.',
                             insights:
                               'Documented credits and refunds, with the evidence behind them.',
@@ -398,15 +398,38 @@ function App() {
                           : openIntake()
                       }
                     >
-                      {icon(Plus)} {sampleToContinue ? 'Continue sample invoice' : 'Add an invoice'}
+                      {icon(Plus)}{' '}
+                      {sampleToContinue ? 'Continue sample invoice' : 'Add New Bill · बिल जोड़ें'}
                     </button>
                   </div>
                   {view === 'overview' && (
                     <>
-                      <BusinessBrief follow={followSource} />
                       <DailyRecordsSummary
                         openRecords={(route) => followSource(route || '/records/customers')}
                       />
+                      <section className="quick-actions" aria-label="Quick shop actions">
+                        <button
+                          className="button primary"
+                          onClick={openIntake}
+                          disabled={!session.permissions.includes('write')}
+                        >
+                          + New Bill <small>सामान आया</small>
+                        </button>
+                        <button
+                          className="button secondary"
+                          onClick={() => followSource('/records/new-credit')}
+                          disabled={!session.permissions.includes('write')}
+                        >
+                          + Customer Udhaar <small>उधार दिया</small>
+                        </button>
+                        <button
+                          className="button secondary"
+                          onClick={() => followSource('/records/galla')}
+                        >
+                          Settle Galla <small>गल्ला मिलाओ</small>
+                        </button>
+                      </section>
+                      <BusinessBrief follow={followSource} />
                       <div className="section-caption">
                         <span>AT A GLANCE</span>
                         <span className="muted">
@@ -523,6 +546,23 @@ function App() {
               )}
               {view === 'more' && (
                 <section className="panel more-panel">
+                  <h2>Supplier money · सप्लायर का हिसाब</h2>
+                  <button className="button secondary full" onClick={() => navigate('cases')}>
+                    Missing Items &amp; Refunds · कम सामान का पैसा
+                  </button>
+                  <button className="button secondary full" onClick={() => navigate('suppliers')}>
+                    Supplier details · सप्लायर
+                  </button>
+                  <button className="button secondary full" onClick={() => navigate('insights')}>
+                    Money returned · वापस मिला पैसा
+                  </button>
+                  <h2>Cash &amp; payments · गल्ला और पेमेंट</h2>
+                  <button
+                    className="button secondary full"
+                    onClick={() => followSource('/records/galla')}
+                  >
+                    Galla Hisab (गल्ला हिसाब) / Cash Drawer
+                  </button>
                   <button className="button secondary full" onClick={() => navigate('records')}>
                     Daily records
                   </button>
@@ -540,16 +580,16 @@ function App() {
                     Merchant help & language
                   </button>
                   <button className="button secondary full" onClick={() => navigate('payments')}>
-                    Payments & reconciliation
+                    Check Paytm payments
                   </button>
                   <button className="button secondary full" onClick={() => navigate('cases')}>
-                    Credit cases
+                    Missing Items & Refunds
                   </button>
                   <button className="button secondary full" onClick={() => navigate('suppliers')}>
                     Supplier balances <ChevronRight size={18} />
                   </button>
                   <button className="button secondary full" onClick={() => navigate('insights')}>
-                    Recovery report and export <ChevronRight size={18} />
+                    Money returned and export <ChevronRight size={18} />
                   </button>
                   <button className="button secondary full" onClick={() => setHelp(true)}>
                     Workflow guide <ChevronRight size={18} />
@@ -575,7 +615,7 @@ function App() {
                     className="button secondary full"
                     onClick={() => setDeviceWorkspace(true)}
                   >
-                    Drafts &amp; sync
+                    Saved on Phone
                   </button>
                   <AccountSecurity />
                   <button className="button secondary full" onClick={session.logout}>
@@ -600,9 +640,10 @@ function App() {
       </div>
       <nav className="bottom-nav" aria-label="Main navigation">
         {[
-          ['overview', shellLabels.home, LayoutDashboard],
-          ['purchases', shellLabels.purchases, ReceiptText],
-          ['more', shellLabels.more, CircleHelp],
+          ['overview', 'Today · आज', LayoutDashboard],
+          ['purchases', 'Deliveries & Stock', ReceiptText],
+          ['records', 'Customer Khata', Store],
+          ['more', 'More · अन्य', CircleHelp],
         ].map(([id, label, Icon]) => (
           <button
             key={id}
@@ -621,7 +662,11 @@ function App() {
                 ? 'page'
                 : undefined
             }
-            onClick={() => navigate(id)}
+            onClick={() => {
+              setSourceRoute(id === 'records' ? '/records/customers' : '');
+              navigate(id);
+              setDeviceWorkspace(false);
+            }}
           >
             <Icon size={21} />
             <span>{label}</span>
