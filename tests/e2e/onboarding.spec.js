@@ -11,7 +11,7 @@ test('new demo opens the existing sample, preserves work and makes approval the 
   await expect(guide).toContainText('Review the bill and confirm what actually arrived.');
   await guide.getByRole('button', { name: 'Continue your sample invoice', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Invoice A-104', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Approve evidence', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Confirm shortage', exact: true })).toBeDisabled();
   const rows = [
     { count: '10', unit: 'pack' },
     { count: '6', unit: 'pack' },
@@ -32,8 +32,8 @@ test('new demo opens the existing sample, preserves work and makes approval the 
   await page.getByRole('checkbox', { name: /The delivery is complete/ }).check();
   await page.getByRole('checkbox', { name: /I verified effective unit prices/ }).check();
   await page.getByRole('button', { name: 'Save delivery review' }).click();
-  await page.getByRole('button', { name: 'Approve evidence', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Confirmed delivery' })).toBeVisible();
+  await page.getByRole('button', { name: 'Confirm shortage', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Items you counted' })).toBeVisible();
   const before = await (await page.request.get('/api/cases')).json();
   const me = await (await page.request.get('/api/auth/me')).json();
   const reused = await page.request.post('/api/invoices/sample', {
@@ -45,7 +45,7 @@ test('new demo opens the existing sample, preserves work and makes approval the 
   expect(body.id).toBe(before[0].id);
   expect(body.history).toEqual(before[0].history);
   expect(body.sample_reused).toBe(true);
-  await page.getByRole('button', { name: 'Home', exact: true }).click();
+  await page.getByRole('button', { name: 'Today · आज', exact: true }).click();
   await expect(guide).toContainText('Approve the evidence — complete');
   expect(await (await page.request.get('/api/cases')).json()).toHaveLength(1);
 });
@@ -58,9 +58,7 @@ test('home metrics and due/task actions open the original reviewed record on a p
   await page.getByLabel('Username', { exact: true }).fill('polish-owner');
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(
-    page.getByRole('heading', { name: 'Daily business brief', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
   const me = await (await page.request.get('/api/auth/me')).json();
   const date = (await (await page.request.get('/api/brief')).json()).business_date;
   async function write(path, data) {
@@ -99,14 +97,16 @@ test('home metrics and due/task actions open the original reviewed record on a p
   await write('/records/tasks', { title: 'Count the front shelf', due_on: date });
   await page.reload();
   const snapshot = page.getByRole('region', { name: 'Recorded business snapshot' });
-  await expect(snapshot.getByRole('button', { name: /Recorded sales/ })).toContainText('₹150');
-  await expect(snapshot.getByRole('button', { name: /Customer dues/ })).toContainText('₹80');
-  await snapshot.getByRole('button', { name: /Recorded sales/ }).click();
+  await expect(snapshot.getByRole('button', { name: /Today’s recorded sales/ })).toContainText(
+    '₹150',
+  );
+  await expect(snapshot.getByRole('button', { name: /Money to Collect/ })).toContainText('₹80');
+  await snapshot.getByRole('button', { name: /Today’s recorded sales/ }).click();
   const source = page.getByRole('region', { name: 'Original record' });
   await expect(source).toContainText('2 accepted source records');
   await source.getByRole('button', { name: 'Open original DUE-ONE', exact: true }).click();
   await expect(source.getByRole('heading', { name: 'DUE-ONE', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Home', exact: true }).click();
+  await page.getByRole('button', { name: 'Today · आज', exact: true }).click();
   const task = page
     .getByRole('article')
     .filter({ has: page.getByRole('heading', { name: 'Count the front shelf', exact: true }) });

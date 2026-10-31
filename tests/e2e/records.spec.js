@@ -4,19 +4,21 @@ async function login(page, name) {
   await page.getByLabel('Username', { exact: true }).fill(name);
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Daily business brief' })).toBeVisible();
-  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Today · आज' })).toBeVisible();
+  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
   await page.getByRole('button', { name: 'Daily records', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Customer accounts', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Money to Collect · उधार लेना है', exact: true }),
+  ).toBeVisible();
 }
 async function record(page, kind, ref, amount, customer = false) {
-  await page.getByRole('button', { name: 'Sales & expenses', exact: true }).click();
+  await page.getByRole('button', { name: 'Sales & spending', exact: true }).click();
   await page.getByRole('combobox', { name: 'Record type', exact: true }).selectOption(kind);
   if (customer)
     await page
       .getByRole('combobox', { name: 'Customer', exact: true })
       .selectOption({ label: 'Ravi · MAN-RAVI' });
-  await page.getByLabel('Unique record reference', { exact: true }).fill(ref);
+  await page.getByLabel('Entry number (must be different)', { exact: true }).fill(ref);
   await page.getByLabel('Recorded amount (₹)', { exact: true }).fill(amount);
   await page.getByLabel('Source / reason', { exact: true }).fill('Checked synthetic notebook');
   await page
@@ -44,9 +46,9 @@ test('manual customer, allocation, cash, tasks and consented marketing work with
   await page.getByRole('button', { name: 'Save customer', exact: true }).click();
   await expect(page.getByText('Customer recorded.', { exact: true })).toBeVisible();
   await record(page, 'credit_sale', 'SALE-1', '10.01', true);
-  await page.getByRole('button', { name: 'Save reviewed entry', exact: true }).click();
+  await page.getByRole('button', { name: 'Save checked entry', exact: true }).click();
   await expect(page.getByText(/Reviewed record saved/)).toBeVisible();
-  await page.getByRole('button', { name: 'Customers', exact: true }).click();
+  await page.getByRole('button', { name: 'Customer Khata · ग्राहक उधार', exact: true }).click();
   await expect(page.getByText('₹10.01 pending', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Prepare payment reminder', exact: true }).click();
   await expect(page.getByText(/INR 10.01 pending/)).toBeVisible();
@@ -59,14 +61,14 @@ test('manual customer, allocation, cash, tasks and consented marketing work with
       exact: true,
     })
     .click();
-  await page.getByRole('button', { name: 'Save reviewed entry', exact: true }).click();
+  await page.getByRole('button', { name: 'Save checked entry', exact: true }).click();
   await expect(page.getByText(/Reviewed record saved/)).toBeVisible();
-  await page.getByRole('button', { name: 'Customers', exact: true }).click();
+  await page.getByRole('button', { name: 'Customer Khata · ग्राहक उधार', exact: true }).click();
   await expect(page.getByText('₹8 pending', { exact: true })).toBeVisible();
   await record(page, 'opening_cash', 'OPEN-1', '100.00');
-  await page.getByRole('button', { name: 'Save reviewed entry', exact: true }).click();
+  await page.getByRole('button', { name: 'Save checked entry', exact: true }).click();
   await expect(page.getByText(/Reviewed record saved/)).toBeVisible();
-  await page.getByRole('button', { name: 'Cash outlook', exact: true }).click();
+  await page.getByRole('button', { name: 'Galla Hisab · गल्ला हिसाब', exact: true }).click();
   await expect(page.getByRole('paragraph').filter({ hasText: 'Recorded cash:' })).toHaveText(
     'Recorded cash: ₹102.01',
   );
@@ -77,13 +79,13 @@ test('manual customer, allocation, cash, tasks and consented marketing work with
       exact: true,
     })
     .click();
-  await page.getByRole('button', { name: 'Save reviewed entry', exact: true }).click();
+  await page.getByRole('button', { name: 'Save checked entry', exact: true }).click();
   await expect(page.getByText(/Reviewed record saved/)).toBeVisible();
-  await page.getByRole('button', { name: 'Cash outlook', exact: true }).click();
+  await page.getByRole('button', { name: 'Galla Hisab · गल्ला हिसाब', exact: true }).click();
   await expect(page.getByRole('paragraph').filter({ hasText: 'Recorded cash:' })).toHaveText(
     'Recorded cash: ₹102.01',
   );
-  await page.getByRole('button', { name: 'Tasks', exact: true }).click();
+  await page.getByRole('button', { name: 'Shop tasks', exact: true }).click();
   await page.getByLabel('Task title', { exact: true }).fill('Check opening stock');
   await page.getByRole('button', { name: 'Save task', exact: true }).click();
   await expect(
@@ -91,7 +93,7 @@ test('manual customer, allocation, cash, tasks and consented marketing work with
   ).toBeVisible();
   await page.getByRole('button', { name: 'Mark task done', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Reopen task', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Marketing drafts', exact: true }).click();
+  await page.getByRole('button', { name: 'Offer messages', exact: true }).click();
   await page.getByLabel('Campaign title', { exact: true }).fill('Local rice offer');
   await page.getByLabel('Promotion text', { exact: true }).fill('Synthetic rice offer for review');
   await page.getByText('Ravi · 1 recorded sales', { exact: true }).click();
@@ -116,11 +118,11 @@ test('manual customer, allocation, cash, tasks and consented marketing work with
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Home', exact: true }).click();
+  await page.getByRole('button', { name: 'Today · आज', exact: true }).click();
   const snapshot = page.getByRole('region', { name: 'Recorded business snapshot' });
   await expect(snapshot.getByText('₹10.01', { exact: true })).toBeVisible();
   await expect(snapshot.getByText('₹8', { exact: true })).toBeVisible();
-  await expect(snapshot.getByText('₹1', { exact: true })).toBeVisible();
+  await expect(snapshot.getByText('₹102.01', { exact: true })).toBeVisible();
   await expect(snapshot.getByText(/Cash drawer: ₹102.01/)).toBeVisible();
   await expect(snapshot.getByText('0', { exact: true })).toBeVisible();
   for (const width of [320, 390, 844]) {
@@ -131,7 +133,9 @@ test('manual customer, allocation, cash, tasks and consented marketing work with
   }
   await snapshot.screenshot({ path: 'artifacts/test-evidence/home-business-snapshot.png' });
   await snapshot.getByRole('button', { name: 'Open daily records' }).click();
-  await expect(page.getByRole('heading', { name: 'Customer accounts', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Money to Collect · उधार लेना है', exact: true }),
+  ).toBeVisible();
 });
 
 test('home snapshot retains unknown cash and recovers from unavailable records', async ({
@@ -147,7 +151,7 @@ test('home snapshot retains unknown cash and recovers from unavailable records',
       body: JSON.stringify({ detail: 'Records temporarily unavailable' }),
     }),
   );
-  await page.getByRole('button', { name: 'Home', exact: true }).click();
+  await page.getByRole('button', { name: 'Today · आज', exact: true }).click();
   const snapshot = page.getByRole('region', { name: 'Recorded business snapshot' });
   await expect(
     snapshot.getByText('Records temporarily unavailable', { exact: true }),

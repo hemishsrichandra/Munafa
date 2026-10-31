@@ -11,13 +11,13 @@ test('merchant screens hide build details and rupee fields send exact integer pa
   await page.getByLabel('Username', { exact: true }).fill('polish-owner');
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Daily business brief' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today · आज' })).toBeVisible();
   await expect(page.getByText('All changes saved', { exact: true })).toBeVisible();
   await expect(
     page.getByText(/Hackathon prototype|API_KEY|IndexedDB|evaluation|PILOT NOT RUN/),
   ).toHaveCount(0);
-  await page.getByRole('button', { name: 'Purchases', exact: true }).click();
-  await page.getByRole('button', { name: 'New purchase', exact: true }).click();
+  await page.getByRole('button', { name: 'Deliveries & Stock', exact: true }).click();
+  await page.getByRole('button', { name: 'Add New Bill · बिल जोड़ें', exact: true }).click();
   await page.getByLabel('Supplier', { exact: true }).fill('SYNTHETIC Cent Wholesale');
   await page.getByLabel('Invoice reference', { exact: true }).fill('UI-CENTS-1');
   await page.getByLabel('Description', { exact: true }).fill('Rice');
@@ -49,7 +49,7 @@ test('merchant screens hide build details and rupee fields send exact integer pa
   await expect(
     page.getByText(/Source .*actor|Coordinates not supplied|Confidence not supplied/),
   ).toHaveCount(0);
-  await page.getByRole('button', { name: 'Home', exact: true }).click();
+  await page.getByRole('button', { name: 'Today · आज', exact: true }).click();
   for (const [width, height] of [
     [320, 740],
     [360, 800],
@@ -68,18 +68,18 @@ test('merchant screens hide build details and rupee fields send exact integer pa
     path: 'artifacts/test-evidence/polished-home-phone.png',
     fullPage: true,
   });
-  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
   await expect(page.getByText(/P2|readiness|prototype|API_KEY/)).toHaveCount(0);
   await page.screenshot({
     path: 'artifacts/test-evidence/polished-more-phone.png',
     fullPage: true,
   });
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
   await page.getByRole('button', { name: 'Connections', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Connections', exact: true })).toBeVisible();
   await expect(page.getByText('Not connected', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
   await page.getByRole('button', { name: 'Export purchases', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Export purchases', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

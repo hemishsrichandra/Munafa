@@ -9,9 +9,7 @@ test('install, guidance and offline bars reserve space above the complete app he
   await page.getByLabel('Username', { exact: true }).fill('polish-owner');
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(
-    page.getByRole('heading', { name: 'Daily business brief', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
   const assertHeaderFits = async () => {
     await page.evaluate(() => window.scrollTo(0, 0));
     const boxes = await page.evaluate(() => {
@@ -23,18 +21,16 @@ test('install, guidance and offline bars reserve space above the complete app he
       };
       return {
         bar: rect('.pwa-status'),
-        sidebar: rect('.sidebar'),
-        brand: rect('.brand'),
+        navigation: rect('.bottom-nav'),
         header: rect('.topbar'),
         width: innerWidth,
         scrollWidth: document.documentElement.scrollWidth,
       };
     });
-    expect(boxes.sidebar.top).toBeGreaterThanOrEqual(boxes.bar.bottom - 1);
-    expect(boxes.brand.top).toBeGreaterThanOrEqual(boxes.bar.bottom - 1);
+    expect(boxes.navigation.top).toBeGreaterThanOrEqual(boxes.bar.bottom - 1);
     expect(boxes.header.top).toBeGreaterThanOrEqual(boxes.bar.bottom - 1);
-    expect(boxes.brand.left).toBeGreaterThanOrEqual(0);
-    expect(boxes.brand.right).toBeLessThanOrEqual(boxes.width);
+    expect(boxes.navigation.left).toBeGreaterThanOrEqual(0);
+    expect(boxes.navigation.right).toBeLessThanOrEqual(boxes.width);
     expect(boxes.scrollWidth).toBeLessThanOrEqual(boxes.width);
   };
   fs.mkdirSync('artifacts/test-evidence', { recursive: true });

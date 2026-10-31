@@ -67,9 +67,19 @@ function App() {
   const openIntake = () => (navigator.onLine ? setAdding(true) : setDeviceWorkspace(true));
   const [locale, setLocale] = useState('en');
   const shellLabels = {
-    en: { home: 'Home', purchases: 'Purchases', more: 'More' },
-    hi: { home: 'होम', purchases: 'खरीदारी', more: 'अधिक' },
-    kn: { home: 'ಮುಖಪುಟ', purchases: 'ಖರೀದಿಗಳು', more: 'ಇನ್ನಷ್ಟು' },
+    en: {
+      home: 'Today · आज',
+      purchases: 'Deliveries & Stock',
+      records: 'Customer Khata',
+      more: 'More · अन्य',
+    },
+    hi: { home: 'आज', purchases: 'सामान और स्टॉक', records: 'ग्राहक उधार', more: 'अन्य' },
+    kn: {
+      home: 'ಇಂದು',
+      purchases: 'ಸರಕು ಮತ್ತು ದಾಸ್ತಾನು',
+      records: 'ಗ್ರಾಹಕರ ಖಾತೆ',
+      more: 'ಇನ್ನಷ್ಟು',
+    },
   }[locale];
   const [sourceRoute, setSourceRoute] = useState('');
   const [view, setView] = useState('overview'),
@@ -640,10 +650,10 @@ function App() {
       </div>
       <nav className="bottom-nav" aria-label="Main navigation">
         {[
-          ['overview', 'Today · आज', LayoutDashboard],
-          ['purchases', 'Deliveries & Stock', ReceiptText],
-          ['records', 'Customer Khata', Store],
-          ['more', 'More · अन्य', CircleHelp],
+          ['overview', shellLabels.home, LayoutDashboard],
+          ['purchases', shellLabels.purchases, ReceiptText],
+          ['records', shellLabels.records, Store],
+          ['more', shellLabels.more, CircleHelp],
         ].map(([id, label, Icon]) => (
           <button
             key={id}

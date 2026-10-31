@@ -1,5 +1,11 @@
 # Copy this context into Antigravity
 
+## Continuation update: broader regression migration
+
+Final results: all 34 distinct browser journeys passed across isolated runs, including migrated purchase/receiving, financial records, supplier partial/full recovery, offline replay, onboarding, help and account recovery checks. The dedicated merchant-ui journey passed again on the final language-selector build. Production build and homepage HTTP 200 passed. Refer to docs/MERCHANT-UI.md; do not treat the previous-checkpoint limitations below as the latest regression status. Physical-device and formal accessibility certification remain unperformed. Backend rules were not changed to obtain passing tests.
+
+The subsequent pass migrated legacy browser selectors to the new wording and replaced sidebar navigation with `tests/e2e/navigation.cjs`. Supplier cases, suppliers and reports are reached through More; header bounds now test bottom navigation rather than a hidden sidebar. Customer/expense assertions retain the same financial checks, with the home expense tile assertion replaced by the requested cash-in-Galla tile. Source-route and money assertions were retained. Current browser verification is documented in docs/MERCHANT-UI.md after completion; earlier statements below about unmigrated tests describe the previous checkpoint.
+
 Continue Munafa's frontend redesign. Repository: https://github.com/hemishsrichandra/Munafa, branch main. Windows workspace: C:/Users/tharu/OneDrive/Documents/munafa. Fetch and inspect HEAD before editing: Hemish pushes concurrently. Do not force-push or overwrite local files. Read docs/MERCHANT-UI.md and this context first.
 
 ## User request and constraints
@@ -32,6 +38,7 @@ The UI change itself did not edit backend, model, migration or outbox code. Befo
 ## Work still needed to fully satisfy the ambitious design request
 
 This is a working core presentation increment, not proof that every screen is zero-jargon or production-certified. Finish the following without breaking existing behavior:
+
 1. Migrate legacy browser selectors/navigation to the four-tab architecture, preserving financial end-to-end assertions, then run the entire browser suite. Add actual customer-credit/payment, purchasing/receiving and supplier proof verification coverage under new wording.
 2. Audit remaining secondary/admin/offline/help screens for jargon and bilingual labels. Deep server validation messages retain technical words; preserve their meaning and safety. Some all-time supplier summary labels remain accounting-oriented.
 3. Complete coverage of delivery-card missing-item badges and prominent expiry pills. Verify each summary uses recorded evidence and does not infer missing quantities before receiving is final.

@@ -9,13 +9,13 @@ test('extension preparation and data gates remain truthful on phones and offline
   await page.getByLabel('Username', { exact: true }).fill('extension-owner');
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Daily business brief' })).toBeVisible();
-  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Today · आज' })).toBeVisible();
+  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
   await page.getByRole('button', { name: 'Connections', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Connections' })).toBeVisible();
   await expect(page.getByText('Not connected', { exact: true })).toBeVisible();
   await expect(page.getByText(/BLOCKED|SPECIFICATION|API|prototype/)).toHaveCount(0);
-  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
   await page.getByRole('button', { name: 'Export purchases', exact: true }).click();
   await page.getByRole('button', { name: 'Review purchases', exact: true }).click();
   await expect(page.getByText(/No confirmed purchases in this period/)).toBeVisible();
@@ -100,7 +100,7 @@ test('extension preparation and data gates remain truthful on phones and offline
   expect(pack.status).toBe('needs_external_review');
   expect(pack.records[0].purchase_id).toBe(purchase.id);
   await expect(page.getByText('Downloaded to your device. Nothing was submitted.')).toBeVisible();
-  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
   await page.getByRole('button', { name: 'Stock planning', exact: true }).click();
   await expect(page.getByText('Synthetic Rice · kg', { exact: true })).toBeVisible();
   await expect(page.getByText('Not enough sales history for a forecast.')).toBeVisible();
@@ -117,7 +117,7 @@ test('extension preparation and data gates remain truthful on phones and offline
     path: 'artifacts/test-evidence/extension-readiness.png',
     fullPage: true,
   });
-  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
   await page.getByRole('button', { name: 'Connections', exact: true }).click();
   await expect(page.getByText('Not connected', { exact: true })).toBeVisible();
   await page.context().setOffline(true);

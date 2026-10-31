@@ -4,14 +4,12 @@ async function login(page, name) {
   await page.getByLabel('Username', { exact: true }).fill(name);
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(
-    page.getByRole('heading', { name: 'Daily business brief', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
 }
 async function hub(page) {
-  await page.getByRole('button', { name: 'Drafts & sync', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Saved on Phone', exact: true }).first().click();
   await expect(page.getByRole('heading', { name: 'Drafts & sync', exact: true })).toBeVisible();
 }
 async function fillInvoice(page, reference) {
@@ -89,9 +87,7 @@ test('offline draft survives reload; lost acceptance response retries one server
     }
   });
   await context.setOffline(false);
-  await expect(
-    page.getByRole('heading', { name: 'Daily business brief', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
   await hub(page);
   await page.getByRole('button', { name: 'Queue for sync' }).click();
   await expect.poll(() => sent.length).toBe(1);
@@ -99,9 +95,7 @@ test('offline draft survives reload; lost acceptance response retries one server
     .poll(async () => (await rows(page, 'outbox'))[0]?.state, { timeout: 20000 })
     .toBe('pending_sync');
   await page.reload();
-  await expect(
-    page.getByRole('heading', { name: 'Daily business brief', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
   await hub(page);
   await expect
     .poll(
@@ -153,9 +147,7 @@ test('attachment capture survives reload and response loss without duplicate upl
     await route.fulfill({ response });
   });
   await context.setOffline(false);
-  await expect(
-    page.getByRole('heading', { name: 'Daily business brief', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
   await hub(page);
   await page.getByRole('button', { name: 'Queue for sync' }).click();
   await expect
@@ -209,7 +201,7 @@ test('logout and account switch clear previous private drafts', async ({ page, c
   await save(page);
   await page.getByRole('button', { name: 'Back to business' }).click();
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'More · अन्य', exact: true }).click();
   page.once('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
@@ -248,9 +240,7 @@ test('stale receiving becomes a human-reviewed conflict without overwriting serv
     await page.request.post('/api/invoices/sample', { headers: await csrfHeaders(context) })
   ).json();
   await page.reload();
-  await expect(
-    page.getByRole('heading', { name: 'Daily business brief', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today · आज', exact: true })).toBeVisible();
   await hub(page);
   await context.setOffline(true);
   await page.getByLabel('Choose invoice for offline receiving').selectOption(c.id);

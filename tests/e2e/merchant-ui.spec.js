@@ -36,6 +36,11 @@ test('four merchant destinations and quick actions work across phone and desktop
       expect(rect.height).toBeGreaterThanOrEqual(48);
     }
   }
+  await nav.getByRole('button', { name: 'More · अन्य', exact: true }).click();
+  await page.getByLabel('Interface language').selectOption('hi');
+  await expect(nav.getByRole('button', { name: 'आज', exact: true })).toBeVisible();
+  await expect(nav.getByRole('button', { name: 'ग्राहक उधार', exact: true })).toBeVisible();
+  await page.getByLabel('Interface language').selectOption('en');
   await nav.getByRole('button', { name: 'Today · आज', exact: true }).click();
   await page.screenshot({ path: 'artifacts/test-evidence/merchant-today.png', fullPage: true });
   await page

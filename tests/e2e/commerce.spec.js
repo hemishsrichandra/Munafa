@@ -4,7 +4,7 @@ async function login(page, name = 'commerce-owner') {
   await page.getByLabel('Username', { exact: true }).fill(name);
   await page.getByLabel('Password', { exact: true }).fill('isolated-browser-test-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Daily business brief' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today · आज' })).toBeVisible();
 }
 async function request(page, path, body, method = 'POST') {
   return page.evaluate(
@@ -36,22 +36,22 @@ test('purchase review, fractional receiving, stock, expiry and linked recovery',
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await login(page);
-  await page.getByRole('button', { name: 'Purchases & stock', exact: true }).click();
+  await page.getByRole('button', { name: 'Deliveries & Stock', exact: true }).click();
   await page.getByRole('button', { name: 'stock', exact: true }).click();
-  await page.getByRole('button', { name: 'New SKU', exact: true }).click();
+  await page.getByRole('button', { name: 'New Item', exact: true }).click();
   const name = 'Rice-' + Date.now();
   await page.getByLabel('code', { exact: true }).fill(name);
   await page.getByLabel('name', { exact: true }).fill(name);
   await page.getByRole('combobox', { name: 'Unit', exact: true }).selectOption('kg');
-  await page.getByRole('button', { name: 'Save SKU', exact: true }).click();
+  await page.getByRole('button', { name: 'Save Item', exact: true }).click();
   await expect(page.getByText(name, { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'purchases', exact: true }).click();
-  await page.getByRole('button', { name: 'New purchase', exact: true }).click();
+  await page.getByRole('button', { name: 'Add New Bill · बिल जोड़ें', exact: true }).click();
   await page.getByLabel('Supplier', { exact: true }).fill('Batch5 Wholesale');
   await page.getByLabel('Invoice reference', { exact: true }).fill(name);
   await page.getByLabel('Description', { exact: true }).fill(name);
   await page
-    .getByRole('combobox', { name: 'Reviewed SKU', exact: true })
+    .getByRole('combobox', { name: 'Reviewed Item', exact: true })
     .selectOption({ label: `${name} (kg)` });
   await page.getByRole('combobox', { name: 'Unit', exact: true }).selectOption('kg');
   await page.getByLabel('Billed quantity', { exact: true }).fill('2.5');
@@ -60,12 +60,14 @@ test('purchase review, fractional receiving, stock, expiry and linked recovery',
   await page.getByLabel('Invoice total (₹)', { exact: true }).fill('200');
   await page.getByRole('button', { name: 'Save invoice draft', exact: true }).click();
   await page
-    .getByRole('button', { name: 'Confirm reviewed invoice (no stock change)', exact: true })
+    .getByRole('button', { name: 'Save checked bill · stock stays the same', exact: true })
     .click();
   await expect(page.getByRole('heading', { name: 'Accepted bill lines' })).toBeVisible();
   const products = await request(page, '/products', null, 'GET');
   expect(products.find((p) => p.name === name).stock_quantity).toBe('0');
-  await page.getByRole('button', { name: 'Record physical delivery', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Count Delivered Items · सामान की गिनती', exact: true })
+    .click();
   await page.getByLabel('Actual quantity', { exact: true }).fill('2');
   await page.getByLabel('Damaged quantity', { exact: true }).fill('0.5');
   await page.getByLabel('Batch reference', { exact: true }).fill(name);
@@ -91,8 +93,8 @@ test('phone purchase drafts and attached evidence survive offline reload', async
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await login(page, 'commerce-offline');
-  await page.getByRole('button', { name: 'Purchases', exact: true }).click();
-  await page.getByRole('button', { name: 'New purchase', exact: true }).click();
+  await page.getByRole('button', { name: 'Deliveries & Stock', exact: true }).click();
+  await page.getByRole('button', { name: 'Add New Bill · बिल जोड़ें', exact: true }).click();
   await page.getByLabel('Supplier', { exact: true }).fill('Offline commerce');
   await page.getByLabel('Invoice reference', { exact: true }).fill('OFF-B5');
   await page.getByLabel('Bill photo or PDF', { exact: true }).setInputFiles({
@@ -118,10 +120,10 @@ test('new purchase works from stock and expiry and tab changes retain entered fi
   page,
 }) => {
   await login(page);
-  await page.getByRole('button', { name: 'Purchases & stock', exact: true }).click();
+  await page.getByRole('button', { name: 'Deliveries & Stock', exact: true }).click();
   for (const tab of ['stock', 'expiry']) {
     await page.getByRole('button', { name: tab, exact: true }).click();
-    await page.getByRole('button', { name: 'New purchase', exact: true }).click();
+    await page.getByRole('button', { name: 'Add New Bill · बिल जोड़ें', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Review invoice', exact: true })).toBeVisible();
     await page.getByLabel('Supplier', { exact: true }).fill('Unsaved supplier ' + tab);
     await page.getByLabel('Invoice reference', { exact: true }).fill('KEEP-' + tab);
