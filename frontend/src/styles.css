@@ -4019,13 +4019,32 @@ details summary {
   bottom: auto;
   display: flex;
   justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
   padding: 7px 20px;
   background: #f7f8f4;
 }
 .install-guide {
-  top: 58px;
-  bottom: auto;
-  right: 20px;
+  position: static;
+  width: 360px;
+  max-width: 100%;
+}
+/* Share the page flow with the install/status bar; pin only after scrolling. */
+@media (min-width: 761px) {
+  .sidebar {
+    position: sticky;
+    inset: auto;
+    top: 0;
+    align-self: flex-start;
+    flex-shrink: 0;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+  .main-shell {
+    margin-left: 0;
+  }
 }
 .overview-lower {
   grid-template-columns: 1fr;

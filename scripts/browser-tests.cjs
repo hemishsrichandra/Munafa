@@ -15,11 +15,12 @@ async function main() {
   const files = readdirSync('tests/e2e').filter((f) => f.endsWith('.spec.js'));
   for (const group of [
     files.filter((f) => f === 'auth.spec.js'),
+    files.filter((f) => f === 'header.spec.js'),
     files.filter((f) => f === 'commerce.spec.js'),
     files.filter((f) => f === 'partner.spec.js'),
     files.filter((f) => f === 'release.spec.js'),
     files.filter((f) => f === 'polish.spec.js'),
-    files.filter((f) => !['auth.spec.js','commerce.spec.js','partner.spec.js','release.spec.js','polish.spec.js'].includes(f)),
+    files.filter((f) => !['auth.spec.js','header.spec.js','commerce.spec.js','partner.spec.js','release.spec.js','polish.spec.js'].includes(f)),
   ]) {
     if (!group.length) continue;
     // A remote connection avoids Windows browser-fixture shutdown hanging after
