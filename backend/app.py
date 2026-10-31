@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import io
 import os
 import uuid
@@ -118,18 +119,28 @@ def identifier():
     return "MNF-" + uuid.uuid4().hex.upper()
 
 
-def insert_invoice(invoice, synthetic=False, attachment=None):
+def insert_invoice(invoice, synthetic=False, attachment=None, reuse_sample=False):
     try:
         date.fromisoformat(invoice["date"])
     except ValueError:
         raise RuleError("Enter a valid invoice date.")
     c = new_case(invoice, identifier(), auth.current().demo)
     with store.connect() as db:
+        # Serialise the fixed sample without weakening generic invoice duplication guards.
+        if reuse_sample:
+            key = int.from_bytes(
+                hashlib.sha256((auth.current().store_id + ":sample:A-104").encode()).digest()[:8],
+                "big",
+                signed=True,
+            )
+            db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": key})
         # A duplicated supplier invoice must be reviewed in the existing case.
         for old in store.all_cases(db):
             if normalized(old["invoice"]["supplier"]) == normalized(
                 invoice["supplier"]
             ) and normalized(old["invoice"]["reference"]) == normalized(invoice["reference"]):
+                if reuse_sample and auth.current().demo and old["synthetic"]:
+                    return {**present(old), "sample_reused": True}
                 raise RuleError(f"Invoice already exists in {old['id']}. Open the existing case.")
         store.save(db, c)
         if attachment:
@@ -185,7 +196,7 @@ def get_case(case_id: str):
 def sample():
     if not auth.current("write").demo:
         raise HTTPException(403, "Synthetic invoices require an isolated demo store.")
-    return insert_invoice(sample_invoice(), True)
+    return insert_invoice(sample_invoice(), True, reuse_sample=True)
 
 
 @app.post("/api/invoices/manual", status_code=201)

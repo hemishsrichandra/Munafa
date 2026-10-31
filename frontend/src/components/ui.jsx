@@ -18,13 +18,12 @@ const badge = (status) => (
 );
 const icon = (Icon, size = 18) => <Icon size={size} strokeWidth={1.7} />;
 function Metric({ label, value, Icon, foot, tone, onClick }) {
+  const Element = onClick ? 'button' : 'div';
   return (
-    <div
+    <Element
+      type={onClick ? 'button' : undefined}
       className={`metric ${onClick ? 'clickable' : ''}`}
       onClick={onClick}
-      {...(onClick
-        ? { role: 'button', tabIndex: 0, onKeyDown: (e) => e.key === 'Enter' && onClick() }
-        : {})}
     >
       <div className="metric-top">
         <span>{label}</span>
@@ -32,7 +31,7 @@ function Metric({ label, value, Icon, foot, tone, onClick }) {
       </div>
       <strong className="metric-value">{value}</strong>
       <span className="metric-foot">{foot}</span>
-    </div>
+    </Element>
   );
 }
 function CaseTable({ cases, open }) {

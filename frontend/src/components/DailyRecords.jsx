@@ -64,7 +64,7 @@ function Check({ children, checked, onChange }) {
   );
 }
 
-export function DailyRecords() {
+export function DailyRecords({ initialRoute = '' }) {
   const local = useOffline();
   const session = useSession(),
     canWrite = session.permissions.includes('write'),
@@ -82,6 +82,53 @@ export function DailyRecords() {
     [entry, setEntry] = useState(freshEntry),
     [reverse, setReverse] = useState(null),
     [reminder, setReminder] = useState('');
+  const [source, setSource] = useState(null);
+  const [sourceBusy, setSourceBusy] = useState(false);
+  const [sourceError, setSourceError] = useState('');
+  async function openSource(route, append = false) {
+    setSourceBusy(true);
+    setSourceError('');
+    try {
+      const url = new URL(route, location.origin);
+      const parts = url.pathname.split('/').filter(Boolean);
+      const section = parts[1];
+      if (section === 'history') {
+        setTab('Sales & expenses');
+        const group = url.searchParams.get('group') || 'all';
+        const offset = append ? source?.next_offset : 0;
+        const response = await api(
+          `/records/entries?group=${encodeURIComponent(group)}&offset=${offset || 0}`,
+        );
+        setSource((old) => ({
+          ...response,
+          section: 'history',
+          route,
+          items: append ? [...(old?.items || []), ...response.items] : response.items,
+        }));
+      } else if (['entries', 'customers', 'tasks'].includes(section)) {
+        setTab(
+          section === 'tasks'
+            ? 'Tasks'
+            : section === 'customers'
+              ? 'Customers'
+              : 'Sales & expenses',
+        );
+        setSource(
+          parts[2]
+            ? { section, record: await api(`/records/${section}/${encodeURIComponent(parts[2])}`) }
+            : null,
+        );
+      }
+    } catch (e) {
+      setSource(null);
+      setSourceError(e.message);
+    } finally {
+      setSourceBusy(false);
+    }
+  }
+  useEffect(() => {
+    if (initialRoute.startsWith('/records/')) openSource(initialRoute);
+  }, [initialRoute]);
   const [task, setTask] = useState({
     title: '',
     category: 'other',
@@ -158,6 +205,83 @@ export function DailyRecords() {
           <p>Customers, money and daily tasks — reviewed by you.</p>
         </div>
       </div>
+      {(source || sourceBusy || sourceError) && (
+        <section className="panel" aria-label="Original record">
+          <h2>Source records</h2>
+          {sourceBusy && <p role="status">Loading the original record…</p>}
+          {sourceError && (
+            <p role="alert">
+              {sourceError}
+              <button className="button secondary" onClick={() => openSource(initialRoute)}>
+                Retry source
+              </button>
+            </p>
+          )}
+          {source?.section === 'history' && (
+            <>
+              <p>
+                {source.total_count} accepted source records · Merchant-entered, not bank/POS
+                verified.
+              </p>
+              {!source.items.length && <p>No accepted records in this view.</p>}
+              {source.items.map((r) => (
+                <article className="source-list-card" key={r.id}>
+                  <strong>
+                    {labels[r.kind] || 'Reversal'} · {money(r.amount_paise)}
+                  </strong>
+                  <p>
+                    {r.reference} · {r.occurred_on}
+                  </p>
+                  <button
+                    className="button secondary"
+                    onClick={() => openSource(`/records/entries/${r.id}`)}
+                  >
+                    Open original {r.reference}
+                  </button>
+                </article>
+              ))}
+              {source.next_offset !== null && (
+                <button
+                  className="button secondary"
+                  disabled={sourceBusy}
+                  onClick={() => openSource(source.route, true)}
+                >
+                  Load more source records
+                </button>
+              )}
+            </>
+          )}
+          {source?.record && (
+            <>
+              <h3>{source.record.reference || source.record.title || source.record.name}</h3>
+              {source.record.amount_paise !== undefined && (
+                <p>
+                  {labels[source.record.kind] || 'Reversal'} · {money(source.record.amount_paise)} ·{' '}
+                  {source.record.payment_channel}
+                </p>
+              )}
+              <p>
+                {source.record.occurred_on || source.record.due_on || ''}{' '}
+                {source.record.status || ''}
+              </p>
+              <p>{source.record.note || ''}</p>
+              {source.record.reversed && <p>Reversed — original retained in history.</p>}
+              {source.record.outstanding_paise !== undefined && (
+                <p>Recorded outstanding: {money(source.record.outstanding_paise)}</p>
+              )}
+              {source.record.obligations?.map((r) => (
+                <button
+                  key={r.id}
+                  className="button secondary"
+                  onClick={() => openSource(`/records/entries/${r.id}`)}
+                >
+                  Open original {r.reference} · {money(r.remaining_paise)} remaining
+                </button>
+              ))}
+            </>
+          )}
+        </section>
+      )}
       <p className="info-box">
         {session.store.demo ? 'Synthetic demo store. ' : ''}These are merchant-entered records. They
         are not verified bank/POS data. Save financial drafts on this device when disconnected;

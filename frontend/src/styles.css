@@ -4639,3 +4639,25 @@ textarea:focus-visible,
 .daily-records article.panel {
   margin-top: 16px;
 }
+
+/* Guided, source-backed home actions reuse existing merchant controls. */
+.metric.clickable {
+  text-align: left;
+  width: 100%;
+}
+.demo-onboarding {
+  padding: 20px;
+  margin: 16px 0;
+  border: 1px solid #ccd9c0;
+  border-radius: 12px;
+  background: #f3f7ed;
+}
+.demo-onboarding ol {
+  padding-left: 20px;
+  line-height: 1.8;
+}
+.source-list-card {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}

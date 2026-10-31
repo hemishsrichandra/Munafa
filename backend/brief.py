@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from sqlalchemy import select, func
 from fastapi import APIRouter
-from . import auth, store, models as m, inventory, payments
+from . import auth, store, models as m, inventory, payments, records
 from .domain import local_today, present
 
 router = APIRouter(prefix="/api")
@@ -54,8 +54,47 @@ def build(db):
                 f"/payments/{r['batch_id']}?mode={mode}",
                 r["observed_at"],
             )
-    for c in store.all_cases(db):
-        c = present(c)
+    cases = [present(c) for c in store.all_cases(db)]
+    onboarding = None
+    for c in cases:
+        if c["status"] == "review":
+            add(
+                "invoice_review",
+                c["id"],
+                "Review invoice " + c["invoice"]["reference"],
+                "Confirm the bill and count the physical delivery separately. Nothing has been approved or recovered.",
+                2,
+                [c["id"]],
+                f"/cases/{c['id']}",
+                c["created_at"],
+            )
+        if p.demo and c["synthetic"] and c["invoice"]["reference"] == "A-104":
+            approved = c["approved_version"] is not None
+            shared = c["status"] in ("sent", "promised", "partial", "resolved")
+            onboarding = {
+                "source_entity_ids": [c["id"]],
+                "route": f"/cases/{c['id']}",
+                "title": "Continue your sample invoice"
+                if c["status"] != "resolved"
+                else "Review your completed sample",
+                "next_step": "Review the bill and confirm what actually arrived."
+                if c["status"] == "review"
+                else "Approve the reviewed evidence."
+                if not approved
+                else "Review the sharing handoff; no message is sent automatically."
+                if not shared
+                else "Record a supplier promise only when received, then confirm recovery with proof."
+                if c["status"] != "resolved"
+                else "Your sample has proof-backed recovery. You can inspect its history.",
+                "steps": [
+                    {"label": "Confirm quantities and units", "complete": c["status"] != "review"},
+                    {"label": "Approve the evidence", "complete": approved},
+                    {"label": "Review sharing handoff", "complete": shared},
+                    {"label": "Confirm recovery with proof", "complete": c["status"] == "resolved"},
+                ],
+                "synthetic": True,
+            }
+
         if c["status"] in ("ready", "sent", "promised", "partial") and c["remaining_paise"] > 0:
             overdue = bool(c["follow_up"] and c["follow_up"] < today.isoformat())
             latest = (
@@ -116,6 +155,77 @@ def build(db):
                     f"/stock/{product['id']}",
                     product["created_at"],
                 )
+    # Accepted manual records only: collections are not another sale; reversals cancel originals.
+    history = records.all_entries(db)
+    active = records.active_entries(db, history)
+    sales = [r for r in active if r["kind"] in ("cash_sale", "credit_sale")]
+    expenses = [r for r in active if r["kind"] == "expense"]
+    obligations = [r for r in active if r["kind"] in ("opening_due", "credit_sale")]
+    dues = [(r, records.outstanding(active, r)) for r in obligations]
+    for r, remaining in dues:
+        if remaining > 0 and r["due_on"] and r["due_on"] <= today:
+            add(
+                "customer_due",
+                r["id"],
+                "Review customer payment due",
+                f"{remaining // 100}.{remaining % 100:02d} INR remains on your recorded obligation, due {r['due_on']}. No bank receipt or reminder delivery is verified.",
+                1 if r["due_on"] < today else 2,
+                [r["id"], r["customer_id"]],
+                f"/records/entries/{r['id']}",
+                r["created_at"],
+            )
+    tasks = [
+        dict(t)
+        for t in db.execute(
+            select(m.business_tasks).where(store.scope(m.business_tasks))
+        ).mappings()
+    ]
+    open_tasks = [t for t in tasks if t["status"] == "open"]
+    for t in open_tasks:
+        if p.role != "owner" and t["assignee_id"] not in (None, p.user_id):
+            continue
+        latest = (
+            db.execute(
+                select(func.max(m.audit_events.c.at)).where(
+                    store.scope(m.audit_events), m.audit_events.c.entity_id == t["id"]
+                )
+            ).scalar()
+            or t["created_at"]
+        )
+        add(
+            "store_task",
+            t["id"],
+            t["title"],
+            f"Recorded {t['category']} task due {t['due_on']}. Open the task before changing its status.",
+            2 if t["due_on"] <= today else 4,
+            [t["id"]],
+            f"/records/tasks/{t['id']}",
+            latest,
+        )
+    totals = {
+        "cash": records.build_summary(db, history=history)["cash"],
+        "mode": "demo" if p.demo else "manual",
+        "source": "merchant_reviewed_manual",
+        "coverage": "All recorded dates; not complete shop sales, profit or bank verification.",
+        "sales_paise": sum(r["amount_paise"] for r in sales),
+        "expenses_paise": sum(r["amount_paise"] for r in expenses),
+        "customer_dues_paise": sum(remaining for _, remaining in dues),
+        "open_tasks": len(open_tasks),
+        "record_count": len(history),
+        "queried_at": now,
+        "last_source_at": max((r["created_at"] for r in history), default=None),
+        "business_date": today,
+        "today": {
+            "sales_paise": sum(r["amount_paise"] for r in sales if r["occurred_on"] == today),
+            "expenses_paise": sum(r["amount_paise"] for r in expenses if r["occurred_on"] == today),
+        },
+        "source_routes": {
+            "sales": "/records/history?group=sales",
+            "expenses": "/records/history?group=expenses",
+            "dues": "/records/customers",
+            "tasks": "/records/tasks",
+        },
+    }
     # This is recorded collection activity, never SKU sales. Unavailable != zero.
     yesterday = today - timedelta(days=1)
     rows = list(
@@ -167,7 +277,9 @@ def build(db):
         },
         "items": sorted(items, key=lambda x: (x["priority"], x["action_id"]))[:7],
         "omitted_count": max(0, len(items) - 7),
-        "receivables_available": False,
+        "receivables_available": True,
+        "manual_totals": totals,
+        "onboarding": onboarding,
     }
 
 

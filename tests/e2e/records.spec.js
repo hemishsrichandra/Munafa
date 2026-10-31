@@ -140,7 +140,7 @@ test('home snapshot retains unknown cash and recovers from unavailable records',
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await login(page, 'records-offline');
-  await page.route('**/api/records/summary', (route) =>
+  await page.route('**/api/brief', (route) =>
     route.fulfill({
       status: 503,
       contentType: 'application/json',
@@ -153,7 +153,7 @@ test('home snapshot retains unknown cash and recovers from unavailable records',
     snapshot.getByText('Records temporarily unavailable', { exact: true }),
   ).toBeVisible();
   await expect(snapshot.getByText('Recorded sales', { exact: true })).toHaveCount(0);
-  await page.unroute('**/api/records/summary');
+  await page.unroute('**/api/brief');
   await snapshot.getByRole('button', { name: 'Retry business snapshot' }).click();
   await expect(snapshot.getByText(/Unknown — record opening cash first/)).toBeVisible();
   await context.setOffline(true);

@@ -37,6 +37,25 @@ export function BusinessBrief({ follow }) {
       {!data && !error && <p role="status">Loading brief…</p>}
       {data && (
         <>
+          {data.onboarding && (
+            <section className="demo-onboarding" aria-label="Sample walkthrough">
+              <small>SYNTHETIC DEMO · YOUR NEXT STEP</small>
+              <h3>{data.onboarding.title}</h3>
+              <p>{data.onboarding.next_step}</p>
+              <ol>
+                {data.onboarding.steps.map((step) => (
+                  <li key={step.label}>
+                    {step.complete ? '✓ ' : ''}
+                    {step.label}
+                    {step.complete ? ' — complete' : ''}
+                  </li>
+                ))}
+              </ol>
+              <button className="button primary" onClick={() => follow(data.onboarding.route)}>
+                {data.onboarding.title}
+              </button>
+            </section>
+          )}
           <small>
             Updated{' '}
             {new Date(data.generated_at).toLocaleTimeString('en-IN', {
@@ -60,7 +79,8 @@ export function BusinessBrief({ follow }) {
           </details>
           {!data.items.length && (
             <p>
-              You’re all caught up. Add a purchase to start tracking your stock and supplier claims.
+              No pending actions in your recorded data. Add a purchase or daily record to track the
+              next step.
             </p>
           )}
           <div className="commerce-list">

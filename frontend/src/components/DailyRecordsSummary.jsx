@@ -19,11 +19,8 @@ export function DailyRecordsSummary({ openRecords }) {
         return;
       }
       try {
-        const [summary, tasks] = await Promise.all([
-          api('/records/summary', { signal: controller.signal }),
-          api('/records/tasks', { signal: controller.signal }),
-        ]);
-        if (active) setData({ summary, tasks });
+        const brief = await api('/brief', { signal: controller.signal });
+        if (active) setData(brief.manual_totals);
       } catch (e) {
         if (active) setError(e.message);
       }
@@ -41,12 +38,12 @@ export function DailyRecordsSummary({ openRecords }) {
       window.removeEventListener('munafa-server-change', refresh);
     };
   }, [revision]);
-  const summary = data?.summary;
+  const summary = data;
   return (
     <section className="panel partner-screen daily-records" aria-label="Recorded business snapshot">
       <div className="brief-heading">
         <h2>Recorded business snapshot</h2>
-        <button className="button secondary" onClick={openRecords}>
+        <button className="button secondary" onClick={() => openRecords('/records/customers')}>
           Open daily records
         </button>
       </div>
@@ -66,7 +63,7 @@ export function DailyRecordsSummary({ openRecords }) {
       ) : (
         <>
           <p className="tiny-help">
-            As of {summary.as_of}
+            As of {summary.business_date}
             {summary.mode === 'demo' ? ' · Synthetic demo records' : ''}
           </p>
           <div className="metrics">
@@ -74,25 +71,29 @@ export function DailyRecordsSummary({ openRecords }) {
               label="Recorded sales"
               value={money(summary.sales_paise)}
               Icon={ReceiptText}
-              foot="Paid sales + sales on credit"
+              foot="Paid sales + sales on credit · View sources"
+              onClick={() => openRecords(summary.source_routes.sales)}
             />
             <Metric
               label="Customer dues"
-              value={money(summary.customers.reduce((n, c) => n + c.outstanding_paise, 0))}
+              value={money(summary.customer_dues_paise)}
               Icon={Store}
-              foot="Outstanding customer obligations"
+              foot="Outstanding customer obligations · View sources"
+              onClick={() => openRecords(summary.source_routes.dues)}
             />
             <Metric
               label="Recorded expenses"
-              value={money(Object.values(summary.expenses_by_category).reduce((a, b) => a + b, 0))}
+              value={money(summary.expenses_paise)}
               Icon={Wallet}
-              foot="Expenses across all payment channels"
+              foot="All payment channels · View sources"
+              onClick={() => openRecords(summary.source_routes.expenses)}
             />
             <Metric
               label="Open tasks"
-              value={data.tasks.filter((t) => t.status === 'open').length}
+              value={summary.open_tasks}
               Icon={Clock3}
-              foot="Tasks visible to your account"
+              foot="Tasks visible to your account · View sources"
+              onClick={() => openRecords(summary.source_routes.tasks)}
             />
           </div>
           <p className="tiny-help">

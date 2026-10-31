@@ -252,8 +252,12 @@ def test_no_synthetic_proof_for_manual_case(client):
 
 
 def test_duplicate_invoice_rejected(client):
-    sample(client)
-    assert client.post("/api/invoices/sample").status_code == 409
+    original = sample(client)
+    repeated = client.post("/api/invoices/sample")
+    assert repeated.status_code == 201
+    assert repeated.json()["id"] == original["id"]
+    # Generic intake still refuses the same supplier/reference; only the explicit sample reuses it.
+    assert client.post("/api/invoices/manual", json=original["invoice"]).status_code == 409
 
 
 def test_invalid_date_and_followup(client):

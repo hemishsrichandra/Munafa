@@ -3,7 +3,7 @@
 from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo
 from typing import Literal
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from pydantic import Field, model_validator
 from sqlalchemy import select, insert, update
 from . import auth, models as m, store
@@ -349,88 +349,159 @@ def reverse_entry(eid: str, body: Reverse):
         return get(db, m.business_entries, rid)
 
 
+def build_summary(db, history=None):
+    history = all_entries(db) if history is None else history
+    rows = active_entries(db, history)
+    people = [
+        dict(r)
+        for r in db.execute(
+            select(m.business_customers).where(store.scope(m.business_customers))
+        ).mappings()
+    ]
+    debts = [
+        {**r, "remaining_paise": outstanding(rows, r)}
+        for r in rows
+        if r["kind"] in ("opening_due", "credit_sale", "payable")
+    ]
+    for p in people:
+        sales = [
+            r
+            for r in rows
+            if r["customer_id"] == p["id"] and r["kind"] in ("credit_sale", "cash_sale")
+        ]
+        p.update(
+            outstanding_paise=sum(
+                d["remaining_paise"] for d in debts if d["customer_id"] == p["id"]
+            ),
+            recorded_sale_count=len(sales),
+            last_recorded_sale=max((r["occurred_on"] for r in sales), default=None),
+            segment="repeat_recorded"
+            if len(sales) >= 2
+            else "one_recorded"
+            if sales
+            else "no_recorded_sales",
+        )
+    for p in people:
+        last = p["last_recorded_sale"]
+        p["days_since_recorded_sale"] = (today() - last).days if last else None
+        p["no_recorded_sale_in_30_days"] = last is not None and (today() - last).days >= 30
+    opening = next((r for r in rows if r["kind"] == "opening_cash"), None)
+    ins = sum(
+        r["amount_paise"]
+        for r in rows
+        if r["kind"] in ("opening_cash", "cash_sale", "collection")
+        and r["payment_channel"] == "cash"
+    )
+    outs = sum(
+        r["amount_paise"]
+        for r in rows
+        if r["kind"] in ("expense", "payable_payment") and r["payment_channel"] == "cash"
+    )
+    expenses = {
+        c: sum(r["amount_paise"] for r in rows if r["kind"] == "expense" and r["category"] == c)
+        for c in ("stock", "rent", "utilities", "wages", "transport", "other")
+    }
+    return {
+        "mode": "demo" if auth.current().demo else "manual",
+        "as_of": today(),
+        "customers": people,
+        "obligations": debts,
+        "entries": [
+            {**r, "reversed": any(x["reversal_of"] == r["id"] for x in history)}
+            for r in history[-100:][::-1]
+        ],
+        "history_limit": 100,
+        "active_entry_count": len(rows),
+        "cash": {
+            "opening_recorded": opening is not None,
+            "recorded_balance_paise": ins - outs if opening else None,
+            "net_recorded_movement_paise": ins - outs - (opening["amount_paise"] if opening else 0),
+            "warning": "Manual cash movements only. This is not a bank balance, profit or a complete cash forecast.",
+        },
+        "sales_paise": sum(
+            r["amount_paise"] for r in rows if r["kind"] in ("cash_sale", "credit_sale")
+        ),
+        "expenses_by_category": expenses,
+        "source": "merchant_reviewed_manual",
+        "sales_coverage_verified": False,
+        "external_sending_enabled": False,
+        "forecast_enabled": False,
+    }
+
+
 @router.get("/summary")
 def summary():
     with store.connect() as db:
+        return build_summary(db)
+
+
+def entry_view(db, row):
+    return {
+        **row,
+        "reversed": bool(
+            db.execute(
+                select(m.business_entries.c.id).where(
+                    store.scope(m.business_entries), m.business_entries.c.reversal_of == row["id"]
+                )
+            ).first()
+        ),
+        "source": "merchant_reviewed_manual",
+    }
+
+
+@router.get("/entries")
+def entry_sources(
+    group: Literal["all", "sales", "expenses"] = "all",
+    on: date | None = None,
+    offset: int = Query(default=0, ge=0, le=10000),
+):
+    with store.connect() as db:
         history = all_entries(db)
-        rows = active_entries(db, history)
-        people = [
-            dict(r)
-            for r in db.execute(
-                select(m.business_customers).where(store.scope(m.business_customers))
-            ).mappings()
-        ]
+        rows = history if group == "all" else active_entries(db, history)
+        if group != "all":
+            allowed = ("cash_sale", "credit_sale") if group == "sales" else ("expense",)
+            rows = [r for r in rows if r["kind"] in allowed]
+        if on is not None:
+            rows = [r for r in rows if r["occurred_on"] == on]
+        rows = rows[::-1]
+        return {
+            "items": [entry_view(db, r) for r in rows[offset : offset + 50]],
+            "total_count": len(rows),
+            "next_offset": offset + 50 if offset + 50 < len(rows) else None,
+            "group": group,
+            "on": on,
+            "source": "merchant_reviewed_manual",
+        }
+
+
+@router.get("/entries/{eid}")
+def entry_source(eid: str):
+    with store.connect() as db:
+        return entry_view(db, get(db, m.business_entries, eid))
+
+
+@router.get("/customers/{eid}")
+def customer_source(eid: str):
+    with store.connect() as db:
+        person = get(db, m.business_customers, eid)
+        rows = active_entries(db)
         debts = [
             {**r, "remaining_paise": outstanding(rows, r)}
             for r in rows
-            if r["kind"] in ("opening_due", "credit_sale", "payable")
+            if r["customer_id"] == eid and r["kind"] in ("opening_due", "credit_sale")
         ]
-        for p in people:
-            sales = [
-                r
-                for r in rows
-                if r["customer_id"] == p["id"] and r["kind"] in ("credit_sale", "cash_sale")
-            ]
-            p.update(
-                outstanding_paise=sum(
-                    d["remaining_paise"] for d in debts if d["customer_id"] == p["id"]
-                ),
-                recorded_sale_count=len(sales),
-                last_recorded_sale=max((r["occurred_on"] for r in sales), default=None),
-                segment="repeat_recorded"
-                if len(sales) >= 2
-                else "one_recorded"
-                if sales
-                else "no_recorded_sales",
-            )
-        for p in people:
-            last = p["last_recorded_sale"]
-            p["days_since_recorded_sale"] = (today() - last).days if last else None
-            p["no_recorded_sale_in_30_days"] = last is not None and (today() - last).days >= 30
-        opening = next((r for r in rows if r["kind"] == "opening_cash"), None)
-        ins = sum(
-            r["amount_paise"]
-            for r in rows
-            if r["kind"] in ("opening_cash", "cash_sale", "collection")
-            and r["payment_channel"] == "cash"
-        )
-        outs = sum(
-            r["amount_paise"]
-            for r in rows
-            if r["kind"] in ("expense", "payable_payment") and r["payment_channel"] == "cash"
-        )
-        expenses = {
-            c: sum(r["amount_paise"] for r in rows if r["kind"] == "expense" and r["category"] == c)
-            for c in ("stock", "rent", "utilities", "wages", "transport", "other")
-        }
         return {
-            "mode": "demo" if auth.current().demo else "manual",
-            "as_of": today(),
-            "customers": people,
+            **person,
             "obligations": debts,
-            "entries": [
-                {**r, "reversed": any(x["reversal_of"] == r["id"] for x in history)}
-                for r in history[-100:][::-1]
-            ],
-            "history_limit": 100,
-            "active_entry_count": len(rows),
-            "cash": {
-                "opening_recorded": opening is not None,
-                "recorded_balance_paise": ins - outs if opening else None,
-                "net_recorded_movement_paise": ins
-                - outs
-                - (opening["amount_paise"] if opening else 0),
-                "warning": "Manual cash movements only. This is not a bank balance, profit or a complete cash forecast.",
-            },
-            "sales_paise": sum(
-                r["amount_paise"] for r in rows if r["kind"] in ("cash_sale", "credit_sale")
-            ),
-            "expenses_by_category": expenses,
+            "outstanding_paise": sum(r["remaining_paise"] for r in debts),
             "source": "merchant_reviewed_manual",
-            "sales_coverage_verified": False,
-            "external_sending_enabled": False,
-            "forecast_enabled": False,
         }
+
+
+@router.get("/tasks/{eid}")
+def task_source(eid: str):
+    with store.connect() as db:
+        return get(db, m.business_tasks, eid)
 
 
 @router.post("/customers/{eid}/reminder")

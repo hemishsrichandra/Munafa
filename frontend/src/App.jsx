@@ -136,17 +136,25 @@ function App() {
       }
     } else if (route.startsWith('/payments/')) navigate('payments');
     else if (route.startsWith('/stock/')) navigate('purchases');
+    else if (route.startsWith('/records/')) navigate('records');
   }
   const onUpdate = (c) => {
     setSelected(c);
     setCases((prev) => prev.map((old) => (old.id === c.id ? c : old)));
   };
   const onCreate = (c) => {
-    setCases((prev) => [c, ...prev]);
+    setCases((prev) => [c, ...prev.filter((old) => old.id !== c.id)]);
     setAdding(false);
     open(c);
-    setToast('Invoice added. Confirm what arrived before approval.');
+    setToast(
+      c.sample_reused
+        ? 'Opened your existing sample. Previous work is saved.'
+        : 'Invoice added. Confirm what arrived before approval.',
+    );
   };
+  const sampleToContinue =
+    session.store.demo &&
+    cases.find((c) => c.synthetic && c.invoice.reference === 'A-104' && c.status !== 'resolved');
   const pending = cases.filter((c) => c.status !== 'resolved');
   const overdue = pending.filter((c) => c.follow_up && c.follow_up < today());
   const verified = cases.reduce((a, c) => a + c.recovered_paise, 0);
@@ -307,7 +315,7 @@ function App() {
                 </div>
               )}
               {view === 'records' ? (
-                <DailyRecords />
+                <DailyRecords initialRoute={sourceRoute} />
               ) : view === 'connections' ? (
                 <Integrations />
               ) : view === 'exports' ? (
@@ -377,17 +385,23 @@ function App() {
                       </p>
                     </div>
                     <button
-                      className="button primary"
+                      className={sampleToContinue ? 'button secondary' : 'button primary'}
                       disabled={!session.permissions.includes('write')}
-                      onClick={openIntake}
+                      onClick={() =>
+                        sampleToContinue
+                          ? followSource(`/cases/${sampleToContinue.id}`)
+                          : openIntake()
+                      }
                     >
-                      {icon(Plus)} Add an invoice
+                      {icon(Plus)} {sampleToContinue ? 'Continue sample invoice' : 'Add an invoice'}
                     </button>
                   </div>
                   {view === 'overview' && (
                     <>
                       <BusinessBrief follow={followSource} />
-                      <DailyRecordsSummary openRecords={() => navigate('records')} />
+                      <DailyRecordsSummary
+                        openRecords={(route) => followSource(route || '/records/customers')}
+                      />
                       <div className="section-caption">
                         <span>AT A GLANCE</span>
                         <span className="muted">
