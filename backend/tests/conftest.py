@@ -21,6 +21,9 @@ def database(monkeypatch):
     monkeypatch.setenv("DATABASE_SCHEMA", schema)
     monkeypatch.setenv("APP_ENV", "test")
     monkeypatch.setenv("ALLOW_DEV_LOGIN", "0")
+    monkeypatch.setenv("ENABLE_PUBLIC_SIGNUP", "1")
+    monkeypatch.setenv("ENABLE_PUBLIC_DEMO", "1")
+    monkeypatch.setenv("PUBLIC_DEMO_MAX_STORES", "500")
     monkeypatch.delenv("SARVAM_API_KEY", raising=False)
     for flag in (
         "ENABLE_SPEECH_PREVIEW",

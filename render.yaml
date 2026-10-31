@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: munafa-paytm-partner
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: singapore
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_SCHEMA
+        value: public
+      - key: DATABASE_URL
+        fromDatabase:
+          name: munafa-postgres
+          property: connectionString
+      - key: APP_ORIGINS
+        sync: false
+      - key: ALLOW_DEV_LOGIN
+        value: '0'
+      - key: ENABLE_PUBLIC_SIGNUP
+        value: '1'
+      - key: ENABLE_PUBLIC_DEMO
+        value: '1'
+      - key: PUBLIC_DEMO_MAX_STORES
+        value: '500'
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: SARVAM_CHAT_MODEL
+        value: sarvam-105b
+      - key: SARVAM_VISION_MODEL
+        value: gemma4
+
+databases:
+  - name: munafa-postgres
+    databaseName: munafa
+    user: munafa_user
+    plan: free
+    region: singapore

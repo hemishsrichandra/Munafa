@@ -8,6 +8,10 @@ from sqlalchemy.engine import make_url
 
 def database_url():
     value = os.environ.get("DATABASE_URL", "")
+    if value.startswith("postgres://"):
+        value = "postgresql+psycopg://" + value[len("postgres://") :]
+    elif value.startswith("postgresql://") and not value.startswith("postgresql+psycopg://"):
+        value = "postgresql+psycopg://" + value[len("postgresql://") :]
     if not value or make_url(value).drivername != "postgresql+psycopg":
         raise RuntimeError(
             "DATABASE_URL must use postgresql+psycopg. No database fallback is available."

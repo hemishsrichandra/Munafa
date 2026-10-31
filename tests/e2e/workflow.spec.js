@@ -11,7 +11,7 @@ test.beforeEach(async ({ page, context }) => {
     return;
   }
   await page.goto('/');
-  await page.getByRole('button', { name: 'Try a demo', exact: true }).click();
+  await page.getByRole('button', { name: 'Development demo access', exact: true }).click();
   await page.getByLabel('Demo access code').fill('e2e-isolated-demo-access');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(

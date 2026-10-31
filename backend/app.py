@@ -148,6 +148,8 @@ def health():
         "chat_model": os.getenv("SARVAM_CHAT_MODEL", "sarvam-105b"),
         "mode": "merchant workspace",
         "development_login": auth.development_login(),
+        "public_signup": auth.public_signup_enabled(),
+        "public_demo": auth.public_demo_enabled(),
     }
 
 
@@ -656,6 +658,30 @@ def login_response(result, request):
 @app.post("/api/auth/login")
 def login(body: LoginBody, request: Request):
     return login_response(auth.login(body.username, body.password), request)
+
+
+class SignupBody(StrictModel):
+    username: str = Field(min_length=3, max_length=120)
+    password: str = Field(min_length=12, max_length=200)
+    store_name: str = Field(min_length=1, max_length=120)
+
+
+@app.post("/api/auth/signup", status_code=201)
+def signup(body: SignupBody, request: Request):
+    response = login_response(auth.signup(body.username, body.password, body.store_name), request)
+    response.status_code = 201
+    return response
+
+
+class PublicDemoBody(StrictModel):
+    pass
+
+
+@app.post("/api/auth/demo", status_code=201)
+def public_demo(body: PublicDemoBody, request: Request):
+    response = login_response(auth.public_demo(), request)
+    response.status_code = 201
+    return response
 
 
 @app.post("/api/auth/dev-login")

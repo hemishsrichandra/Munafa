@@ -1,3 +1,7 @@
+# Latest handoff — public signup and isolated demo
+
+See [AUTH-DEPLOYMENT.md](AUTH-DEPLOYMENT.md) for the 31 October 2026 authentication release, Render flags, tests and next steps. New public signup creates a private non-demo store; Try a demo creates a separate synthetic store per visitor. Existing development login stays blocked in production. No migration or extra API key. Previous automatic default-owner provisioning has been removed; if Render already created `owner`, rotate its password using the documented `set-password` CLI. Existing account data/credentials have not been reset. This change incorporates origin/main through a00979f and leaves unrelated local starter-folder deletions out of the commit.
+
 # Cross-system handoff — merchant UI polish
 
 **Latest additive release — 31 October:** [MANUAL-RECORDS.md](MANUAL-RECORDS.md) documents More → Daily records: customer dues and explicit partial allocations, cash/noncash records, reversals, reviewed expenses, staff tasks, manual cash scenarios, local reminders and consent-aware marketing drafts. Existing main screens and provider gates remain unchanged. User confirmed no partner access and chose manual entries first; CSV is later. Migration head is now **19b0c9cc7712**, superseding historical heads below. Apply forward migrations before startup. [FEATURE-CHECKLIST-AUDIT.md](FEATURE-CHECKLIST-AUDIT.md) has updated bounded statuses (18 implemented, 30 partial, 6 gated, 3 absent), not claims of production completeness or measured impact.

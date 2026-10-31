@@ -110,10 +110,19 @@ async def guard(request, call_next):
                         raise HTTPException(400, "Invalid request length.")
                     if size > 9 * 1024 * 1024:
                         raise HTTPException(413, "Request is too large.")
-            public = path in ("/api/health", "/api/auth/login", "/api/auth/dev-login")
+            public = path in (
+                "/api/health",
+                "/api/auth/login",
+                "/api/auth/dev-login",
+                "/api/auth/signup",
+                "/api/auth/demo",
+            )
             if public:
                 if write:
-                    rate_limit(("login", request.client.host if request.client else "unknown"), 10)
+                    host = request.client.host if request.client else "unknown"
+                    rate_limit(("login", host), 10)
+                    if path in ("/api/auth/signup", "/api/auth/demo"):
+                        rate_limit(("provision", host), 3)
                     await bounded_body(request, 16384)
             else:
                 bearer = request.headers.get("authorization", "")
