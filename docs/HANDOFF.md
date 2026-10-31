@@ -8,6 +8,8 @@ See [AUTH-DEPLOYMENT.md](AUTH-DEPLOYMENT.md) for the 31 October 2026 authenticat
 
 # Cross-system handoff — merchant UI polish
 
+**Hackathon-sized home improvement:** `DailyRecordsSummary.jsx` connects existing reviewed customer dues, sales, expenses, cash and open tasks to the home screen, with source/coverage labels, unknown opening cash, error/retry and offline clearing/reconnect. No schema or financial-write changes. Read [ANTIGRAVITY-HANDOFF.md](ANTIGRAVITY-HANDOFF.md) for continuation context, verification and deliberately deferred work. Latest date-fixture fixes and project review through `ec049bf` were merged before testing.
+
 **Final concurrent header update:** remote changes through `09d013d` were subsequently merged and pushed with the additive release. The new header regression and both Daily records journeys passed again on that final build (**3 passed**); this adds one new checked journey to the 28 below. Local health and homepage both returned HTTP 200. Existing untracked research/output files were excluded from the release.
 
 **Browser completion:** all **28 journeys passed** across isolated spec runs, including the new manual-record/offline-sync flows, public authentication, purchase/receiving/stock, supplier partial/full recovery, help, phone widths and PWA checks. Windows test browser background rendering throttling was disabled after two initial element-stability timeouts; both failed checks and every remaining spec passed on rerun. Detailed scope and limitations are in MANUAL-RECORDS.md.

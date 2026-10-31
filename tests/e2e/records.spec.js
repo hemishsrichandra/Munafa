@@ -119,8 +119,8 @@ test('manual customer, allocation, cash, tasks and consented marketing work with
   await page.getByRole('button', { name: 'Home', exact: true }).click();
   const snapshot = page.getByRole('region', { name: 'Recorded business snapshot' });
   await expect(snapshot.getByText('₹10.01', { exact: true })).toBeVisible();
-  await expect(snapshot.getByText('₹8.00', { exact: true })).toBeVisible();
-  await expect(snapshot.getByText('₹1.00', { exact: true })).toBeVisible();
+  await expect(snapshot.getByText('₹8', { exact: true })).toBeVisible();
+  await expect(snapshot.getByText('₹1', { exact: true })).toBeVisible();
   await expect(snapshot.getByText(/Cash drawer: ₹102.01/)).toBeVisible();
   await expect(snapshot.getByText('0', { exact: true })).toBeVisible();
   for (const width of [320, 390, 844]) {
@@ -129,8 +129,38 @@ test('manual customer, allocation, cash, tasks and consented marketing work with
       true,
     );
   }
+  await snapshot.screenshot({ path: 'artifacts/test-evidence/home-business-snapshot.png' });
   await snapshot.getByRole('button', { name: 'Open daily records' }).click();
   await expect(page.getByRole('heading', { name: 'Customer accounts', exact: true })).toBeVisible();
+});
+
+test('home snapshot retains unknown cash and recovers from unavailable records', async ({
+  page,
+  context,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login(page, 'records-offline');
+  await page.route('**/api/records/summary', (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ detail: 'Records temporarily unavailable' }),
+    }),
+  );
+  await page.getByRole('button', { name: 'Home', exact: true }).click();
+  const snapshot = page.getByRole('region', { name: 'Recorded business snapshot' });
+  await expect(
+    snapshot.getByText('Records temporarily unavailable', { exact: true }),
+  ).toBeVisible();
+  await expect(snapshot.getByText('Recorded sales', { exact: true })).toHaveCount(0);
+  await page.unroute('**/api/records/summary');
+  await snapshot.getByRole('button', { name: 'Retry business snapshot' }).click();
+  await expect(snapshot.getByText(/Unknown — record opening cash first/)).toBeVisible();
+  await context.setOffline(true);
+  await expect(snapshot.getByText(/Reconnect to load recorded business totals/)).toBeVisible();
+  await expect(snapshot.getByText('Recorded sales', { exact: true })).toHaveCount(0);
+  await context.setOffline(false);
+  await expect(snapshot.getByText(/Unknown — record opening cash first/)).toBeVisible();
 });
 
 test('manual cash draft survives offline reload and reaches ledger once after queued review', async ({

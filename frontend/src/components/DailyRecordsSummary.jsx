@@ -43,8 +43,8 @@ export function DailyRecordsSummary({ openRecords }) {
   }, [revision]);
   const summary = data?.summary;
   return (
-    <section className="panel daily-records" aria-label="Recorded business snapshot">
-      <div className="panel-heading">
+    <section className="panel partner-screen daily-records" aria-label="Recorded business snapshot">
+      <div className="brief-heading">
         <h2>Recorded business snapshot</h2>
         <button className="button secondary" onClick={openRecords}>
           Open daily records
