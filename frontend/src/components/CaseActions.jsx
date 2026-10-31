@@ -88,11 +88,24 @@ function ShareModal({ c, close, config, notify }) {
   async function generate(language) {
     setBusy(true);
     setError('');
-    setDraft(null);
     try {
-      setDraft(await api(`/cases/${c.id}/message`, { method: 'POST', body: { language } }));
+      const res = await api(`/cases/${c.id}/message`, { method: 'POST', body: { language } });
+      setDraft(res);
     } catch (e) {
       setError(e.message);
+      // Ensure we keep or load a working draft so the screen is never left empty
+      if (!draft) {
+        try {
+          const fallback = await api(`/cases/${c.id}/message`, {
+            method: 'POST',
+            body: { language: 'en-IN' },
+          });
+          setDraft(fallback);
+        } catch {
+          // ignore fallback error
+        }
+      }
+      setLang('en-IN');
     } finally {
       setBusy(false);
     }
@@ -101,8 +114,11 @@ function ShareModal({ c, close, config, notify }) {
     generate('en-IN');
   }, []);
   const [translationReviewed, setTranslationReviewed] = useState(false);
+  const cleanPhone = (c?.invoice?.supplier_phone || '').replace(/\D/g, '');
   const link = draft
-    ? `https://wa.me/${c.invoice.supplier_phone.replace(/\D/g, '')}?text=${encodeURIComponent(draft.text)}`
+    ? cleanPhone
+      ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(draft.text)}`
+      : `https://wa.me/?text=${encodeURIComponent(draft.text)}`
     : '#';
   return (
     <Modal
@@ -123,11 +139,11 @@ function ShareModal({ c, close, config, notify }) {
             disabled={busy}
           >
             <option value="en-IN">English · deterministic draft</option>
-            <option value="hi-IN" disabled={!config?.sarvam_configured}>
-              हिन्दी · Sarvam AI
+            <option value="hi-IN">
+              हिन्दी · {config?.sarvam_configured ? 'Sarvam AI' : 'Hindi draft'}
             </option>
-            <option value="kn-IN" disabled={!config?.sarvam_configured}>
-              ಕನ್ನಡ · Sarvam AI
+            <option value="kn-IN">
+              ಕನ್ನಡ · {config?.sarvam_configured ? 'Sarvam AI' : 'Kannada draft'}
             </option>
           </select>
         </label>

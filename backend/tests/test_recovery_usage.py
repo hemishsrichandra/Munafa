@@ -251,3 +251,69 @@ def test_unverified_public_signup_cannot_bypass_demo_spend_protection(database, 
         assert c.get("/api/assistant/capabilities").json()["cloud_configured"] is True
         auth.set_provider_access("unverified-owner", False)
         assert c.get("/api/assistant/capabilities").json()["cloud_configured"] is False
+
+
+def test_public_demo_indic_message_draft_uses_deterministic_rules_without_paid_calls(
+    database, monkeypatch
+):
+    import copy
+
+    with TestClient(app) as c:
+        r = c.post("/api/auth/demo", json={}, headers={"Idempotency-Key": uuid.uuid4().hex})
+        assert r.status_code == 201
+        csrf = r.json()["csrf"]
+        cases = c.get("/api/cases").json()
+        demo_case = cases[0]
+
+        # Review and approve the sample case
+        inv = copy.deepcopy(demo_case["invoice"])
+        for line, n in zip(inv["lines"], (10, 6, 24)):
+            line.update(received=n, unit="piece" if line["unit"] == "unknown" else line["unit"])
+            line.update(received_unit=line["unit"], unit_confirmed=True)
+        c.patch(
+            f"/api/cases/{demo_case['id']}/review",
+            json={
+                "version": demo_case["version"],
+                "invoice": inv,
+                "delivery_complete": True,
+                "pricing_confirmed": True,
+            },
+            headers={"X-CSRF-Token": csrf, "Idempotency-Key": uuid.uuid4().hex},
+        )
+        demo_case = c.get(f"/api/cases/{demo_case['id']}").json()
+        app_res = c.post(
+            f"/api/cases/{demo_case['id']}/approve",
+            json={"version": demo_case["version"]},
+            headers={"X-CSRF-Token": csrf, "Idempotency-Key": uuid.uuid4().hex},
+        )
+        assert app_res.status_code == 200
+        approved = app_res.json()
+        assert approved["approved_version"] is not None
+
+        # Even with SARVAM_API_KEY present, public demo defaults to deterministic Indic rules
+        monkeypatch.setenv("SARVAM_API_KEY", "synthetic-key-not-called")
+
+        def forbidden(*args, **kwargs):
+            pytest.fail("Public demo must not contact Sarvam paid endpoints")
+
+        monkeypatch.setattr("httpx.post", forbidden)
+
+        hi_msg = c.post(
+            f"/api/cases/{demo_case['id']}/message",
+            json={"language": "hi-IN"},
+            headers={"X-CSRF-Token": csrf, "Idempotency-Key": uuid.uuid4().hex},
+        )
+        assert hi_msg.status_code == 200
+        assert hi_msg.json()["provider"] == "rules"
+        assert "नमस्ते" in hi_msg.json()["text"]
+        assert hi_msg.json()["numeric_match"] is True
+
+        kn_msg = c.post(
+            f"/api/cases/{demo_case['id']}/message",
+            json={"language": "kn-IN"},
+            headers={"X-CSRF-Token": csrf, "Idempotency-Key": uuid.uuid4().hex},
+        )
+        assert kn_msg.status_code == 200
+        assert kn_msg.json()["provider"] == "rules"
+        assert "ನಮಸ್ಕಾರ" in kn_msg.json()["text"]
+        assert kn_msg.json()["numeric_match"] is True
