@@ -2,7 +2,9 @@ name: PostgreSQL and PWA checks
 on: [push, pull_request]
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     services:
       postgres:
         image: postgres:17
