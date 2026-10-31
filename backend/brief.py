@@ -164,15 +164,18 @@ def build(db):
     dues = [(r, records.outstanding(active, r)) for r in obligations]
     for r, remaining in dues:
         if remaining > 0 and r["due_on"] and r["due_on"] <= today:
+            sources = [x for x in history if x["id"] == r["id"] or x["target_id"] == r["id"]]
+            related_ids = {x["id"] for x in sources}
+            sources += [x for x in history if x["reversal_of"] in related_ids]
             add(
                 "customer_due",
                 r["id"],
                 "Review customer payment due",
                 f"{remaining // 100}.{remaining % 100:02d} INR remains on your recorded obligation, due {r['due_on']}. No bank receipt or reminder delivery is verified.",
                 1 if r["due_on"] < today else 2,
-                [r["id"], r["customer_id"]],
+                [r["id"], r["customer_id"]] + [x["id"] for x in sources if x["id"] != r["id"]],
                 f"/records/entries/{r['id']}",
-                r["created_at"],
+                max(x["created_at"] for x in sources),
             )
     tasks = [
         dict(t)

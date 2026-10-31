@@ -39,13 +39,17 @@ Open [the built application](http://127.0.0.1:8000). Restart the backend after t
 
 ### Public signup and demo
 
-On the deployed sign-in screen, **Create account** opens a private merchant store and **Try a demo** opens a separate synthetic sample workspace per visitor. Both work in production without enabling development login. They default on; set ENABLE_PUBLIC_SIGNUP=0 or ENABLE_PUBLIC_DEMO=0 to disable. Public demo creation has a database-enforced total cap of 500 by default. Demo sessions expire in 12 hours, but records are not automatically deleted. Use sample information only. Signup requires a 12+ character password; email verification and password recovery are not yet implemented. Read [authentication setup, Render settings and retention limits](docs/AUTH-DEPLOYMENT.md).
+On the deployed sign-in screen, **Create account** opens a private merchant store and **Try a demo** opens a separate synthetic sample workspace per visitor. Both work in production without enabling development login. They default on; set ENABLE_PUBLIC_SIGNUP=0 or ENABLE_PUBLIC_DEMO=0 to disable. Public demo creation has a database-enforced total cap of 500 by default, and paid cloud AI is disabled for public-demo accounts by default. Manual capture and deterministic help remain available. Demo sessions expire in 12 hours, but records are not automatically deleted. Use sample information only. Signup requires a 12+ character password; email verification is not implemented. One-time recovery codes are available under More → Account recovery; email recovery is not connected. Read [authentication setup, Render settings and retention limits](docs/AUTH-DEPLOYMENT.md).
 
 ### Explicit development demo
 
 Only for development: set APP_ENV=development, ALLOW_DEV_LOGIN=1, and a private DEV_LOGIN_CODE with at least 16 characters. Run `.venv/bin/python -m backend.manage seed-demo`, then use **Development demo access** on the login screen and enter that code. This creates a separate demo store and a synthetic A-104 case if empty. It does not reset anything. All input in that store remains synthetic.
 
 Production refuses to enable development login. Production cookies require HTTPS. There is no Paytm SSO or OTP integration.
+
+## Recovery and operational safeguards
+
+Set up one-time codes while you know your password: More → Account recovery. Keep them private and separate from the device; a reset revokes all codes and sessions. Read [account recovery and demo budgets](docs/ACCOUNT-RECOVERY.md). [Backup/restore and retention tooling](ops/BACKUP-RECOVERY.md) is implemented but no off-host destination is configured, so no production backup is claimed. No additional paid API/service is provisioned. Current implementation checkpoints and external validation gates are in [IMPROVEMENTS-HANDOFF.md](docs/IMPROVEMENTS-HANDOFF.md).
 
 ## Current product
 

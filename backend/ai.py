@@ -26,6 +26,9 @@ def post(path, payload):
         raise RuleError(
             "Sarvam AI is not configured. Add SARVAM_API_KEY to .env, or use the sample/manual entry."
         )
+    from .usage import reserve
+
+    reserve("translation" if path == "/translate" else "document_or_text")
     try:
         response = httpx.post(
             BASE + path,

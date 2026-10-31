@@ -27,6 +27,7 @@ PUBLIC = {
     "/api/auth/dev-login",
     "/api/auth/signup",
     "/api/auth/demo",
+    "/api/auth/recover",
 }
 
 
@@ -499,7 +500,7 @@ def test_postgresql_backup_restore_rehearsal_only_disposable_objects(client, tmp
             assert snapshot(db) == before
             assert (
                 db.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "19b0c9cc7712"
+                == "f237b2e9c014"
             )
             assert (
                 db.execute(select(func.sum(m.financial_events.c.amount_paise))).scalar_one() == 8000

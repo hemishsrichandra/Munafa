@@ -17,15 +17,15 @@ services:
       - key: APP_ORIGINS
         sync: false
       - key: ALLOW_DEV_LOGIN
-        value: "1"
-      - key: DEV_LOGIN_CODE
-        value: isolated-hackathon-demo-key-16char
+        value: '0'
       - key: ENABLE_PUBLIC_SIGNUP
-        value: "1"
+        value: '1'
       - key: ENABLE_PUBLIC_DEMO
-        value: "1"
+        value: '1'
       - key: PUBLIC_DEMO_MAX_STORES
-        value: "500"
+        value: '500'
+      - key: PUBLIC_DEMO_AI_ENABLED
+        value: '0'
       - key: SARVAM_API_KEY
         sync: false
       - key: SARVAM_CHAT_MODEL
@@ -33,7 +33,7 @@ services:
       - key: SARVAM_VISION_MODEL
         value: gemma4
       - key: ENABLE_SPEECH_PREVIEW
-        value: "1"
+        value: '1'
 
 databases:
   - name: munafa-postgres

@@ -24,6 +24,8 @@ class Principal:
     timezone: str
     demo: bool
     store_name: str
+    public_demo: bool = False
+    provider_access: bool = False
 
 
 principal: ContextVar[Principal | None] = ContextVar("principal", default=None)
@@ -79,10 +81,21 @@ def provision(
 ):
     """Explicit CLI/test provisioning, not a public registration endpoint."""
     with engine().begin() as db:
-        return provision_in(db, username, password_hash(password), store_name, demo, role, store_id)
+        return provision_in(
+            db,
+            username,
+            password_hash(password),
+            store_name,
+            demo,
+            role,
+            store_id,
+            provider_access=True,
+        )
 
 
-def provision_in(db, username, hashed, store_name, demo=False, role="owner", store_id=None):
+def provision_in(
+    db, username, hashed, store_name, demo=False, role="owner", store_id=None, provider_access=False
+):
     """Identity, membership and session creation can share one atomic transaction."""
     uid = uuid.uuid4().hex
     sid = store_id or uuid.uuid4().hex
@@ -94,7 +107,11 @@ def provision_in(db, username, hashed, store_name, demo=False, role="owner", sto
                 id=sid, merchant_id=mid, name=store_name, timezone="Asia/Kolkata", demo=demo
             )
         )
-    db.execute(insert(m.users).values(id=uid, username=username, password_hash=hashed))
+    db.execute(
+        insert(m.users).values(
+            id=uid, username=username, password_hash=hashed, provider_access=provider_access
+        )
+    )
     db.execute(insert(m.memberships).values(user_id=uid, store_id=sid, role=role))
     return uid, sid
 
@@ -188,8 +205,16 @@ def public_demo():
 
 def membership(db, uid, sid=None):
     q = (
-        select(m.memberships, m.stores.c.timezone, m.stores.c.demo, m.stores.c.name)
+        select(
+            m.memberships,
+            m.stores.c.timezone,
+            m.stores.c.demo,
+            m.stores.c.name,
+            m.users.c.username,
+            m.users.c.provider_access,
+        )
         .join(m.stores, m.memberships.c.store_id == m.stores.c.id)
+        .join(m.users, m.memberships.c.user_id == m.users.c.id)
         .where(m.memberships.c.user_id == uid)
     )
     if sid:
@@ -197,7 +222,16 @@ def membership(db, uid, sid=None):
     row = db.execute(q.order_by(m.memberships.c.store_id)).mappings().first()
     if not row:
         raise HTTPException(403, "Store access denied.")
-    return Principal(uid, row["store_id"], row["role"], row["timezone"], row["demo"], row["name"])
+    return Principal(
+        uid,
+        row["store_id"],
+        row["role"],
+        row["timezone"],
+        row["demo"],
+        row["name"],
+        bool(row["demo"] and row["username"].startswith("demo-")),
+        row["provider_access"],
+    )
 
 
 def session_for(db, uid, sid=None):
@@ -268,6 +302,27 @@ def change_password(username, password):
             raise ValueError("Account not found. No password was changed.")
         db.execute(update(m.users).where(m.users.c.id == row.id).values(password_hash=hashed))
         db.execute(delete(m.sessions).where(m.sessions.c.user_id == row.id))
+        from .recovery import revoke_codes
+
+        revoke_codes(db, row.id)
+
+
+def set_provider_access(username, enabled):
+    """Trusted operator CLI only; store owners cannot approve their own shared-key spending."""
+    with engine().begin() as db:
+        row = db.execute(
+            select(m.users.c.id).where(m.users.c.username == username).with_for_update()
+        ).first()
+        if not row:
+            raise ValueError("Account not found. No change made.")
+        p = membership(db, row.id)
+        if p.public_demo:
+            raise ValueError(
+                "Public demos use the separate global quota gate, not account approval."
+            )
+        db.execute(
+            update(m.users).where(m.users.c.id == row.id).values(provider_access=bool(enabled))
+        )
 
 
 def demo_login(code):

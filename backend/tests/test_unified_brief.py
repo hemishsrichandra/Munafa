@@ -45,7 +45,7 @@ def test_manual_totals_do_not_double_count_collections_or_reversed_sales(client)
     person = customer(client)
     date = merchant_today(client)
     debt = ok(entry(client, customer_id=person["id"], due_on=date.isoformat()), 201)
-    ok(
+    payment = ok(
         entry(
             client,
             "collection",
@@ -68,8 +68,10 @@ def test_manual_totals_do_not_double_count_collections_or_reversed_sales(client)
     assert totals["cash"]["recorded_balance_paise"] is None
     assert totals["today"] == {"sales_paise": 15000, "expenses_paise": 1234}
     due = next(x for x in data["items"] if x["type"] == "customer_due")
-    assert due["source_entity_ids"] == [debt["id"], person["id"]]
-    assert client.get("/api" + due["route"]).json()["id"] == debt["id"]
+    assert due["source_entity_ids"] == [debt["id"], person["id"], payment["id"]]
+    original = client.get("/api" + due["route"]).json()
+    assert original["id"] == debt["id"] and original["remaining_paise"] == 8000
+    assert [r["id"] for r in original["allocations"]] == [payment["id"]]
     sources = client.get("/api/records/entries?group=sales").json()
     assert {x["id"] for x in sources["items"]} == {debt["id"], sale["id"]}
     assert sources["total_count"] == 2 and sources["next_offset"] is None

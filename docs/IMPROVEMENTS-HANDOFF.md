@@ -34,7 +34,9 @@ Backups: private destination configuration, bounded pg_dump/verification, manife
 
 Tests: migration up/down on scratch schemas, reset replay/expiry/guess/tenant/role/session revocation, secret redaction, cross-worker quota and unavailable providers, dry-run retention and backup failure handling/restore isolation. External storage configuration remains an owner action.
 
-Status: PLANNED, gated configuration confirmed.
+Status: IMPLEMENTED / ISOLATED INDEX-SNAPSHOT REGRESSIONS PASSED. Additive head f237b2e9c014 adds account_recovery_codes (hashes), service_usage_counters and immutable service_usage_events. API recovery-code setup/status/reset/privacy and More account-security UI are implemented; exact password whitespace and viewer logout are fixed. Public-signup provider spending requires explicit operator approval (users.provider_access; old accounts default false, CLI allow-ai/deny-ai). Public demo provider calls are disabled at server boundaries by default, with PostgreSQL-atomic call/reservation caps if explicitly configured. Backend migration/recovery/budget focused checks passed; phone recovery and no-IndexedDB-secret journey passed in isolated spec runner. Initial combined direct auth/recovery run hit the intended shared rate limit; per-spec runner passed without weakening limits.
+
+Optional pinned boto3/SDK (open-source, no service provisioned) in requirements-ops/dev; configurable nightly GitHub backup workflow reports NOT_CONFIGURED with absent secrets. Real read-only PostgreSQL snapshot archive and scratch-only restore pass, including row checksums; private storage/SDK fixtures check encryption, public-access blocking and readback corruption. No external storage has been contacted. Retention plan is read-only; optional security-token cleanup follows a fresh verified backup and is disabled by default. Financial/audit/attachment deletion is never automatic. Ops docs: ops/BACKUP-RECOVERY.md; user recovery docs: ACCOUNT-RECOVERY.md. No new paid provider beyond the already approved Sarvam synthetic evaluation.
 
 ## Checkpoint 3 — OCR evaluation + device/pilot readiness
 
@@ -49,3 +51,13 @@ Status: PLANNED; real invoice/device/pilot evidence BLOCKED BY CONFIRMED ACCESS 
 ## Baseline
 
 Current full regression from preceding checkpoint: 302 PostgreSQL backend tests, 29 browser journeys, 19 frontend/offline tests. Latest concurrent home snapshot adds its own tests; rerun relevant/full checks on the final merged code. Migration head 19b0c9cc7712. Production app https://munafa-paytm-partner.onrender.com. Fetch/inspect remote before every commit/push; do not force-push or overwrite concurrent work.
+
+## Concurrent work preserved
+
+Latest pulled remote: 86d8b17. It enabled dev login in a production blueprint; our resolution keeps ALLOW_DEV_LOGIN=0, removes the committed shared development code from the current file, preserves the concurrent ENABLE_SPEECH_PREVIEW=1 setting as an unvalidated opt-in preview for approved accounts, and keeps PUBLIC_DEMO_AI_ENABLED=0. Do not weaken production startup guards. No actual Render settings were changed by the agent.
+
+Another editor created untracked a1b2c3d4e5f6_store_settings_upi_vpa.py (parent f237b2e9c014) and unstaged UPI/reminder edits in backend/records.py and DailyRecords.jsx. The owner explicitly said **continue these five improvements and preserve parallel work separately**. Those changes must not be staged, overwritten, moved or deleted. Current staged versions contain our source-evidence changes but not the parallel UPI additions. Validate the staged index in a private temporary archive, not the mid-edit working tree; never include that unrelated untracked migration in this checkpoint. Verify the index tree hash is unchanged before committing. Temporary stash 'codex recovery ops before latest Render config merge' is retained as a recovery safety copy after its conflict was resolved; do not pop/drop unrelated stashes.
+
+Latest completed checks before the final provider-approval hardening: full backend 337 passed; full browser 33 passed; target recovery/operations/migration with the approval flag 20 passed; source-evidence/operations 15 passed; personalized provider/assistant target 27 passed. Final snapshot checks must supersede these counts. No real bucket, real data import, device or pilot test has been run. Sarvam synthetic run up to ₹10 is approved but has **not yet been executed**.
+
+Final security checkpoint validation (isolated staged tree 8fb891f64d757e5b57b35d391c90e942de28b2c0): **339 backend tests passed**, **33 Playwright journeys passed**, **19 offline unit tests passed**. Ruff check/format, Prettier and production build passed. The first snapshot exposed accidentally staged parallel model metadata; the index was corrected without altering that editor’s working file and the entire backend rerun passed. Parent remote remains 86d8b17. No skipped device/pilot/storage integration is counted as passing.

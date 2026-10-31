@@ -1,3 +1,5 @@
+> Update: this document records the earlier signup release. One-time recovery codes and default-off paid public-demo AI are now implemented; see [ACCOUNT-RECOVERY.md](ACCOUNT-RECOVERY.md) and [the five-improvement handoff](IMPROVEMENTS-HANDOFF.md). Email recovery remains unavailable. Backups are configurable but NOT CONFIGURED without a private destination.
+
 # Public authentication and Render handoff
 
 31 October 2026. Scope: merchant signup and isolated public synthetic demo, retaining existing sessions, tenant rules and recovery safeguards. No migration, new dependency, SSO, OTP or email service.

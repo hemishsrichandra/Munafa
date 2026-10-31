@@ -69,6 +69,7 @@ users = table(
     identity(),
     C("username", String(120), nullable=False, unique=True),
     C("password_hash", Text, nullable=False),
+    C("provider_access", Boolean, nullable=False, server_default="false"),
 )
 memberships = table(
     "memberships",
@@ -769,4 +770,36 @@ business_campaigns = table(
     C("actor_id", String(64), ForeignKey("users.id"), nullable=False),
     instant("created_at"),
     owned_unique(),
+)
+
+# Account recovery secrets are hashes, never raw codes. No ledger truth lives here.
+recovery_codes = table(
+    "account_recovery_codes",
+    identity(),
+    C("user_id", String(64), ForeignKey("users.id"), nullable=False, index=True),
+    C("code_hash", String(64), nullable=False, unique=True),
+    instant("created_at"),
+    instant("expires_at"),
+    C("used_at", DateTime(timezone=True)),
+    C("revoked_at", DateTime(timezone=True)),
+    Check("expires_at > created_at", name="recovery_expiry"),
+)
+usage_counters = table(
+    "service_usage_counters",
+    C("scope", String(100), primary_key=True),
+    C("window_start", DateTime(timezone=True), primary_key=True),
+    C("calls", Integer, nullable=False),
+    C("reserved_paise", BigInteger, nullable=False),
+    Check("calls >= 0 AND reserved_paise >= 0", name="usage_nonnegative"),
+)
+usage_events = table(
+    "service_usage_events",
+    identity(),
+    scoped(),
+    C("actor_id", String(64), ForeignKey("users.id"), nullable=False),
+    C("purpose", String(40), nullable=False),
+    C("reserved_paise", BigInteger, nullable=False),
+    instant("window_start"),
+    instant("at"),
+    Check("reserved_paise > 0", name="usage_reservation_positive"),
 )

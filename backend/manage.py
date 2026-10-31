@@ -7,7 +7,9 @@ from . import auth
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["create-owner", "set-password", "seed-demo"])
+    parser.add_argument(
+        "command", choices=["create-owner", "set-password", "seed-demo", "allow-ai", "deny-ai"]
+    )
     parser.add_argument("--username", default="")
     args = parser.parse_args()
     if args.command == "create-owner":
@@ -27,6 +29,20 @@ def main():
         except ValueError as exc:
             parser.error(str(exc))
         print("Password changed. All existing server sessions for this account were revoked.")
+    elif args.command in ("allow-ai", "deny-ai"):
+        username = args.username or input("Exact username: ").strip()
+        enabled = args.command == "allow-ai"
+        if input("Type ALLOW to enable provider spending or DENY to disable it: ").strip() != (
+            "ALLOW" if enabled else "DENY"
+        ):
+            parser.error("Confirmation did not match. No change made.")
+        try:
+            auth.set_provider_access(username, enabled)
+        except ValueError as exc:
+            parser.error(str(exc))
+        print(
+            "Provider access updated. Account must still pass provider configuration, roles and request limits."
+        )
     else:
         if not auth.development_login():
             parser.error("Explicit development login configuration is required.")

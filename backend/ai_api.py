@@ -6,6 +6,7 @@ from typing import Literal
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import Field
 from . import auth, store, providers
+from . import usage as provider_usage
 from .domain import StrictModel, RuleError
 from .security import rate_limit
 
@@ -14,9 +15,19 @@ router = APIRouter(prefix="/api/assistant")
 
 @router.get("/capabilities")
 def capabilities():
+    principal = auth.current()
+    allowed = (
+        provider_usage.public_settings_enabled()
+        if principal.public_demo
+        else principal.provider_access
+    )
     return {
-        "cloud_configured": bool(os.getenv("SARVAM_API_KEY", "").strip()),
-        "speech_preview": os.getenv("ENABLE_SPEECH_PREVIEW") == "1",
+        "cloud_configured": bool(os.getenv("SARVAM_API_KEY", "").strip()) and allowed,
+        "public_demo_provider_access": principal.public_demo and allowed,
+        "provider_access_allowed": allowed,
+        "speech_preview": os.getenv("ENABLE_SPEECH_PREVIEW") == "1"
+        and allowed
+        and bool(os.getenv("SARVAM_API_KEY", "").strip()),
         "languages": ["en-IN", "hi-IN", "kn-IN"],
         "language_validation": "not_field_validated",
         "live_provider_tests_passed": False,

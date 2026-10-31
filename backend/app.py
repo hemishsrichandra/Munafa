@@ -24,6 +24,7 @@ from .integrations import router as integrations_router
 from .preparation import router as preparation_router
 from .intelligence import router as intelligence_router
 from .records import router as records_router
+from .recovery import router as recovery_router, AuthInput
 from .supplier_performance import router as supplier_performance_router
 from .db import engine
 from .security import guard, origins
@@ -162,6 +163,7 @@ def health():
         "development_login": auth.development_login(),
         "public_signup": auth.public_signup_enabled(),
         "public_demo": auth.public_demo_enabled(),
+        "recovery_method": "one_time_codes",
     }
 
 
@@ -621,7 +623,7 @@ def export(action_id: str):
 
 
 # These routes precede the frontend catch-all in registration order below.
-class LoginBody(StrictModel):
+class LoginBody(AuthInput):
     username: str = Field(min_length=1, max_length=120)
     password: str = Field(min_length=1, max_length=200)
 
@@ -672,7 +674,7 @@ def login(body: LoginBody, request: Request):
     return login_response(auth.login(body.username, body.password), request)
 
 
-class SignupBody(StrictModel):
+class SignupBody(AuthInput):
     username: str = Field(min_length=3, max_length=120)
     password: str = Field(min_length=12, max_length=200)
     store_name: str = Field(min_length=1, max_length=120)
@@ -825,6 +827,7 @@ app.include_router(integrations_router)
 app.include_router(preparation_router)
 app.include_router(intelligence_router)
 app.include_router(records_router)
+app.include_router(recovery_router)
 app.include_router(supplier_performance_router)
 
 DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"

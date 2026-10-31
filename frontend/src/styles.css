@@ -4661,3 +4661,29 @@ textarea:focus-visible,
   border-bottom: 1px solid var(--line);
   overflow-wrap: anywhere;
 }
+
+.account-security {
+  margin-top: 18px;
+  text-align: left;
+}
+.account-security .field {
+  margin: 12px 0;
+}
+.recovery-code-sheet {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.recovery-code-sheet ul {
+  padding-left: 0;
+  list-style: none;
+}
+.recovery-code-sheet li {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.recovery-code-sheet code {
+  font-size: 12px;
+  user-select: text;
+}

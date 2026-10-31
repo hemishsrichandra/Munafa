@@ -435,16 +435,23 @@ def summary():
         return build_summary(db)
 
 
-def entry_view(db, row):
+def entry_view(db, row, history=None):
+    history = all_entries(db) if history is None else history
+    active = active_entries(db, history)
+    reversed_ids = {r["reversal_of"] for r in history if r["reversal_of"]}
+    allocations = [
+        {**r, "reversed": r["id"] in reversed_ids} for r in history if r["target_id"] == row["id"]
+    ]
+    remaining = (
+        (outstanding(active, row) if row["id"] not in reversed_ids else 0)
+        if row["kind"] in ("opening_due", "credit_sale", "payable")
+        else None
+    )
     return {
         **row,
-        "reversed": bool(
-            db.execute(
-                select(m.business_entries.c.id).where(
-                    store.scope(m.business_entries), m.business_entries.c.reversal_of == row["id"]
-                )
-            ).first()
-        ),
+        "reversed": row["id"] in reversed_ids,
+        "remaining_paise": remaining,
+        "allocations": allocations,
         "source": "merchant_reviewed_manual",
     }
 
@@ -465,7 +472,7 @@ def entry_sources(
             rows = [r for r in rows if r["occurred_on"] == on]
         rows = rows[::-1]
         return {
-            "items": [entry_view(db, r) for r in rows[offset : offset + 50]],
+            "items": [entry_view(db, r, history=history) for r in rows[offset : offset + 50]],
             "total_count": len(rows),
             "next_offset": offset + 50 if offset + 50 < len(rows) else None,
             "group": group,

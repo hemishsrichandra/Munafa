@@ -36,6 +36,7 @@ import { Commerce } from './components/Commerce';
 import { Intelligence } from './components/Intelligence';
 import { Preparation } from './components/Preparation';
 import { DailyRecords } from './components/DailyRecords';
+import { AccountSecurity } from './components/AccountSecurity';
 import { DailyRecordsSummary } from './components/DailyRecordsSummary';
 import { Integrations } from './components/Integrations';
 import { Assistant, CachedHelp } from './components/Assistant';
@@ -84,11 +85,15 @@ function App() {
     [help, setHelp] = useState(false);
   async function load() {
     try {
-      const [data, cfg] = await Promise.all([api('/cases'), api('/health')]);
+      const [data, cfg, capabilities] = await Promise.all([
+        api('/cases'),
+        api('/health'),
+        api('/assistant/capabilities'),
+      ]);
       setCases(data);
       if (!session.offlineUnavailable)
         await cacheCases(local.scope, data).catch((e) => local.setError(e.message));
-      setConfig(cfg);
+      setConfig({ ...cfg, sarvam_configured: capabilities.cloud_configured });
       setError('');
     } catch (e) {
       setError(e.message);
@@ -572,6 +577,7 @@ function App() {
                   >
                     Drafts &amp; sync
                   </button>
+                  <AccountSecurity />
                   <button className="button secondary full" onClick={session.logout}>
                     Sign out
                   </button>

@@ -1,0 +1,12 @@
+{
+  "Rules": [
+    {
+      "ID": "reviewed-private-backup-30-day-proposal",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "munafa-backups/" },
+      "Expiration": { "Days": 30 },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 30 },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 1 }
+    }
+  ]
+}

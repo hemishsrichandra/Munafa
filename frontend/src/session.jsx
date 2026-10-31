@@ -10,6 +10,9 @@ export function SessionGate({ children }) {
   const [publicDemoAllowed, setPublicDemoAllowed] = useState(false);
   const [configError, setConfigError] = useState('');
   const [creatingAccount, setCreatingAccount] = useState(false);
+  const [recovering, setRecovering] = useState(false);
+  const [recoveryCode, setRecoveryCode] = useState('');
+  const [authNotice, setAuthNotice] = useState('');
   const [storeName, setStoreName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [session, setSession] = useState(null),
@@ -31,6 +34,9 @@ export function SessionGate({ children }) {
     setConfirmPassword('');
     setCode('');
     setCreatingAccount(false);
+    setRecovering(false);
+    setRecoveryCode('');
+    setAuthNotice('');
     setDemo(false);
     setSession({ ...verified, offlineAccess: false });
   }
@@ -103,7 +109,10 @@ export function SessionGate({ children }) {
       setConfigError('Account options could not load. Check your connection and retry.');
     }
   }
-  function changeMode(signup = false, development = false) {
+  function changeMode(signup = false, development = false, recovery = false) {
+    setRecovering(recovery);
+    setRecoveryCode('');
+    setAuthNotice('');
     setCreatingAccount(signup);
     setDemo(development);
     setPassword('');
@@ -190,8 +199,25 @@ export function SessionGate({ children }) {
               : 'Your purchases, stock and supplier credits in one place.'}
           </p>
           <h2>
-            {creatingAccount ? 'Create account' : demo ? 'Development access' : 'Welcome back'}
+            {recovering
+              ? 'Recover account'
+              : creatingAccount
+                ? 'Create account'
+                : demo
+                  ? 'Development access'
+                  : 'Welcome back'}
           </h2>
+          {recovering && (
+            <p>
+              Use an unused recovery code you saved from your account. Email recovery is not
+              available. If you have no code, contact your store administrator.
+            </p>
+          )}
+          {authNotice && (
+            <p className="info-box" role="status">
+              {authNotice}
+            </p>
+          )}
           {offline && (
             <div className="offline-banner" role="status">
               Reconnect to sign in. Previously verified workspaces can save local drafts offline for
@@ -201,13 +227,22 @@ export function SessionGate({ children }) {
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              if (creatingAccount && password !== confirmPassword) {
+              if ((creatingAccount || recovering) && password !== confirmPassword) {
                 setError('Passwords do not match. Please check both entries.');
                 return;
               }
               setLoading(true);
               setError('');
               try {
+                if (recovering) {
+                  const result = await api('/auth/recover', {
+                    method: 'POST',
+                    body: { username, recovery_code: recoveryCode, new_password: password },
+                  });
+                  changeMode();
+                  setAuthNotice(result.detail);
+                  return;
+                }
                 await acceptSession(
                   await api(
                     creatingAccount ? '/auth/signup' : demo ? '/auth/dev-login' : '/auth/login',
@@ -275,23 +310,39 @@ export function SessionGate({ children }) {
                     lowercase.
                   </p>
                 )}
+                {recovering && (
+                  <label className="field">
+                    Recovery code
+                    <input
+                      required
+                      value={recoveryCode}
+                      maxLength={80}
+                      autoComplete="off"
+                      spellCheck={false}
+                      autoCapitalize="characters"
+                      onChange={(e) => setRecoveryCode(e.target.value)}
+                    />
+                  </label>
+                )}
                 <label className="field">
-                  Password
+                  {recovering ? 'New password' : 'Password'}
                   <input
                     required
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    autoComplete={creatingAccount ? 'new-password' : 'current-password'}
-                    minLength={creatingAccount ? 12 : undefined}
+                    autoComplete={
+                      creatingAccount || recovering ? 'new-password' : 'current-password'
+                    }
+                    minLength={creatingAccount || recovering ? 12 : undefined}
                     maxLength={200}
                   />
                 </label>
-                {creatingAccount && (
+                {(creatingAccount || recovering) && (
                   <>
                     <p className="tiny-help">
-                      Use at least 12 characters. Keep your password safe; password recovery is not
-                      available yet.
+                      Use at least 12 characters. Set up and privately save your recovery codes from
+                      Account recovery after signing in.
                     </p>
                     <label className="field">
                       Confirm password
@@ -315,14 +366,22 @@ export function SessionGate({ children }) {
               </p>
             )}
             <button className="button primary full" disabled={offline}>
-              {creatingAccount ? 'Create account' : 'Sign in'}
+              {recovering ? 'Reset password' : creatingAccount ? 'Create account' : 'Sign in'}
             </button>
-            {creatingAccount || demo ? (
+            {creatingAccount || demo || recovering ? (
               <button type="button" className="button secondary full" onClick={() => changeMode()}>
                 Back to sign in
               </button>
             ) : (
               <>
+                <button
+                  type="button"
+                  className="button secondary full"
+                  disabled={offline}
+                  onClick={() => changeMode(false, false, true)}
+                >
+                  Recover account
+                </button>
                 {signupAllowed && (
                   <button
                     type="button"

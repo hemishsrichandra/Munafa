@@ -24,6 +24,7 @@ def database(monkeypatch):
     monkeypatch.setenv("ENABLE_PUBLIC_SIGNUP", "1")
     monkeypatch.setenv("ENABLE_PUBLIC_DEMO", "1")
     monkeypatch.setenv("PUBLIC_DEMO_MAX_STORES", "500")
+    monkeypatch.setenv("PUBLIC_DEMO_AI_ENABLED", "0")
     monkeypatch.delenv("SARVAM_API_KEY", raising=False)
     for flag in (
         "ENABLE_SPEECH_PREVIEW",

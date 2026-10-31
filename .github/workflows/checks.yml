@@ -16,18 +16,26 @@ jobs:
           --health-interval 5s --health-timeout 3s --health-retries 20
     env:
       TZ: UTC
+      PG_BIN: /usr/lib/postgresql/17/bin
       DATABASE_URL: postgresql+psycopg://runner@127.0.0.1:5432/munafa_test
       TEST_DATABASE_URL: postgresql+psycopg://runner@127.0.0.1:5432/munafa_test
       APP_ENV: test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: {python-version: '3.13'}
+        with: { python-version: '3.13' }
       - uses: actions/setup-node@v4
-        with: {node-version: '22', cache: npm}
+        with: { node-version: '22', cache: npm }
       - run: python -m venv .venv
       - run: .venv/bin/pip install -r backend/requirements-dev.txt
       - run: npm ci
+      - name: Install PostgreSQL 17 backup clients for real restore tests
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          curl --fail --silent --show-error https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release; echo "$VERSION_CODENAME")-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client-17
       - run: .venv/bin/python -m pytest backend/tests -q
       - run: .venv/bin/ruff check backend scripts/serve_e2e.py scripts/build_eval_corpus.py scripts/evaluate_ai.py scripts/audit_release.py scripts/analyse_pilot.py scripts/evaluate_forecast.py
       - run: npm run format:check

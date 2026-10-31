@@ -56,6 +56,8 @@ def rate_limit(key, limit):
 
 
 def permission(path, method):
+    if path in ("/api/auth/logout", "/api/auth/security", "/api/auth/recovery-codes"):
+        return "read"  # Own-account controls apply to viewers too, never ledger authority.
     if method == "GET":
         return "export" if path == "/api/export" else "read"
     if path.endswith(("/approve", "/resolve", "/sent", "/execute")):
@@ -116,12 +118,13 @@ async def guard(request, call_next):
                 "/api/auth/dev-login",
                 "/api/auth/signup",
                 "/api/auth/demo",
+                "/api/auth/recover",
             )
             if public:
                 if write:
                     host = request.client.host if request.client else "unknown"
                     rate_limit(("login", host), 10)
-                    if path in ("/api/auth/signup", "/api/auth/demo"):
+                    if path in ("/api/auth/signup", "/api/auth/demo", "/api/auth/recover"):
                         rate_limit(("provision", host), 3)
                     await bounded_body(request, 16384)
             else:
@@ -133,6 +136,10 @@ async def guard(request, call_next):
                 )
                 if not token:
                     raise HTTPException(401, "Sign in to continue.")
+                if path == "/api/auth/recovery-codes":
+                    rate_limit(
+                        ("recovery-codes", request.client.host if request.client else "unknown"), 3
+                    )
                 p = await run_in_threadpool(
                     auth.authenticate,
                     token,

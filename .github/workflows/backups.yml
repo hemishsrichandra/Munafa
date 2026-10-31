@@ -1,0 +1,62 @@
+name: Private PostgreSQL backup
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '25 20 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: private-postgresql-backup
+  cancel-in-progress: false
+jobs:
+  configuration:
+    runs-on: ubuntu-latest
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - id: check
+        env:
+          SOURCE: ${{ secrets.BACKUP_DATABASE_URL }}
+          BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          ACCESS: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+          SECRET: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+          REGION: ${{ vars.BACKUP_AWS_REGION }}
+        run: |
+          if [ -n "$SOURCE" ] && [ -n "$BUCKET" ] && [ -n "$ACCESS" ] && [ -n "$SECRET" ] && [ -n "$REGION" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo '::warning::NOT CONFIGURED: no off-host backup will be created. Supply private backup secrets and review ops/BACKUP-RECOVERY.md.'
+          fi
+  backup:
+    name: Create and verify private backup (only when configured)
+    needs: configuration
+    if: needs.configuration.outputs.configured == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install supported PostgreSQL 17 clients
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          curl --fail --silent --show-error https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release; echo "$VERSION_CODENAME")-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client-17
+      - run: python -m pip install -r backend/requirements.lock.txt -r backend/requirements-ops.txt
+      - name: Archive and verify encrypted private object
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.BACKUP_AWS_REGION }}
+          BACKUP_S3_ENDPOINT_URL: ${{ vars.BACKUP_S3_ENDPOINT_URL }}
+          BACKUP_SCHEMA: public
+          PG_BIN: /usr/lib/postgresql/17/bin
+          SECURITY_RETENTION_APPLY: '0'
+        run: python -m backend.backup
+      # Deliberately no upload-artifact: database backups never enter public/CI artifacts.

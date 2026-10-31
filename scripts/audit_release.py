@@ -96,6 +96,7 @@ def main():
                 "/api/auth/dev-login",
                 "/api/auth/signup",
                 "/api/auth/demo",
+                "/api/auth/recover",
             ),
         }
         for path, methods in app.openapi()["paths"].items()

@@ -115,6 +115,9 @@ class SarvamSpeech:
         if not key:
             raise RuleError("Speech is not configured. Type your note instead.")
         model = os.getenv("SARVAM_STT_MODEL", "saaras:v3")
+        from .usage import reserve
+
+        reserve("speech")
         try:
             result = httpx.post(
                 ai.BASE + "/speech-to-text",

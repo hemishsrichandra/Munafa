@@ -266,6 +266,36 @@ export function DailyRecords({ initialRoute = '' }) {
               </p>
               <p>{source.record.note || ''}</p>
               {source.record.reversed && <p>Reversed — original retained in history.</p>}
+              {source.record.remaining_paise !== null &&
+                source.record.remaining_paise !== undefined && (
+                  <p>Recorded amount still due: {money(source.record.remaining_paise)}</p>
+                )}
+              {source.record.allocations?.map((r) => (
+                <button
+                  className="button secondary"
+                  key={r.id}
+                  onClick={() => openSource(`/records/entries/${r.id}`)}
+                >
+                  Open payment {r.reference} · {money(r.amount_paise)}
+                  {r.reversed ? ' · reversed' : ''}
+                </button>
+              ))}
+              {source.record.target_id && (
+                <button
+                  className="button secondary"
+                  onClick={() => openSource(`/records/entries/${source.record.target_id}`)}
+                >
+                  Open original obligation
+                </button>
+              )}
+              {source.record.reversal_of && (
+                <button
+                  className="button secondary"
+                  onClick={() => openSource(`/records/entries/${source.record.reversal_of}`)}
+                >
+                  Open corrected original
+                </button>
+              )}
               {source.record.outstanding_paise !== undefined && (
                 <p>Recorded outstanding: {money(source.record.outstanding_paise)}</p>
               )}
